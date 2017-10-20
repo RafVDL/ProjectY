@@ -1,8 +1,15 @@
+import java.rmi.registry.Registry;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.server.UnicastRemoteObject;
+
 public class NamingServer implements Nameserver{
 
     public NamingServer(){
         super();
     }
+
+    IpAdresses HashMap<int, InetAddress>;
+
 
     
 
@@ -20,8 +27,6 @@ public class NamingServer implements Nameserver{
         }catch (Exception e) {
             System.err.println("NamingServer exception: " + e.toString());
             e.printStackTrace();
-
-            Thomas hey
         }
     }
 
