@@ -1,6 +1,8 @@
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.HashMap;
+import java.net.InetAddress;
 
 public class NamingServer implements Nameserver{
 
@@ -8,10 +10,33 @@ public class NamingServer implements Nameserver{
         super();
     }
 
-    IpAdresses HashMap<int, InetAddress>;
+    HashMap<int, InetAddress> IpAdresses = new HashMap<int, InetAddress>();
+
+    void addMeToNetwork(String computerName, InetAddress IP){
+        int hashComputername = Math.abs(computerName.hashCode() % 32768);
+        IpAdresses.put(hashComputername, IP);
+    }
+
+    void removeMeFromNetwork(String computerName){
+        IpAdresses.remove(Math.abs(computerName.hashCode() % 32768));
+    }
+
+    InetAddress getOwner(String fileName){
+        int hashFileName = Math.abs(fileName.hashCode() % 32768);
+        int found = 0;
+        InetAddress current;
+        for(int i = hashFileName; !found && (i > 0); i--){
+            current = IpAdresses.get(i);
+            if(current != null){
+                found = 1;
+            }
+        }
+        if(current == null){
+            //uitzondering: niets gevonden 
+        }
+    }
 
 
-    
 
     public static void main(String[] args) {
 
