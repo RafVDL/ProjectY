@@ -20,6 +20,8 @@ public class NamingServer implements Nameserver{
         }catch (Exception e) {
             System.err.println("NamingServer exception: " + e.toString());
             e.printStackTrace();
+
+            Thomas hey
         }
     }
 
