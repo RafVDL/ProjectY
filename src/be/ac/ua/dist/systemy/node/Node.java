@@ -1,12 +1,18 @@
 package be.ac.ua.dist.systemy.node;
 
+import be.ac.ua.dist.systemy.nameserver.NameServerPackage.Nameserver;
+
 import java.io.DataInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.util.List;
 
 public class Node implements NodeInterface {
@@ -78,8 +84,12 @@ public class Node implements NodeInterface {
         }
     }
 
-    public static void main(String[] args) {
-        //Register at server
+    public static void main(String[] args) throws RemoteException, NotBoundException, UnknownHostException {
+        Registry registry = LocateRegistry.getRegistry("192.168.137.1", 3733);
+        Nameserver stub = (Nameserver) registry.lookup("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer");
+
+        stub.addMeToNetwork("test", InetAddress.getByName("192.168.137.2"));
+        stub.printIPadresses();
 
         NodeTCPServer tcpServer = new NodeTCPServer();
         tcpServer.startServer();
