@@ -3,6 +3,11 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.net.InetAddress;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.util.Iterator;
 
 public class NamingServer implements Nameserver{
 
@@ -23,18 +28,76 @@ public class NamingServer implements Nameserver{
 
     InetAddress getOwner(String fileName){
         int hashFileName = Math.abs(fileName.hashCode() % 32768);
-        int found = 0;
-        InetAddress current;
-        for(int i = hashFileName; !found && (i > 0); i--){
-            current = IpAdresses.get(i);
-            if(current != null){
-                found = 1;
+        long i = 0;
+        InetAddress currentIP;
+        int currentHash = null;
+        InetAddress highestIP;
+        int highestHash = null;
+
+
+        Iterator<HashMap.Entry<int, InetAddress>> it = IpAdresses.entrySet().iterator();
+
+        while(it.hasNext()){
+            HashMap.Entry<int, InetAddress> pair = it.next();
+            if(pair.getKey() < hashFileName){
+                if(currentHash == null){
+                    currentHash = pair.getKey();
+                    currentIP = pair.getValue();
+                } else if (pair.getKey() > currentHash) {
+                    currentHash = pair.getKey();
+                    currentIP = pair.getValue();
+                }
+            } else if (pair.getKey() > highestHash) {
+                highestHash = pair.getKey();
+                highestIP = pair.getValue();
+            }
+
+        }
+
+        if(currentIP == null){
+            return highestIP;
+        } else {
+            return currentIP;
+        }
+
+    }
+
+    void printIPadresses(){
+        Iterator<HashMap.Entry<int, InetAddress>> it = IpAdresses.entrySet().iterator();
+        while(it.hasNext()){
+            System.out.println("Hash: " + it.getKey());
+            System.out.println("IP: " + it.getValue() + "\n");
+        }
+
+    }
+
+    void exportIPadresses(){
+        String writeThis;
+        Iterator<HashMap.Entry<int, InetAddress>> it = IpAdresses.entrySet().iterator();
+        int i=0;
+        BufferedWriter outputWriter = null;
+        try {
+            File outputFile = new File("test.txt");
+            outputWriter = new BufferedWriter(new FileWriter(outputFile));
+            while(it.hasNext()) {
+                writeThis = "Hash: " + it.getValue() + "  IP: " + it.getKey();
+                outputWriter.write(writeThis);
+                outputWriter.newLine();
+            }
+            outputWriter.flush();
+        } catch (Exception e) {
+            e.printStackTrace();;
+        } finally{
+            try {
+                outputWriter.close();
+            } catch(Exception e) {
+
             }
         }
-        if(current == null){
-            //uitzondering: niets gevonden 
-        }
     }
+
+
+
 
 
 
