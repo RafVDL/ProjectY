@@ -18,6 +18,9 @@ public class NamingServer implements Nameserver{
     }
 
     HashMap<Integer, InetAddress> IpAdresses = new HashMap<Integer, InetAddress>();
+    private static final int PORT = 3733;
+    private static final String serverIP = "192.168.137.1"; //commentaar
+
 
     public void addMeToNetwork(String computerName, InetAddress IP){
         int hashComputername = Math.abs(computerName.hashCode() % 32768);
@@ -109,10 +112,11 @@ public class NamingServer implements Nameserver{
     public static void main(String[] args) {
 
         try {
+            System.setProperty("java.rmi.server.hostname", serverIP);
             NamingServer obj = new NamingServer();
             Nameserver stub = (Nameserver) UnicastRemoteObject.exportObject(obj, 0);
 
-            Registry registry = LocateRegistry.getRegistry();
+            Registry registry = LocateRegistry.createRegistry(PORT);
             registry.bind("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer", stub);
 
             System.err.println("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer Ready");
