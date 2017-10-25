@@ -22,13 +22,13 @@ public class NamingServer implements Nameserver{
     private static final String serverIP = "192.168.137.1"; //commentaar
 
 
-    public void addMeToNetwork(String computerName, InetAddress IP){
-        int hashComputername = Math.abs(computerName.hashCode() % 32768);
+    public void addMeToNetwork(InetAddress IP){
+        int hashComputername = Math.abs(IP.getHostName().hashCode() % 32768);
         IpAdresses.put(hashComputername, IP);
     }
 
-    public void removeMeFromNetwork(String computerName){
-        IpAdresses.remove(Math.abs(computerName.hashCode() % 32768));
+    public void removeMeFromNetwork(InetAddress IP){
+        IpAdresses.remove(Math.abs(IP.getHostName().hashCode() % 32768));
     }
 
     public InetAddress getOwner(String fileName) throws UnknownHostException {
@@ -67,7 +67,7 @@ public class NamingServer implements Nameserver{
             System.out.println("No smaller hash found, owner is: " + highestHash + "\n");
             return highestIP;
         } else {
-            System.out.println("Owner is" + currentHash + "\n");
+            System.out.println("Owner is " + currentHash + "\n");
             return currentIP;
         }
 
@@ -129,7 +129,7 @@ public class NamingServer implements Nameserver{
             registry.bind("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer", stub);
 
             System.err.println("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer Ready");
-            stub.addMeToNetwork("mijn pc", InetAddress.getByName("192.168.137.1"));
+            stub.addMeToNetwork(InetAddress.getByName("192.168.137.1"));
 
         }catch (Exception e) {
             System.err.println("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer exception: " + e.toString());

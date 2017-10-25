@@ -88,11 +88,11 @@ public class Node implements NodeInterface {
         Registry registry = LocateRegistry.getRegistry("192.168.137.1", 3733);
         Nameserver stub = (Nameserver) registry.lookup("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer");
 
-        stub.addMeToNetwork("test", InetAddress.getByName("192.168.137.2"));
+        stub.addMeToNetwork(InetAddress.getByName("192.168.137.2"));
         stub.printIPadresses();
         stub.getOwner("test.txt");
         stub.exportIPadresses();
-        stub.removeMeFromNetwork("test");
+        stub.removeMeFromNetwork(InetAddress.getByName("192.168.137.2"));
         stub.printIPadresses();
 
 

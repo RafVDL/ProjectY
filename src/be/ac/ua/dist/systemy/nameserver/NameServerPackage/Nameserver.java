@@ -8,8 +8,8 @@ import java.rmi.RemoteException;
 public interface Nameserver extends Remote {
 
     InetAddress getOwner(String fileName) throws UnknownHostException, RemoteException;
-    void addMeToNetwork(String computerName, InetAddress IP) throws RemoteException;
-    void removeMeFromNetwork(String computerName) throws RemoteException;
+    void addMeToNetwork(InetAddress IP) throws RemoteException;
+    void removeMeFromNetwork(InetAddress IP) throws RemoteException;
     void exportIPadresses() throws RemoteException;
     void printIPadresses() throws RemoteException;
 
