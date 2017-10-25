@@ -3,6 +3,8 @@ package be.ac.ua.dist.systemy.nameserver.NameServerPackage;
 import java.net.UnknownHostException;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
+import java.rmi.server.RemoteServer;
+import java.rmi.server.ServerNotActiveException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.net.InetAddress;
@@ -22,12 +24,14 @@ public class NamingServer implements Nameserver{
     private static final String serverIP = "192.168.137.1"; //commentaar
 
 
-    public void addMeToNetwork(InetAddress IP){
+    public void addMeToNetwork() throws ServerNotActiveException, UnknownHostException {
+        InetAddress IP = InetAddress.getByName(RemoteServer.getClientHost());
         int hashComputername = Math.abs(IP.getHostName().hashCode() % 32768);
         IpAdresses.put(hashComputername, IP);
     }
 
-    public void removeMeFromNetwork(InetAddress IP){
+    public void removeMeFromNetwork() throws ServerNotActiveException, UnknownHostException {
+        InetAddress IP = InetAddress.getByName(RemoteServer.getClientHost());
         IpAdresses.remove(Math.abs(IP.getHostName().hashCode() % 32768));
     }
 
@@ -74,7 +78,7 @@ public class NamingServer implements Nameserver{
     }
 
     public void printIPadresses(){
-        System.out.println("Printing IP-adresses to Console:;");
+        System.out.println("Printing IP-adresses to Console:");
         Iterator<HashMap.Entry<Integer, InetAddress>> it = IpAdresses.entrySet().iterator();
         while(it.hasNext()){
             HashMap.Entry pair = (HashMap.Entry)it.next();
@@ -129,7 +133,7 @@ public class NamingServer implements Nameserver{
             registry.bind("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer", stub);
 
             System.err.println("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer Ready");
-            stub.addMeToNetwork(InetAddress.getByName("192.168.137.1"));
+            stub.addMeToNetwork();
 
         }catch (Exception e) {
             System.err.println("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer exception: " + e.toString());
