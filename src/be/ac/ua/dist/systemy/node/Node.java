@@ -78,7 +78,10 @@ public class Node implements NodeInterface {
         }
     }
 
-    public static void main(String[] args){
+    public static void main(String[] args) {
         //Register at server
+
+        NodeTCPServer tcpServer = new NodeTCPServer();
+        tcpServer.startServer();
     }
 }
