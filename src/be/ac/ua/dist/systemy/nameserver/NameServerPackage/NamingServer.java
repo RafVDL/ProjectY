@@ -68,7 +68,7 @@ public class NamingServer implements Nameserver{
 
     }
 
-    void printIPadresses(){
+    public void printIPadresses(){
         Iterator<HashMap.Entry<Integer, InetAddress>> it = IpAdresses.entrySet().iterator();
         while(it.hasNext()){
             HashMap.Entry pair = (HashMap.Entry)it.next();
@@ -78,7 +78,7 @@ public class NamingServer implements Nameserver{
 
     }
 
-    void exportIPadresses(){
+     public void exportIPadresses(){
         String writeThis;
         Iterator<HashMap.Entry<Integer, InetAddress>> it = IpAdresses.entrySet().iterator();
         int i=0;
@@ -125,6 +125,7 @@ public class NamingServer implements Nameserver{
             System.err.println("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer exception: " + e.toString());
             e.printStackTrace();
         }
+
     }
 
 
