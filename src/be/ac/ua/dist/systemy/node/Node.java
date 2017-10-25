@@ -90,6 +90,11 @@ public class Node implements NodeInterface {
 
         stub.addMeToNetwork("test", InetAddress.getByName("192.168.137.2"));
         stub.printIPadresses();
+        stub.getOwner("test.txt");
+        stub.exportIPadresses();
+        stub.removeMeFromNetwork("test");
+        stub.printIPadresses();
+
 
         NodeTCPServer tcpServer = new NodeTCPServer();
         tcpServer.startServer();

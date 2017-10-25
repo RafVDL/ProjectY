@@ -32,7 +32,9 @@ public class NamingServer implements Nameserver{
     }
 
     public InetAddress getOwner(String fileName) throws UnknownHostException {
+        System.out.println("Getting owner of file: " + fileName);
         int hashFileName = Math.abs(fileName.hashCode() % 32768);
+        System.out.println("Hash of file = " + hashFileName);
         InetAddress currentIP;
         currentIP = InetAddress.getByAddress(new byte[] {0, 0, 0, 0});
         int currentHash = 0;
@@ -58,27 +60,33 @@ public class NamingServer implements Nameserver{
                 highestIP = pair.getValue();
             }
 
+
         }
 
         if(currentIP.equals(InetAddress.getByAddress(new byte[] {0, 0, 0, 0}))){
+            System.out.println("No smaller hash found, owner is: " + highestHash + "\n");
             return highestIP;
         } else {
+            System.out.println("Owner is" + currentHash + "\n");
             return currentIP;
         }
 
     }
 
     public void printIPadresses(){
+        System.out.println("Printing IP-adresses to Console:;");
         Iterator<HashMap.Entry<Integer, InetAddress>> it = IpAdresses.entrySet().iterator();
         while(it.hasNext()){
             HashMap.Entry pair = (HashMap.Entry)it.next();
             System.out.println("Hash: " + pair.getKey());
             System.out.println("IP: " + pair.getValue() + "\n");
         }
+        System.out.println("Print completed \n");
 
     }
 
      public void exportIPadresses(){
+        System.out.println("Exporting IP-adressess ...");
         String writeThis;
         Iterator<HashMap.Entry<Integer, InetAddress>> it = IpAdresses.entrySet().iterator();
         int i=0;
@@ -102,6 +110,7 @@ public class NamingServer implements Nameserver{
 
             }
         }
+        System.out.println("Export completed \n");
     }
 
 
