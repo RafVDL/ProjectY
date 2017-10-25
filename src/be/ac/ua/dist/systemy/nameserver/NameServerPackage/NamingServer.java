@@ -1,3 +1,5 @@
+package be.ac.ua.dist.systemy.nameserver.NameServerPackage;
+
 import java.net.UnknownHostException;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
@@ -6,7 +8,6 @@ import java.util.HashMap;
 import java.net.InetAddress;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.util.Iterator;
 
@@ -16,30 +17,31 @@ public class NamingServer implements Nameserver{
         super();
     }
 
-    HashMap<int, InetAddress> IpAdresses = new HashMap<int, InetAddress>();
+    HashMap<Integer, InetAddress> IpAdresses = new HashMap<Integer, InetAddress>();
 
-    void addMeToNetwork(String computerName, InetAddress IP){
+    public void addMeToNetwork(String computerName, InetAddress IP){
         int hashComputername = Math.abs(computerName.hashCode() % 32768);
         IpAdresses.put(hashComputername, IP);
     }
 
-    void removeMeFromNetwork(String computerName){
+    public void removeMeFromNetwork(String computerName){
         IpAdresses.remove(Math.abs(computerName.hashCode() % 32768));
     }
 
-    InetAddress getOwner(String fileName) throws UnknownHostException {
+    public InetAddress getOwner(String fileName) throws UnknownHostException {
         int hashFileName = Math.abs(fileName.hashCode() % 32768);
         InetAddress currentIP;
         currentIP = InetAddress.getByAddress(new byte[] {0, 0, 0, 0});
         int currentHash = 0;
         InetAddress highestIP;
+        highestIP = InetAddress.getByAddress(new byte[] {0, 0, 0, 0});
         int highestHash = 0;
 
 
-        Iterator<HashMap.Entry<int, InetAddress>> it = IpAdresses.entrySet().iterator();
+        Iterator<HashMap.Entry<Integer, InetAddress>> it = IpAdresses.entrySet().iterator();
 
         while(it.hasNext()){
-            HashMap.Entry<int, InetAddress> pair = it.next();
+            HashMap.Entry<Integer, InetAddress> pair = it.next();
             if(pair.getKey() < hashFileName){
                 if(currentHash == 0){
                     currentHash = pair.getKey();
@@ -55,7 +57,7 @@ public class NamingServer implements Nameserver{
 
         }
 
-        if(currentIP.equals  == InetAddress.getByAddress(new byte[] {0, 0, 0, 0})){
+        if(currentIP.equals(InetAddress.getByAddress(new byte[] {0, 0, 0, 0}))){
             return highestIP;
         } else {
             return currentIP;
@@ -64,24 +66,26 @@ public class NamingServer implements Nameserver{
     }
 
     void printIPadresses(){
-        Iterator<HashMap.Entry<int, InetAddress>> it = IpAdresses.entrySet().iterator();
+        Iterator<HashMap.Entry<Integer, InetAddress>> it = IpAdresses.entrySet().iterator();
         while(it.hasNext()){
-            System.out.println("Hash: " + it.getKey());
-            System.out.println("IP: " + it.getValue() + "\n");
+            HashMap.Entry pair = (HashMap.Entry)it.next();
+            System.out.println("Hash: " + pair.getKey());
+            System.out.println("IP: " + pair.getValue() + "\n");
         }
 
     }
 
     void exportIPadresses(){
         String writeThis;
-        Iterator<HashMap.Entry<int, InetAddress>> it = IpAdresses.entrySet().iterator();
+        Iterator<HashMap.Entry<Integer, InetAddress>> it = IpAdresses.entrySet().iterator();
         int i=0;
         BufferedWriter outputWriter = null;
         try {
             File outputFile = new File("test.txt");
             outputWriter = new BufferedWriter(new FileWriter(outputFile));
             while(it.hasNext()) {
-                writeThis = "Hash: " + it.getValue() + "  IP: " + it.getKey();
+                HashMap.Entry pair = (HashMap.Entry)it.next();
+                writeThis = "Hash: " + pair.getValue() + "  IP: " + pair.getKey();
                 outputWriter.write(writeThis);
                 outputWriter.newLine();
             }
@@ -109,12 +113,12 @@ public class NamingServer implements Nameserver{
             Nameserver stub = (Nameserver) UnicastRemoteObject.exportObject(obj, 0);
 
             Registry registry = LocateRegistry.getRegistry();
-            registry.bind("NamingServer", stub);
+            registry.bind("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer", stub);
 
-            System.err.println("NamingServer Ready");
+            System.err.println("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer Ready");
 
         }catch (Exception e) {
-            System.err.println("NamingServer exception: " + e.toString());
+            System.err.println("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer exception: " + e.toString());
             e.printStackTrace();
         }
     }
