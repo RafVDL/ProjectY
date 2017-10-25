@@ -1,3 +1,4 @@
+import java.net.UnknownHostException;
 import java.rmi.registry.Registry;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.server.UnicastRemoteObject;
@@ -26,13 +27,13 @@ public class NamingServer implements Nameserver{
         IpAdresses.remove(Math.abs(computerName.hashCode() % 32768));
     }
 
-    InetAddress getOwner(String fileName){
+    InetAddress getOwner(String fileName) throws UnknownHostException {
         int hashFileName = Math.abs(fileName.hashCode() % 32768);
-        long i = 0;
         InetAddress currentIP;
-        int currentHash = null;
+        currentIP = InetAddress.getByAddress(new byte[] {0, 0, 0, 0});
+        int currentHash = 0;
         InetAddress highestIP;
-        int highestHash = null;
+        int highestHash = 0;
 
 
         Iterator<HashMap.Entry<int, InetAddress>> it = IpAdresses.entrySet().iterator();
@@ -40,7 +41,7 @@ public class NamingServer implements Nameserver{
         while(it.hasNext()){
             HashMap.Entry<int, InetAddress> pair = it.next();
             if(pair.getKey() < hashFileName){
-                if(currentHash == null){
+                if(currentHash == 0){
                     currentHash = pair.getKey();
                     currentIP = pair.getValue();
                 } else if (pair.getKey() > currentHash) {
@@ -54,7 +55,7 @@ public class NamingServer implements Nameserver{
 
         }
 
-        if(currentIP == null){
+        if(currentIP.equals  == InetAddress.getByAddress(new byte[] {0, 0, 0, 0})){
             return highestIP;
         } else {
             return currentIP;
