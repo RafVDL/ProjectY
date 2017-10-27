@@ -24,15 +24,18 @@ public class NamingServer implements Nameserver{
     private static final String serverIP = "192.168.137.1"; //commentaar
 
 
-    public void addMeToNetwork() throws ServerNotActiveException, UnknownHostException {
+    public void addMeToNetwork(String nodeName) throws ServerNotActiveException, UnknownHostException {
         InetAddress IP = InetAddress.getByName(RemoteServer.getClientHost());
-        int hashComputername = Math.abs(IP.getHostName().hashCode() % 32768);
+        System.out.println("Adding " + nodeName + " from IP-table");
+        int hashComputername = Math.abs(nodeName.hashCode() % 32768);
         IpAdresses.put(hashComputername, IP);
     }
 
-    public void removeMeFromNetwork() throws ServerNotActiveException, UnknownHostException {
+    public void removeMeFromNetwork(String nodeName) throws ServerNotActiveException, UnknownHostException {
         InetAddress IP = InetAddress.getByName(RemoteServer.getClientHost());
-        IpAdresses.remove(Math.abs(IP.getHostName().hashCode() % 32768));
+        System.out.println("Removing " + nodeName + " from IP-table");
+        int hashComputername = Math.abs(nodeName.hashCode() % 32768);
+        IpAdresses.remove(hashComputername, IP);
     }
 
     public InetAddress getOwner(String fileName) throws UnknownHostException {
