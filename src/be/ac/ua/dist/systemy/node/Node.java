@@ -167,7 +167,5 @@ public class Node implements NodeInterface {
         stub.exportIPadresses();
         stub.removeMeFromNetwork("e");
         stub.printIPadresses();
-
-
     }
 }
