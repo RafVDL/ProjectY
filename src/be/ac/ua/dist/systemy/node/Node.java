@@ -2,13 +2,11 @@ package be.ac.ua.dist.systemy.node;
 
 import be.ac.ua.dist.systemy.nameserver.NameServerPackage.Nameserver;
 
-import java.io.DataInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
+import java.net.DatagramPacket;
 import java.net.InetAddress;
+import java.net.MulticastSocket;
 import java.net.Socket;
-import java.net.UnknownHostException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -36,6 +34,9 @@ public class Node implements NodeInterface {
         this.currentName = nodeName;
         this.currentAddress = address;
         this.currentHash = calculateHash(nodeName);
+
+        NodeTCPServer tcpServer = new NodeTCPServer();
+        tcpServer.startServer();
     }
 
     @Override
@@ -91,47 +92,72 @@ public class Node implements NodeInterface {
         }
     }
 
-    private void updateNext(int newHash, InetAddress newAddress, String newName){
-        nextHash = newHash;
+    private void updateNext(InetAddress newAddress, String newName) {
+        nextHash = calculateHash(newName);
         nextAddress = newAddress;
         nextName = newName;
     }
 
-    private void updatePrev(int newHash, InetAddress newAddress, String newName){
-        prevHash = newHash;
+    private void updatePrev(InetAddress newAddress, String newName) {
+        prevHash = calculateHash(newName);
         prevAddress = newAddress;
         prevName = newName;
     }
 
-    public void updateNeighbours(InetAddress newAddress, String newName){
+    public void updateNeighbours(InetAddress newAddress, String newName) {
         int newHash = calculateHash(newName);
-        nextHash = calculateHash(nextName);
-        prevHash = calculateHash(prevName);
 
-        if(newHash > currentHash && newHash<nextHash){
+        if (newHash > currentHash && newHash < nextHash) {
             // New node sits between this node en next node.
 
             //TODO Send self and nextNode to newNode.
-            updateNext(newHash, newAddress, newName);
-        }
-        else if (newHash<currentHash&&newHash>prevHash){
+            updateNext(newAddress, newName);
+        } else if (newHash < currentHash && newHash > prevHash) {
             // New node sits between this node and the previous node.
 
             //TODO Send previous node and self to newNode.
-            updatePrev(newHash, newAddress, newName);
-        }
-        else {
+            updatePrev(newAddress, newName);
+        } else {
             // New node does not become a neighbour of this node.
 
             // Do nothing
         }
     }
 
-    private int calculateHash(String name){
+    public void joinNetwork() throws IOException {
+        MulticastSocket socket = new MulticastSocket(4446);
+        InetAddress group = InetAddress.getByName("203.0.113.0");
+        socket.joinGroup(group);
+
+
+        byte[] buf;
+        buf = ("HELLO|" + currentName).getBytes();
+        DatagramPacket packet = new DatagramPacket(buf, buf.length, group, 4446);
+        socket.send(packet);
+
+        buf = new byte[256];
+        packet = new DatagramPacket(buf, buf.length);
+        socket.receive(packet);
+
+        boolean done = false;
+        String received = new String(buf);
+        if (received.startsWith("NODECOUNT")) {
+            String[] split = received.split("\\|");
+            Integer nodeCount = Integer.parseInt(split[1]);
+            if (nodeCount < 1) {
+                updateNext(currentAddress, currentName);
+                updatePrev(currentAddress, currentName);
+            }
+        }
+
+        socket.close();
+    }
+
+    private int calculateHash(String name) {
         return Math.abs(name.hashCode() % 32768);
     }
 
-    public static void main(String[] args) throws RemoteException, NotBoundException, UnknownHostException, ServerNotActiveException {
+    public static void main(String[] args) throws IOException, NotBoundException, ServerNotActiveException {
         Registry registry = LocateRegistry.getRegistry("192.168.137.1", 3733);
         Nameserver stub = (Nameserver) registry.lookup("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer");
 
@@ -143,7 +169,5 @@ public class Node implements NodeInterface {
         stub.printIPadresses();
 
 
-        NodeTCPServer tcpServer = new NodeTCPServer();
-        tcpServer.startServer();
     }
 }
