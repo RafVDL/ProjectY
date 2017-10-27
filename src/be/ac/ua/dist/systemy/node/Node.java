@@ -135,11 +135,11 @@ public class Node implements NodeInterface {
         Registry registry = LocateRegistry.getRegistry("192.168.137.1", 3733);
         Nameserver stub = (Nameserver) registry.lookup("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer");
 
-        stub.addMeToNetwork();
+        stub.addMeToNetwork("e");
         stub.printIPadresses();
         stub.getOwner("test.txt");
         stub.exportIPadresses();
-        stub.removeMeFromNetwork();
+        stub.removeMeFromNetwork("e");
         stub.printIPadresses();
 
 

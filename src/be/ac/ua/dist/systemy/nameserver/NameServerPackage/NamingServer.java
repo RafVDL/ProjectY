@@ -136,7 +136,7 @@ public class NamingServer implements Nameserver{
             registry.bind("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer", stub);
 
             System.err.println("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer Ready");
-            stub.addMeToNetwork();
+            stub.addMeToNetwork("Thomas-Nameserver");
 
         }catch (Exception e) {
             System.err.println("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer exception: " + e.toString());
