@@ -39,7 +39,7 @@ public class Node implements NodeInterface {
         this.currentHash = calculateHash(nodeName);
 
         socket = new MulticastSocket(4446);
-        group = InetAddress.getByName("203.0.113.0");
+        group = InetAddress.getByName("225.0.113.0");
         socket.joinGroup(group);
     }
 

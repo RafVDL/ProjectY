@@ -19,7 +19,7 @@ public class NamingServerHelloThread extends Thread {
         MulticastSocket socket;
         try {
             socket = new MulticastSocket(4446);
-            InetAddress group = InetAddress.getByName("203.0.113.0");
+            InetAddress group = InetAddress.getByName("225.0.113.0");
             socket.joinGroup(group);
 
             DatagramPacket packet;
