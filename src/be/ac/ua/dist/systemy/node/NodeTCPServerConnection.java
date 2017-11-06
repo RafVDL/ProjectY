@@ -11,8 +11,7 @@ public class NodeTCPServerConnection extends Thread {
     }
 
     /**
-     * Listens for the first input line (ie. REQUESTFILE) followed by a filename as second parameter. The switch statement
-     * is already implemented for expansion reasons
+     * Listens for commands from other nodes.
      */
     @Override
     public void run() {
@@ -27,13 +26,18 @@ public class NodeTCPServerConnection extends Thread {
                     String fileName = in.readLine();
                     sendFile(dos, "server_" + fileName);
                     break;
+                case "NEXT_NEIGHBOUR":
+                    String prevNeighbour = in.readLine();
+                    String nextNeighbour = in.readLine();
+
+
+                    break;
             }
 
             dis.close();
             dos.close();
             in.close();
             clientSocket.close();
-
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -24,7 +24,7 @@ public class NamingServerHelloThread extends Thread {
 
             DatagramPacket packet;
             while (!stop) {
-                byte[] buf = new byte[256];
+                byte[] buf = new byte[1024];
                 packet = new DatagramPacket(buf, buf.length);
                 socket.receive(packet);
 
@@ -34,6 +34,17 @@ public class NamingServerHelloThread extends Thread {
                     String hostname = split[1];
 
                     buf = ("NODECOUNT|" + namingServer.IpAdresses.size()).getBytes();
+
+                    packet = new DatagramPacket(buf, buf.length);
+                    socket.send(packet);
+                } else if (received.startsWith("GETIP")) {
+                    String[] split = received.split("\\|");
+                    String hostname = split[1];
+                    if (namingServer.IpAdresses.containsKey(Math.abs(hostname.hashCode() % 32768))) {
+                        buf = ("REIP|" + hostname + "|" + namingServer.IpAdresses.get(Math.abs(hostname.hashCode() % 32768)).getHostAddress()).getBytes();
+                    } else {
+                        buf = ("REIP|" + hostname + "|NOT_FOUND").getBytes();
+                    }
 
                     packet = new DatagramPacket(buf, buf.length);
                     socket.send(packet);

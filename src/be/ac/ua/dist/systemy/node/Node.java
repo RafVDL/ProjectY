@@ -30,10 +30,17 @@ public class Node implements NodeInterface {
     private int prevHash;
     private int nextHash;
 
-    public Node(String nodeName, InetAddress address) {
+    MulticastSocket socket;
+    InetAddress group;
+
+    public Node(String nodeName, InetAddress address) throws IOException {
         this.currentName = nodeName;
         this.currentAddress = address;
         this.currentHash = calculateHash(nodeName);
+
+        socket = new MulticastSocket(4446);
+        group = InetAddress.getByName("203.0.113.0");
+        socket.joinGroup(group);
     }
 
     @Override
@@ -110,6 +117,14 @@ public class Node implements NodeInterface {
         if (newHash > currentHash && newHash < nextHash) {
             // New node sits between this node en next node.
 
+            if (newAddress == null) {
+                try {
+                    newAddress = getAddressByName(newName);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
             try {
                 //Open tcp socket to newNode @newAddress:port
                 clientSocket = new Socket(newAddress, TCP_PORT);
@@ -133,6 +148,15 @@ public class Node implements NodeInterface {
         } else if (newHash < currentHash && newHash > prevHash) {
             // New node sits between this node and the previous node.
             // Only update own neighbours.
+
+            if (newAddress == null) {
+                try {
+                    newAddress = getAddressByName(newName);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
             updatePrev(newAddress, newName);
         } else {
             // New node does not become a neighbour of this node.
@@ -141,11 +165,30 @@ public class Node implements NodeInterface {
         }
     }
 
-    public void joinNetwork() throws IOException {
-        MulticastSocket socket = new MulticastSocket(4446);
-        InetAddress group = InetAddress.getByName("203.0.113.0");
-        socket.joinGroup(group);
+    private InetAddress getAddressByName(String hostname) throws IOException {
+        byte[] buf;
+        buf = ("GETIP|" + currentName).getBytes();
+        DatagramPacket packet = new DatagramPacket(buf, buf.length, group, 4446);
+        socket.send(packet);
 
+        buf = new byte[256];
+        packet = new DatagramPacket(buf, buf.length);
+        socket.receive(packet);
+
+        String received = new String(buf);
+        if (received.startsWith("REIP")) {
+            String[] split = received.split("\\|");
+            String returnedHostname = split[1];
+            String ip = split[2];
+            if (ip.equals("NOT_FOUND")) {
+                return null;
+            }
+            return InetAddress.getByName(ip);
+        }
+        return null;
+    }
+
+    public void joinNetwork() throws IOException {
         byte[] buf;
         buf = ("HELLO|" + currentName).getBytes();
         DatagramPacket packet = new DatagramPacket(buf, buf.length, group, 4446);

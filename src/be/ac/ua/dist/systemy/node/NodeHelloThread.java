@@ -30,11 +30,20 @@ public class NodeHelloThread extends Thread {
                 socket.receive(packet);
 
                 String received = new String(packet.getData());
-                if (received.startsWith("HELLO")) {
+                if (received.startsWith("HELLO")) { // message from new node
                     String[] split = received.split("\\|");
                     String hostname = split[1];
 
+                    node.updateNeighbours(packet.getAddress(), hostname);
                 }
+//                } else if (received.startsWith("HELLOR")) { // response from already existing node
+//                    String[] split = received.split("\\|");
+//                    String hostname = split[1];
+//                    String nextHostname = split[2];
+//
+//                    node.updateNeighbours(packet.getAddress(), hostname);
+//                    node.updateNeighbours(null, nextHostname);
+//                }
             }
 
             socket.leaveGroup(group);

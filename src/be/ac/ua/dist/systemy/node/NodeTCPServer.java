@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class NodeTCPServer extends Thread{
+public class NodeTCPServer extends Thread {
 
     /**
      * Starts the server -> listens for clients trying to establish a connection. Creates a new thread for each client
