@@ -6,6 +6,7 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 
 public class NamingServerHelloThread extends Thread {
+    private static final int MULTICAST_PORT = 4446;
 
     public boolean stop = false;
     private NamingServer namingServer;
@@ -18,7 +19,7 @@ public class NamingServerHelloThread extends Thread {
     public void run() {
         MulticastSocket socket;
         try {
-            socket = new MulticastSocket(4446);
+            socket = new MulticastSocket(MULTICAST_PORT);
             InetAddress group = InetAddress.getByName("225.0.113.0");
             socket.joinGroup(group);
 
@@ -35,7 +36,7 @@ public class NamingServerHelloThread extends Thread {
 
                     buf = ("NODECOUNT|" + namingServer.IpAdresses.size()).getBytes();
 
-                    packet = new DatagramPacket(buf, buf.length);
+                    packet = new DatagramPacket(buf, buf.length, group, MULTICAST_PORT);
                     socket.send(packet);
                 } else if (received.startsWith("GETIP")) {
                     String[] split = received.split("\\|");
