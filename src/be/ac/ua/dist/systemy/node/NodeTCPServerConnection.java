@@ -4,9 +4,12 @@ import java.io.*;
 import java.net.Socket;
 
 public class NodeTCPServerConnection extends Thread {
+
+    private Node node;
     private Socket clientSocket;
 
-    public NodeTCPServerConnection(Socket clientSocket) {
+    public NodeTCPServerConnection(Node node, Socket clientSocket) {
+        this.node = node;
         this.clientSocket = clientSocket;
     }
 
@@ -30,7 +33,18 @@ public class NodeTCPServerConnection extends Thread {
                     String prevNeighbour = in.readLine();
                     String nextNeighbour = in.readLine();
 
+                    node.updateNeighbours(clientSocket.getInetAddress(), prevNeighbour);
+                    node.updateNeighbours(null, nextNeighbour);
+                    break;
+                case "QUIT":
+                    String oldNeighbour = in.readLine();
+                    String newNeighbour = in.readLine();
 
+                    if (node.getPrevName().equals(oldNeighbour)) {
+                        node.updatePrev(null, newNeighbour);
+                    } else if (node.getNextName().equals(oldNeighbour)) {
+                        node.updateNext(null, newNeighbour);
+                    }
                     break;
             }
 

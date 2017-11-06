@@ -28,6 +28,8 @@ public class Node implements NodeInterface {
     private int prevHash;
     private int nextHash;
 
+    private boolean running = true;
+
     MulticastSocket socket;
     InetAddress group;
 
@@ -38,6 +40,38 @@ public class Node implements NodeInterface {
 
         socket = new MulticastSocket(Ports.MULTICAST_PORT);
         group = InetAddress.getByName("225.0.113.0");
+    }
+
+    public InetAddress getPrevAddress() {
+        return prevAddress;
+    }
+
+    public void setPrevAddress(InetAddress prevAddress) {
+        this.prevAddress = prevAddress;
+    }
+
+    public InetAddress getNextAddress() {
+        return nextAddress;
+    }
+
+    public void setNextAddress(InetAddress nextAddress) {
+        this.nextAddress = nextAddress;
+    }
+
+    public void setPrevName(String prevName) {
+        this.prevName = prevName;
+    }
+
+    public void setNextName(String nextName) {
+        this.nextName = nextName;
+    }
+
+    public String getNextName() {
+        return nextName;
+    }
+
+    public String getPrevName() {
+        return prevName;
     }
 
     @Override
@@ -95,6 +129,14 @@ public class Node implements NodeInterface {
 
     @Override
     public void updateNext(InetAddress newAddress, String newName) {
+        if (newAddress == null) {
+            try {
+                newAddress = getAddressByName(newName);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
         nextHash = calculateHash(newName);
         nextAddress = newAddress;
         nextName = newName;
@@ -102,18 +144,24 @@ public class Node implements NodeInterface {
 
     @Override
     public void updatePrev(InetAddress newAddress, String newName) {
+        if (newAddress == null) {
+            try {
+                newAddress = getAddressByName(newName);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
         prevHash = calculateHash(newName);
         prevAddress = newAddress;
         prevName = newName;
     }
 
     public void updateNeighbours(InetAddress newAddress, String newName) {
-        Socket clientSocket;
         int newHash = calculateHash(newName);
 
         if (newHash > currentHash && newHash < nextHash) {
             // New node sits between this node en next node.
-
             if (newAddress == null) {
                 try {
                     newAddress = getAddressByName(newName);
@@ -122,6 +170,7 @@ public class Node implements NodeInterface {
                 }
             }
 
+            Socket clientSocket;
             try {
                 //Open tcp socket to newNode @newAddress:port
                 clientSocket = new Socket(newAddress, Ports.TCP_PORT);
@@ -146,19 +195,7 @@ public class Node implements NodeInterface {
             // New node sits between this node and the previous node.
             // Only update own neighbours.
 
-            if (newAddress == null) {
-                try {
-                    newAddress = getAddressByName(newName);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
             updatePrev(newAddress, newName);
-        } else {
-            // New node does not become a neighbour of this node.
-
-            // Do nothing.
         }
     }
 
@@ -207,13 +244,55 @@ public class Node implements NodeInterface {
                 updateNext(currentAddress, currentName);
                 updatePrev(currentAddress, currentName);
             }
+            System.out.println("Node connected");
         }
 
         uniSocket.close();
     }
 
+    public void leaveNetwork() {
+        Socket clientSocket;
+        try {
+            clientSocket = new Socket(prevAddress, Ports.TCP_PORT);
+            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+
+            //Send neighbour update command.
+            out.println("QUIT");
+            //Send neighbours
+            out.println(currentName);
+            out.println(nextName);
+
+            //Close everything.
+            out.close();
+            clientSocket.close();
+
+            clientSocket = new Socket(nextAddress, Ports.TCP_PORT);
+            out = new PrintWriter(clientSocket.getOutputStream(), true);
+
+            //Send neighbour update command.
+            out.println("QUIT");
+            //Send neighbours
+            out.println(currentName);
+            out.println(prevName);
+
+            //Close everything.
+            out.close();
+            clientSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private int calculateHash(String name) {
         return Math.abs(name.hashCode() % 32768);
+    }
+
+    public boolean isRunning() {
+        return running;
+    }
+
+    public void setRunning(boolean running) {
+        this.running = running;
     }
 
     public static void main(String[] args) throws IOException, NotBoundException, ServerNotActiveException {
@@ -246,10 +325,19 @@ public class Node implements NodeInterface {
         String ip = sc.nextLine();
 
         Node node = new Node(hostname, InetAddress.getByName(ip));
-        NodeHelloThread helloThread = new NodeHelloThread(node);
+        NodeUDPServer helloThread = new NodeUDPServer(node);
         helloThread.start();
-        NodeTCPServer tcpServerThread = new NodeTCPServer();
+        NodeTCPServer tcpServerThread = new NodeTCPServer(node);
         tcpServerThread.start();
         node.joinNetwork();
+
+        String cmd = sc.nextLine();
+
+        switch (cmd) {
+            case "shutdown":
+                node.setRunning(false);
+                node.leaveNetwork();
+                break;
+        }
     }
 }
