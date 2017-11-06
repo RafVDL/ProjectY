@@ -1,12 +1,14 @@
 package be.ac.ua.dist.systemy.nameserver.NameServerPackage;
 
+import be.ac.ua.dist.systemy.Ports;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 
 public class NamingServerHelloThread extends Thread {
-    private static final int MULTICAST_PORT = 4446;
 
     public boolean stop = false;
     private NamingServer namingServer;
@@ -19,7 +21,8 @@ public class NamingServerHelloThread extends Thread {
     public void run() {
         MulticastSocket socket;
         try {
-            socket = new MulticastSocket(MULTICAST_PORT);
+            socket = new MulticastSocket(Ports.MULTICAST_PORT);
+            DatagramSocket uniSocket = new DatagramSocket(Ports.UNICAST_PORT, namingServer.serverIP);
             InetAddress group = InetAddress.getByName("225.0.113.0");
             socket.joinGroup(group);
 
@@ -36,8 +39,10 @@ public class NamingServerHelloThread extends Thread {
 
                     buf = ("NODECOUNT|" + namingServer.IpAdresses.size()).getBytes();
 
-                    packet = new DatagramPacket(buf, buf.length, group, MULTICAST_PORT);
-                    socket.send(packet);
+                    namingServer.addNodeToNetwork(hostname, packet.getAddress());
+
+                    packet = new DatagramPacket(buf, buf.length, packet.getAddress(), Ports.UNICAST_PORT);
+                    uniSocket.send(packet);
                 } else if (received.startsWith("GETIP")) {
                     String[] split = received.split("\\|");
                     String hostname = split[1];
@@ -47,13 +52,14 @@ public class NamingServerHelloThread extends Thread {
                         buf = ("REIP|" + hostname + "|NOT_FOUND").getBytes();
                     }
 
-                    packet = new DatagramPacket(buf, buf.length);
-                    socket.send(packet);
+                    packet = new DatagramPacket(buf, buf.length, packet.getAddress(), Ports.UNICAST_PORT);
+                    uniSocket.send(packet);
                 }
             }
 
             socket.leaveGroup(group);
             socket.close();
+            uniSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

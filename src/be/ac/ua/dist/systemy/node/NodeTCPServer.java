@@ -1,5 +1,7 @@
 package be.ac.ua.dist.systemy.node;
 
+import be.ac.ua.dist.systemy.Ports;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -13,7 +15,7 @@ public class NodeTCPServer extends Thread {
     @Override
     public void run() {
         try {
-            ServerSocket serverSocket = new ServerSocket(Node.TCP_PORT);
+            ServerSocket serverSocket = new ServerSocket(Ports.TCP_PORT);
             System.out.println("Started server, listening for clients.");
             while (true) {
                 Socket clientSocket = serverSocket.accept();

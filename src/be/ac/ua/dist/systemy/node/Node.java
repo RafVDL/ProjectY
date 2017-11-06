@@ -1,21 +1,18 @@
 package be.ac.ua.dist.systemy.node;
 
+import be.ac.ua.dist.systemy.Ports;
+
 import java.io.DataInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.net.DatagramPacket;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
-import java.net.Socket;
+import java.net.*;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.server.ServerNotActiveException;
 import java.util.List;
 
 public class Node implements NodeInterface {
-    public static final int TCP_PORT = 6969;
-    public static final int RMI_PORT = 3733;
 
     private String currentName;
     private InetAddress currentAddress;
@@ -38,9 +35,8 @@ public class Node implements NodeInterface {
         this.currentAddress = address;
         this.currentHash = calculateHash(nodeName);
 
-        socket = new MulticastSocket(4446);
+        socket = new MulticastSocket(Ports.MULTICAST_PORT);
         group = InetAddress.getByName("225.0.113.0");
-        socket.joinGroup(group);
     }
 
     @Override
@@ -67,7 +63,7 @@ public class Node implements NodeInterface {
             remoteAddress = InetAddress.getByName("10.10.10.10");
 
             //Open tcp socket to server @remoteAddress:port
-            clientSocket = new Socket(remoteAddress, TCP_PORT);
+            clientSocket = new Socket(remoteAddress, Ports.TCP_PORT);
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
             DataInputStream in = new DataInputStream(clientSocket.getInputStream());
             FileOutputStream fos = new FileOutputStream(fileName);
@@ -127,7 +123,7 @@ public class Node implements NodeInterface {
 
             try {
                 //Open tcp socket to newNode @newAddress:port
-                clientSocket = new Socket(newAddress, TCP_PORT);
+                clientSocket = new Socket(newAddress, Ports.TCP_PORT);
                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
 
                 //Send neighbour update command.
@@ -168,7 +164,7 @@ public class Node implements NodeInterface {
     private InetAddress getAddressByName(String hostname) throws IOException {
         byte[] buf;
         buf = ("GETIP|" + currentName).getBytes();
-        DatagramPacket packet = new DatagramPacket(buf, buf.length, group, 4446);
+        DatagramPacket packet = new DatagramPacket(buf, buf.length, group, Ports.MULTICAST_PORT);
         socket.send(packet);
 
         buf = new byte[256];
@@ -191,14 +187,18 @@ public class Node implements NodeInterface {
     public void joinNetwork() throws IOException {
         byte[] buf;
         buf = ("HELLO|" + currentName).getBytes();
-        DatagramPacket packet = new DatagramPacket(buf, buf.length, group, 4446);
+        DatagramPacket packet = new DatagramPacket(buf, buf.length, group, Ports.MULTICAST_PORT);
         socket.send(packet);
+
+        socket.joinGroup(group);
+
+        DatagramSocket uniSocket = new DatagramSocket(Ports.UNICAST_PORT, currentAddress);
 
         buf = new byte[256];
         packet = new DatagramPacket(buf, buf.length);
-        socket.receive(packet);
+        uniSocket.receive(packet);
 
-        String received = new String(buf);
+        String received = new String(buf).trim();
         if (received.startsWith("NODECOUNT")) {
             String[] split = received.split("\\|");
             Integer nodeCount = Integer.parseInt(split[1]);
@@ -208,7 +208,7 @@ public class Node implements NodeInterface {
             }
         }
 
-        socket.close();
+        uniSocket.close();
     }
 
     private int calculateHash(String name) {
