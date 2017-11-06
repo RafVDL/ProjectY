@@ -11,6 +11,7 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.server.ServerNotActiveException;
 import java.util.List;
+import java.util.Scanner;
 
 public class Node implements NodeInterface {
 
@@ -238,7 +239,13 @@ public class Node implements NodeInterface {
 //        } catch (AlreadyBoundException e) {
 //            e.printStackTrace();
 //        }
-        Node node = new Node("Node1", InetAddress.getByName("192.168.137.10"));
+        Scanner sc = new Scanner(System.in);
+        System.out.print("Enter hostname: ");
+        String hostname = sc.nextLine();
+        System.out.print("Enter IP: ");
+        String ip = sc.nextLine();
+
+        Node node = new Node(hostname, InetAddress.getByName(ip));
         NodeHelloThread helloThread = new NodeHelloThread(node);
         helloThread.start();
         NodeTCPServer tcpServerThread = new NodeTCPServer();

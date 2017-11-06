@@ -32,7 +32,7 @@ public class NamingServerHelloThread extends Thread {
                 packet = new DatagramPacket(buf, buf.length);
                 socket.receive(packet);
 
-                String received = new String(packet.getData());
+                String received = new String(packet.getData()).trim();
                 if (received.startsWith("HELLO")) {
                     String[] split = received.split("\\|");
                     String hostname = split[1];

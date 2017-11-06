@@ -9,15 +9,16 @@ import java.rmi.server.RemoteServer;
 import java.rmi.server.ServerNotActiveException;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Scanner;
 
 public class NamingServer implements Nameserver {
 
-    public NamingServer() throws UnknownHostException {
-        super();
+    public NamingServer(InetAddress serverIP) throws UnknownHostException {
+        this.serverIP = serverIP;
     }
 
     HashMap<Integer, InetAddress> IpAdresses = new HashMap<Integer, InetAddress>();
-    public final InetAddress serverIP = InetAddress.getByName("192.168.137.10"); //commentaar
+    public final InetAddress serverIP; //commentaar
 
     public int getHash(String nodeName) {
         return Math.abs(nodeName.hashCode() % 32768);
@@ -144,7 +145,11 @@ public class NamingServer implements Nameserver {
 //            System.err.println("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer exception: " + e.toString());
 //            e.printStackTrace();
 //        }
-        NamingServer namingServer = new NamingServer();
+        Scanner sc = new Scanner(System.in);
+        System.out.print("Enter IP: ");
+        String ip = sc.nextLine();
+
+        NamingServer namingServer = new NamingServer(InetAddress.getByName(ip));
         NamingServerHelloThread helloThread = new NamingServerHelloThread(namingServer);
         helloThread.start();
 
