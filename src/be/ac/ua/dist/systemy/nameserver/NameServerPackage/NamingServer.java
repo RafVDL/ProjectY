@@ -21,7 +21,7 @@ public class NamingServer implements Nameserver{
 
     HashMap<Integer, InetAddress> IpAdresses = new HashMap<Integer, InetAddress>();
     private static final int PORT = 3733;
-    private static final String serverIP = "192.168.137.1"; //commentaar
+    private static final String serverIP = "192.168.137.10"; //commentaar
 
 
     public void addMeToNetwork(String nodeName) throws ServerNotActiveException, UnknownHostException {
@@ -127,23 +127,24 @@ public class NamingServer implements Nameserver{
 
     public static void main(String[] args) {
 
-        try {
-            System.setProperty("java.rmi.server.hostname", serverIP);
-            NamingServer obj = new NamingServer();
-            Nameserver stub = (Nameserver) UnicastRemoteObject.exportObject(obj, 0);
-
-            Registry registry = LocateRegistry.createRegistry(PORT);
-            registry.bind("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer", stub);
-
-            System.err.println("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer Ready");
-            stub.addMeToNetwork("Thomas-Nameserver");
-
-        }catch (Exception e) {
-            System.err.println("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer exception: " + e.toString());
-            e.printStackTrace();
-        }
-
-
+//        try {
+//            System.setProperty("java.rmi.server.hostname", serverIP);
+//            NamingServer obj = new NamingServer();
+//            Nameserver stub = (Nameserver) UnicastRemoteObject.exportObject(obj, 0);
+//
+//            Registry registry = LocateRegistry.createRegistry(PORT);
+//            registry.bind("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer", stub);
+//
+//            System.err.println("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer Ready");
+//            stub.addMeToNetwork("Thomas-Nameserver");
+//
+//        }catch (Exception e) {
+//            System.err.println("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer exception: " + e.toString());
+//            e.printStackTrace();
+//        }
+        NamingServer namingServer = new NamingServer();
+        NamingServerHelloThread helloThread = new NamingServerHelloThread(namingServer);
+        helloThread.start();
 
 
     }
