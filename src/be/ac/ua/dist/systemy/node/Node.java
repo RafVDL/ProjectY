@@ -42,6 +42,22 @@ public class Node implements NodeInterface {
         group = InetAddress.getByName("225.0.113.0");
     }
 
+    public String getCurrentName() {
+        return currentName;
+    }
+
+    public void setCurrentName(String currentName) {
+        this.currentName = currentName;
+    }
+
+    public InetAddress getCurrentAddress() {
+        return currentAddress;
+    }
+
+    public void setCurrentAddress(InetAddress currentAddress) {
+        this.currentAddress = currentAddress;
+    }
+
     public InetAddress getPrevAddress() {
         return prevAddress;
     }
@@ -252,9 +268,11 @@ public class Node implements NodeInterface {
 
     public void leaveNetwork() {
         Socket clientSocket;
+        PrintWriter out;
         try {
-            clientSocket = new Socket(prevAddress, Ports.TCP_PORT);
-            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+            clientSocket = new Socket();
+            clientSocket.connect(new InetSocketAddress(prevAddress, Ports.TCP_PORT), 1000);
+            out = new PrintWriter(clientSocket.getOutputStream(), true);
 
             //Send neighbour update command.
             out.println("QUIT");
@@ -265,8 +283,15 @@ public class Node implements NodeInterface {
             //Close everything.
             out.close();
             clientSocket.close();
+        } catch (SocketTimeoutException e) {
+            // handle node disconnected
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-            clientSocket = new Socket(nextAddress, Ports.TCP_PORT);
+        try {
+            clientSocket = new Socket();
+            clientSocket.connect(new InetSocketAddress(prevAddress, Ports.TCP_PORT), 1000);
             out = new PrintWriter(clientSocket.getOutputStream(), true);
 
             //Send neighbour update command.
@@ -278,6 +303,8 @@ public class Node implements NodeInterface {
             //Close everything.
             out.close();
             clientSocket.close();
+        } catch (SocketTimeoutException e) {
+            // handle node disconnected
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -325,8 +352,8 @@ public class Node implements NodeInterface {
         String ip = sc.nextLine();
 
         Node node = new Node(hostname, InetAddress.getByName(ip));
-        NodeUDPServer helloThread = new NodeUDPServer(node);
-        helloThread.start();
+        NodeUDPServer udpServer = new NodeUDPServer(node);
+        udpServer.start();
         NodeTCPServer tcpServerThread = new NodeTCPServer(node);
         tcpServerThread.start();
         node.joinNetwork();
