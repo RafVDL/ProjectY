@@ -16,51 +16,54 @@ public class NamingServerHelloThread extends Thread {
 
     @Override
     public void run() {
-        MulticastSocket socket;
+        MulticastSocket multicastSocket;
         try {
-            socket = new MulticastSocket(Ports.MULTICAST_PORT);
+            multicastSocket = new MulticastSocket(Ports.MULTICAST_PORT);
             DatagramSocket uniSocket = new DatagramSocket(Ports.UNICAST_PORT, namingServer.serverIP);
             InetAddress group = InetAddress.getByName("225.0.113.0");
-            socket.joinGroup(group);
+            multicastSocket.joinGroup(group);
 
             DatagramPacket packet;
             while (namingServer.isRunning()) {
                 byte[] buf = new byte[1024];
                 packet = new DatagramPacket(buf, buf.length);
-                socket.receive(packet);
+                multicastSocket.receive(packet);
 
                 String received = new String(packet.getData()).trim();
                 if (received.startsWith("HELLO")) {
                     String[] split = received.split("\\|");
                     String hostname = split[1];
 
-                    namingServer.addNodeToNetwork(hostname, packet.getAddress());
-
-                    Socket clientSocket;
+                    Socket tcpSocket;
                     DataOutputStream dos;
                     PrintWriter out;
                     try {
-                        clientSocket = new Socket();
-                        clientSocket.connect(new InetSocketAddress(packet.getAddress(), Ports.TCP_PORT), 1000);
-                        dos = new DataOutputStream(clientSocket.getOutputStream());
-                        out = new PrintWriter(dos);
+                        tcpSocket = new Socket();
+                        tcpSocket.setSoLinger(true, 5);
+                        tcpSocket.connect(new InetSocketAddress(packet.getAddress(), Ports.TCP_PORT), 1000);
+                        dos = new DataOutputStream(tcpSocket.getOutputStream());
+                        out = new PrintWriter(dos, true);
 
                         out.println("NODECOUNT");
-                        dos.writeInt(namingServer.IpAdresses.size());
+                        dos.writeInt(namingServer.ipAdresses.size());
+                        dos.flush();
 
                         //Close everything.
-                        dos.close();
-                        clientSocket.close();
+                        out.close();
+                        tcpSocket.close();
                     } catch (SocketTimeoutException e) {
                         // handle node disconnected
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
+
+                    namingServer.addNodeToNetwork(hostname, packet.getAddress());
+
                 } else if (received.startsWith("GETIP")) {
                     String[] split = received.split("\\|");
                     String hostname = split[1];
-                    if (namingServer.IpAdresses.containsKey(Math.abs(hostname.hashCode() % 32768))) {
-                        buf = ("REIP|" + hostname + "|" + namingServer.IpAdresses.get(Math.abs(hostname.hashCode() % 32768)).getHostAddress()).getBytes();
+                    if (namingServer.ipAdresses.containsKey(Math.abs(hostname.hashCode() % 32768))) {
+                        buf = ("REIP|" + hostname + "|" + namingServer.ipAdresses.get(Math.abs(hostname.hashCode() % 32768)).getHostAddress()).getBytes();
                     } else {
                         buf = ("REIP|" + hostname + "|NOT_FOUND").getBytes();
                     }
@@ -74,8 +77,8 @@ public class NamingServerHelloThread extends Thread {
                 }
             }
 
-            socket.leaveGroup(group);
-            socket.close();
+            multicastSocket.leaveGroup(group);
+            multicastSocket.close();
             uniSocket.close();
         } catch (IOException e) {
             e.printStackTrace();

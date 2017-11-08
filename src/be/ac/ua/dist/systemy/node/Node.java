@@ -285,13 +285,9 @@ public class Node implements NodeInterface {
     private void sendTcpCmd(Socket socket, String cmd, String... args) {
         try {
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-
             out.println(cmd);
-            int index = 0;
-            if (args != null) {
-                while (index < args.length) {
-                    out.println(args[index]);
-                }
+            for (String arg : args) {
+                out.println(arg);
             }
 
             out.close();

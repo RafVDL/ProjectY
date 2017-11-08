@@ -13,7 +13,7 @@ import java.util.Scanner;
 
 public class NamingServer implements Nameserver {
     public final InetAddress serverIP; //commentaar
-    HashMap<Integer, InetAddress> IpAdresses = new HashMap<>();
+    HashMap<Integer, InetAddress> ipAdresses = new HashMap<>();
 
     private boolean running = true;
 
@@ -29,20 +29,20 @@ public class NamingServer implements Nameserver {
         int hash = getHash(nodeName);
         System.out.println("Adding " + nodeName + " (hash: " + hash + ")" + " to table");
 
-        if (!IpAdresses.containsKey(hash)) {
-            IpAdresses.put(hash, ip);
+        if (!ipAdresses.containsKey(hash)) {
+            ipAdresses.put(hash, ip);
         } else {
-            System.out.println(hash + " already exists in IpAdresses");
+            System.out.println(hash + " already exists in ipAdresses");
         }
     }
 
     public void removeNodeFromNetwork(String nodeName) {
         System.out.println("Removing " + nodeName + " from IP-table");
         int hash = getHash(nodeName);
-        if (IpAdresses.containsKey(hash)) {
-            IpAdresses.remove(hash);
+        if (ipAdresses.containsKey(hash)) {
+            ipAdresses.remove(hash);
         } else {
-            System.out.println(hash + " does not exist in IpAdresses");
+            System.out.println(hash + " does not exist in ipAdresses");
         }
     }
 
@@ -50,10 +50,10 @@ public class NamingServer implements Nameserver {
         InetAddress IP = InetAddress.getByName(RemoteServer.getClientHost());
         System.out.println("Adding " + nodeName + " from IP-table");
         int hash = getHash(nodeName);
-        if (IpAdresses.containsKey(hash)) {
-            IpAdresses.put(hash, IP);
+        if (ipAdresses.containsKey(hash)) {
+            ipAdresses.put(hash, IP);
         } else {
-            System.out.println(hash + " already exists in IpAdresses");
+            System.out.println(hash + " already exists in ipAdresses");
         }
     }
 
@@ -61,10 +61,10 @@ public class NamingServer implements Nameserver {
         InetAddress IP = InetAddress.getByName(RemoteServer.getClientHost());
         System.out.println("Removing " + nodeName + " from IP-table");
         int hash = getHash(nodeName);
-        if (IpAdresses.containsKey(hash)) {
-            IpAdresses.remove(hash, IP);
+        if (ipAdresses.containsKey(hash)) {
+            ipAdresses.remove(hash, IP);
         } else {
-            System.out.println(hash + " does not exist in IpAdresses");
+            System.out.println(hash + " does not exist in ipAdresses");
         }
     }
 
@@ -80,7 +80,7 @@ public class NamingServer implements Nameserver {
         int highestHash = 0;
 
 
-        Iterator<HashMap.Entry<Integer, InetAddress>> it = IpAdresses.entrySet().iterator();
+        Iterator<HashMap.Entry<Integer, InetAddress>> it = ipAdresses.entrySet().iterator();
 
         while (it.hasNext()) {
             HashMap.Entry<Integer, InetAddress> pair = it.next();
@@ -112,7 +112,7 @@ public class NamingServer implements Nameserver {
 
     public void printIPadresses() {
         System.out.println("Printing IP-adresses to Console:");
-        Iterator<HashMap.Entry<Integer, InetAddress>> it = IpAdresses.entrySet().iterator();
+        Iterator<HashMap.Entry<Integer, InetAddress>> it = ipAdresses.entrySet().iterator();
         while (it.hasNext()) {
             HashMap.Entry pair = it.next();
             System.out.println("Hash: " + pair.getKey());
@@ -125,7 +125,7 @@ public class NamingServer implements Nameserver {
     public void exportIPadresses() {
         System.out.println("Exporting IP-adressess ...");
         String writeThis;
-        Iterator<HashMap.Entry<Integer, InetAddress>> it = IpAdresses.entrySet().iterator();
+        Iterator<HashMap.Entry<Integer, InetAddress>> it = ipAdresses.entrySet().iterator();
         BufferedWriter outputWriter = null;
         try {
             File outputFile = new File("test.txt");
