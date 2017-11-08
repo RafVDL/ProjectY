@@ -9,8 +9,6 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 
 public class NamingServerHelloThread extends Thread {
-
-    public boolean stop = false;
     private NamingServer namingServer;
 
     public NamingServerHelloThread(NamingServer namingServer) {
@@ -27,7 +25,7 @@ public class NamingServerHelloThread extends Thread {
             socket.joinGroup(group);
 
             DatagramPacket packet;
-            while (!stop) {
+            while (namingServer.isRunning()) {
                 byte[] buf = new byte[1024];
                 packet = new DatagramPacket(buf, buf.length);
                 socket.receive(packet);

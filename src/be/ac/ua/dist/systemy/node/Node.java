@@ -358,13 +358,19 @@ public class Node implements NodeInterface {
         tcpServerThread.start();
         node.joinNetwork();
 
-        String cmd = sc.nextLine();
+        while (node.running) {
+            String cmd = sc.nextLine();
 
-        switch (cmd) {
-            case "shutdown":
-                node.setRunning(false);
-                node.leaveNetwork();
-                break;
+            switch (cmd) {
+                case "shutdown":
+                    node.setRunning(false);
+                    node.leaveNetwork();
+                    System.out.println("Left the network");
+                    break;
+                case "neighbours":
+                    System.out.println("Prev: " + node.prevName + " === Next: " + node.nextName);
+                    break;
+            }
         }
     }
 }

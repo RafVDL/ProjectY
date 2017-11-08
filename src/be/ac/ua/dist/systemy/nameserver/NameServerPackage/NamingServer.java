@@ -15,6 +15,8 @@ public class NamingServer implements Nameserver {
     public final InetAddress serverIP; //commentaar
     HashMap<Integer, InetAddress> IpAdresses = new HashMap<>();
 
+    private boolean running = true;
+
     public NamingServer(InetAddress serverIP) throws UnknownHostException {
         this.serverIP = serverIP;
     }
@@ -136,6 +138,13 @@ public class NamingServer implements Nameserver {
         System.out.println("Export completed \n");
     }
 
+    public boolean isRunning() {
+        return running;
+    }
+
+    public void setRunning(boolean running) {
+        this.running = running;
+    }
 
     public static void main(String[] args) throws UnknownHostException {
 
@@ -162,5 +171,16 @@ public class NamingServer implements Nameserver {
         NamingServerHelloThread helloThread = new NamingServerHelloThread(namingServer);
         helloThread.start();
         System.out.println("Namingserver started @" + ip);
+
+        while (namingServer.running) {
+            String cmd = sc.nextLine();
+
+            switch (cmd) {
+                case "shutdown":
+                    namingServer.setRunning(false);
+                    System.out.println("Shutdown the network");
+                    break;
+            }
+        }
     }
 }
