@@ -176,7 +176,7 @@ public class Node implements NodeInterface {
     public void updateNeighbours(InetAddress newAddress, String newName) {
         int newHash = calculateHash(newName);
 
-        if (newHash > currentHash && newHash < nextHash) {
+        if (newHash >= currentHash && newHash <= nextHash) {
             // New node sits between this node en next node.
             if (newAddress == null) {
                 try {
