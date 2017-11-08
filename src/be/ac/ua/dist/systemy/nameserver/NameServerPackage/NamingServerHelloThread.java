@@ -2,11 +2,10 @@ package be.ac.ua.dist.systemy.nameserver.NameServerPackage;
 
 import be.ac.ua.dist.systemy.Ports;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
+import java.io.PrintWriter;
+import java.net.*;
 
 public class NamingServerHelloThread extends Thread {
     private NamingServer namingServer;
@@ -35,12 +34,28 @@ public class NamingServerHelloThread extends Thread {
                     String[] split = received.split("\\|");
                     String hostname = split[1];
 
-                    buf = ("NODECOUNT|" + namingServer.IpAdresses.size()).getBytes();
-
                     namingServer.addNodeToNetwork(hostname, packet.getAddress());
 
-                    packet = new DatagramPacket(buf, buf.length, packet.getAddress(), Ports.UNICAST_PORT);
-                    uniSocket.send(packet);
+                    Socket clientSocket;
+                    DataOutputStream dos;
+                    PrintWriter out;
+                    try {
+                        clientSocket = new Socket();
+                        clientSocket.connect(new InetSocketAddress(packet.getAddress(), Ports.TCP_PORT), 1000);
+                        dos = new DataOutputStream(clientSocket.getOutputStream());
+                        out = new PrintWriter(dos);
+
+                        out.println("NODECOUNT");
+                        dos.writeInt(namingServer.IpAdresses.size());
+
+                        //Close everything.
+                        dos.close();
+                        clientSocket.close();
+                    } catch (SocketTimeoutException e) {
+                        // handle node disconnected
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 } else if (received.startsWith("GETIP")) {
                     String[] split = received.split("\\|");
                     String hostname = split[1];

@@ -334,25 +334,6 @@ public class Node implements NodeInterface {
         multicastSocket.send(packet);
 
         multicastSocket.joinGroup(multicastGroup);
-
-        DatagramSocket uniSocket = new DatagramSocket(Ports.UNICAST_PORT, ownAddress);
-
-        buf = new byte[256];
-        packet = new DatagramPacket(buf, buf.length);
-        uniSocket.receive(packet);
-
-        String received = new String(buf).trim();
-        if (received.startsWith("NODECOUNT")) {
-            String[] split = received.split("\\|");
-            Integer nodeCount = Integer.parseInt(split[1]);
-            if (nodeCount < 1) {
-                updateNext(ownAddress, ownName);
-                updatePrev(ownAddress, ownName);
-            }
-            System.out.println("Node connected");
-        }
-
-        uniSocket.close();
     }
 
     public void leaveNetwork() throws IOException {
