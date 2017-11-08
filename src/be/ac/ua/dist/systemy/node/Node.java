@@ -270,7 +270,14 @@ public class Node implements NodeInterface {
         uniSocket.close();
     }
 
-    public void leaveNetwork() {
+    public void leaveNetwork() throws IOException {
+        byte[] buf;
+        buf = ("QUITNAMING|" + currentName).getBytes();
+        DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Ports.MULTICAST_PORT);
+        multicastSocket.send(packet);
+        multicastSocket.leaveGroup(multicastGroup);
+        multicastSocket.close();
+
         if (currentName.equals(nextName) && currentName.equals(prevName))
             return;
 
