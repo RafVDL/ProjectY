@@ -29,23 +29,28 @@ public class NodeTCPServerConnection extends Thread {
                     String fileName = in.readLine();
                     sendFile(dos, "server_" + fileName);
                     break;
+
                 case "NODECOUNT":
                     int nodecount = dis.readInt();
                     if (nodecount < 1) {
-                        node.updatePrev(node.getCurrentAddress(), node.getCurrentName());
-                        node.updateNext(node.getCurrentAddress(), node.getCurrentName());
+                        node.updatePrev(node.getOwnAddress(), node.getOwnName());
+                        node.updateNext(node.getOwnAddress(), node.getOwnName());
                     }
                     break;
-                case "NEXT_NEIGHBOUR":
-                    String prevNeighbour = in.readLine();
-                    String nextNeighbour = in.readLine();
 
-                    node.updateNeighbours(clientSocket.getInetAddress(), prevNeighbour);
-                    node.updateNeighbours(null, nextNeighbour);
+                case "PREV_NEXT_NEIGHBOUR":
+                    String prevName = in.readLine();
+                    String nextName = in.readLine();
+
+                    node.updatePrev(clientSocket.getInetAddress(), prevName);
+                    node.updateNext(null, nextName);
+//                    node.updateNeighbours(clientSocket.getInetAddress(), prevName);
+//                    node.updateNeighbours(null, nextName);
                     break;
+
                 case "QUIT":
                     String oldNeighbour = in.readLine();
-                    if (oldNeighbour.equals(node.getCurrentName()))
+                    if (oldNeighbour.equals(node.getOwnName()))
                         break;
                     String newNeighbour = in.readLine();
 

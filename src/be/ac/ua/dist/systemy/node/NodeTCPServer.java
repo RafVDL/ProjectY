@@ -24,7 +24,7 @@ public class NodeTCPServer extends Thread {
         try {
             ServerSocket serverSocket = new ServerSocket(Ports.TCP_PORT);
             serverSocket.setSoTimeout(2000);
-            System.out.println("Started server, listening for clients.");
+            System.out.println("Started NodeTCPServer, listening for other Nodes.");
             while (node.isRunning()) {
                 try {
                     Socket clientSocket = serverSocket.accept();

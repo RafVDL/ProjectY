@@ -15,12 +15,13 @@ import java.util.Scanner;
 
 public class Node implements NodeInterface {
 
-    private String currentName;
-    private InetAddress currentAddress;
-    private int currentHash;
+    private String ownName;
+    private InetAddress ownAddress;
+    private int ownHash;
     private List<String> localFiles;
     private List<String> replicatedFiles;
     private List<String> downloadedFiles;
+
     private InetAddress prevAddress;
     private InetAddress nextAddress;
     private String prevName;
@@ -34,28 +35,28 @@ public class Node implements NodeInterface {
     InetAddress multicastGroup;
 
     public Node(String nodeName, InetAddress address) throws IOException {
-        this.currentName = nodeName;
-        this.currentAddress = address;
-        this.currentHash = calculateHash(nodeName);
+        this.ownName = nodeName;
+        this.ownAddress = address;
+        this.ownHash = calculateHash(nodeName);
 
         multicastSocket = new MulticastSocket(Ports.MULTICAST_PORT);
         multicastGroup = InetAddress.getByName("225.0.113.0");
     }
 
-    public String getCurrentName() {
-        return currentName;
+    public String getOwnName() {
+        return ownName;
     }
 
-    public void setCurrentName(String currentName) {
-        this.currentName = currentName;
+    public void setOwnName(String ownName) {
+        this.ownName = ownName;
     }
 
-    public InetAddress getCurrentAddress() {
-        return currentAddress;
+    public InetAddress getOwnAddress() {
+        return ownAddress;
     }
 
-    public void setCurrentAddress(InetAddress currentAddress) {
-        this.currentAddress = currentAddress;
+    public void setOwnAddress(InetAddress ownAddress) {
+        this.ownAddress = ownAddress;
     }
 
     public InetAddress getPrevAddress() {
@@ -143,6 +144,12 @@ public class Node implements NodeInterface {
         }
     }
 
+    /**
+     * Updates the next neighbour of this node
+     *
+     * @param newAddress of the next neighbour
+     * @param newName    of the next neighbour
+     */
     @Override
     public void updateNext(InetAddress newAddress, String newName) {
         if (newAddress == null) {
@@ -158,6 +165,12 @@ public class Node implements NodeInterface {
         nextName = newName;
     }
 
+    /**
+     * Updates the previous neighbour of this node
+     *
+     * @param newAddress of the previous neighbour
+     * @param newName    of the previous neighbour
+     */
     @Override
     public void updatePrev(InetAddress newAddress, String newName) {
         if (newAddress == null) {
@@ -173,33 +186,43 @@ public class Node implements NodeInterface {
         prevName = newName;
     }
 
+    /**
+     * Gets invoked when a new Node is joining the network. (via NodeMultiCastServer)
+     * <p>
+     * Existing Node checks if the new Node becomes a new neighbour of this Node. If so, it checks whether the new node
+     * becomes a previous or next neighbour. If it is a previous, the existing Node only updates its own neighbours.
+     * Else, the Node also sends an update (via tcp) to the new node.
+     * <p>
+     * In the special case that there is only one existing Node in the network, its neighbours are the Node itself. In
+     * this case the existing Node should always update the joining Node.
+     *
+     * @param newAddress the IP-address of the joining node
+     * @param newName    the name of the joining node
+     */
     public void updateNeighbours(InetAddress newAddress, String newName) {
         int newHash = calculateHash(newName);
 
-        if ((newHash > currentHash && newHash < nextHash) || (currentHash == nextHash && newHash > currentHash)) {
-            // New node sits between this node en next node.
-            if (newAddress == null) {
-                try {
-                    newAddress = getAddressByName(newName);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+
+        if ((ownHash == prevHash) && (ownHash == nextHash)) {
+            // NodeCount is currently 0, always update self and the joining Node.
+
+            try {
+                Socket clientSocket = new Socket(newAddress, Ports.TCP_PORT);
+                sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownName, ownName);
+                clientSocket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
 
-            Socket clientSocket;
+            updatePrev(newAddress, newName);
+            updateNext(newAddress, newName);
+
+        } else if ((newHash > ownHash) && (newHash < nextHash)) {
+            // Joining Node sits between this Node and next neighbour.
+
             try {
-                //Open tcp multicastSocket to newNode @newAddress:port
-                clientSocket = new Socket(newAddress, Ports.TCP_PORT);
-                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-
-                //Send neighbour update command.
-                out.println("NEXT_NEIGHBOUR");
-                //Send neighbours
-                out.println(currentName);
-                out.println(nextName);
-
-                //Close everything.
-                out.close();
+                Socket clientSocket = new Socket(newAddress, Ports.TCP_PORT);
+                sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownName, nextName);
                 clientSocket.close();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -207,11 +230,73 @@ public class Node implements NodeInterface {
 
             updateNext(newAddress, newName);
 
-        } else if ((newHash < currentHash && newHash > prevHash) || (currentHash == nextHash && newHash < currentHash)) {
-            // New node sits between this node and the previous node.
-            // Only update own neighbours.
+        } else if ((newHash > prevHash) && (newHash < ownHash)) {
+            // Joining Node sits between previous neighbour and this Node.
 
             updatePrev(newAddress, newName);
+        }
+
+//        if ((newHash > ownHash && newHash < nextHash) || (ownHash == nextHash && newHash > ownHash)) {
+//            // New node sits between this node and next node.
+//            if (newAddress == null) {
+//                try {
+//                    newAddress = getAddressByName(newName);
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//
+//            Socket clientSocket;
+//            try {
+//                //Open tcp multiCastSocket to newNode @newAddress:port
+//                clientSocket = new Socket(newAddress, Ports.TCP_PORT);
+//                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+//
+//                //Send neighbour update command.
+//                out.println("PREV_NEXT_NEIGHBOUR");
+//                //Send neighbours
+//                out.println(ownName);
+//                out.println(nextName);
+//
+//                //Close everything.
+//                out.close();
+//                clientSocket.close();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//
+//            updateNext(newAddress, newName);
+//
+//        } else if ((newHash < ownHash && newHash > prevHash) || (ownHash == nextHash && newHash < ownHash)) {
+//            // New node sits between this node and the previous node.
+//            // Only update own neighbours.
+//
+//            updatePrev(newAddress, newName);
+//        }
+    }
+
+    /**
+     * Sends a command via tcp with optional extra parameters.
+     *
+     * @param socket to use for sending
+     * @param cmd    to send
+     * @param args   to include (optional)
+     */
+    private void sendTcpCmd(Socket socket, String cmd, String... args) {
+        try {
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+
+            out.println(cmd);
+            int index = 0;
+            if (args != null) {
+                while (index < args.length) {
+                    out.println(args[index]);
+                }
+            }
+
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -221,7 +306,7 @@ public class Node implements NodeInterface {
         DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Ports.MULTICAST_PORT);
         multicastSocket.send(packet);
 
-        DatagramSocket uniSocket = new DatagramSocket(Ports.UNICAST_PORT, currentAddress);
+        DatagramSocket uniSocket = new DatagramSocket(Ports.UNICAST_PORT, ownAddress);
 
         buf = new byte[256];
         packet = new DatagramPacket(buf, buf.length);
@@ -244,13 +329,13 @@ public class Node implements NodeInterface {
 
     public void joinNetwork() throws IOException {
         byte[] buf;
-        buf = ("HELLO|" + currentName).getBytes();
+        buf = ("HELLO|" + ownName).getBytes();
         DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Ports.MULTICAST_PORT);
         multicastSocket.send(packet);
 
         multicastSocket.joinGroup(multicastGroup);
 
-        DatagramSocket uniSocket = new DatagramSocket(Ports.UNICAST_PORT, currentAddress);
+        DatagramSocket uniSocket = new DatagramSocket(Ports.UNICAST_PORT, ownAddress);
 
         buf = new byte[256];
         packet = new DatagramPacket(buf, buf.length);
@@ -261,8 +346,8 @@ public class Node implements NodeInterface {
             String[] split = received.split("\\|");
             Integer nodeCount = Integer.parseInt(split[1]);
             if (nodeCount < 1) {
-                updateNext(currentAddress, currentName);
-                updatePrev(currentAddress, currentName);
+                updateNext(ownAddress, ownName);
+                updatePrev(ownAddress, ownName);
             }
             System.out.println("Node connected");
         }
@@ -272,13 +357,13 @@ public class Node implements NodeInterface {
 
     public void leaveNetwork() throws IOException {
         byte[] buf;
-        buf = ("QUITNAMING|" + currentName).getBytes();
+        buf = ("QUITNAMING|" + ownName).getBytes();
         DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Ports.MULTICAST_PORT);
         multicastSocket.send(packet);
         multicastSocket.leaveGroup(multicastGroup);
         multicastSocket.close();
 
-        if (currentName.equals(nextName) && currentName.equals(prevName))
+        if (ownName.equals(nextName) && ownName.equals(prevName))
             return;
 
         Socket clientSocket;
@@ -291,7 +376,7 @@ public class Node implements NodeInterface {
             //Send neighbour update command.
             out.println("QUIT");
             //Send neighbours
-            out.println(currentName);
+            out.println(ownName);
             out.println(nextName);
 
             //Close everything.
@@ -311,7 +396,7 @@ public class Node implements NodeInterface {
             //Send neighbour update command.
             out.println("QUIT");
             //Send neighbours
-            out.println(currentName);
+            out.println(ownName);
             out.println(prevName);
 
             //Close everything.
@@ -366,7 +451,7 @@ public class Node implements NodeInterface {
         String ip = sc.nextLine();
 
         Node node = new Node(hostname, InetAddress.getByName(ip));
-        NodeUDPServer udpServer = new NodeUDPServer(node);
+        NodeMultiCastServer udpServer = new NodeMultiCastServer(node);
         udpServer.start();
         NodeTCPServer tcpServerThread = new NodeTCPServer(node);
         tcpServerThread.start();
