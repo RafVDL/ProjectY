@@ -217,15 +217,19 @@ public class Node implements NodeInterface {
 
     private InetAddress getAddressByName(String hostname) throws IOException {
         byte[] buf;
-        buf = ("GETIP|" + currentName).getBytes();
+        buf = ("GETIP|" + hostname).getBytes();
         DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Ports.MULTICAST_PORT);
         multicastSocket.send(packet);
 
+        DatagramSocket uniSocket = new DatagramSocket(Ports.UNICAST_PORT, currentAddress);
+
         buf = new byte[256];
         packet = new DatagramPacket(buf, buf.length);
-        multicastSocket.receive(packet);
+        uniSocket.receive(packet);
 
         String received = new String(buf);
+        uniSocket.close();
+
         if (received.startsWith("REIP")) {
             String[] split = received.split("\\|");
             String returnedHostname = split[1];
@@ -267,6 +271,9 @@ public class Node implements NodeInterface {
     }
 
     public void leaveNetwork() {
+        if (currentName.equals(nextName) && currentName.equals(prevName))
+            return;
+
         Socket clientSocket;
         PrintWriter out;
         try {
