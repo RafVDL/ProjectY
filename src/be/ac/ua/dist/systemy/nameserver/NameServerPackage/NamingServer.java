@@ -12,13 +12,12 @@ import java.util.Iterator;
 import java.util.Scanner;
 
 public class NamingServer implements Nameserver {
+    public final InetAddress serverIP; //commentaar
+    HashMap<Integer, InetAddress> IpAdresses = new HashMap<>();
 
     public NamingServer(InetAddress serverIP) throws UnknownHostException {
         this.serverIP = serverIP;
     }
-
-    HashMap<Integer, InetAddress> IpAdresses = new HashMap<Integer, InetAddress>();
-    public final InetAddress serverIP; //commentaar
 
     public int getHash(String nodeName) {
         return Math.abs(nodeName.hashCode() % 32768);
@@ -27,7 +26,7 @@ public class NamingServer implements Nameserver {
     public void addNodeToNetwork(String nodeName, InetAddress ip) {
         System.out.println("Adding " + nodeName + " to table");
         int hash = getHash(nodeName);
-        if(IpAdresses.containsKey(hash)) {
+        if (!IpAdresses.containsKey(hash)) {
             IpAdresses.put(hash, ip);
         } else {
             System.out.println(hash + " already exists in IpAdresses");
@@ -38,7 +37,7 @@ public class NamingServer implements Nameserver {
         InetAddress IP = InetAddress.getByName(RemoteServer.getClientHost());
         System.out.println("Adding " + nodeName + " from IP-table");
         int hash = getHash(nodeName);
-        if(IpAdresses.containsKey(hash)) {
+        if (IpAdresses.containsKey(hash)) {
             IpAdresses.put(hash, IP);
         } else {
             System.out.println(hash + " already exists in IpAdresses");
@@ -49,7 +48,7 @@ public class NamingServer implements Nameserver {
         InetAddress IP = InetAddress.getByName(RemoteServer.getClientHost());
         System.out.println("Removing " + nodeName + " from IP-table");
         int hash = getHash(nodeName);
-        if(IpAdresses.containsKey(hash)) {
+        if (IpAdresses.containsKey(hash)) {
             IpAdresses.remove(hash, IP);
         } else {
             System.out.println(hash + " does not exist in IpAdresses");
@@ -102,7 +101,7 @@ public class NamingServer implements Nameserver {
         System.out.println("Printing IP-adresses to Console:");
         Iterator<HashMap.Entry<Integer, InetAddress>> it = IpAdresses.entrySet().iterator();
         while (it.hasNext()) {
-            HashMap.Entry pair = (HashMap.Entry) it.next();
+            HashMap.Entry pair = it.next();
             System.out.println("Hash: " + pair.getKey());
             System.out.println("IP: " + pair.getValue() + "\n");
         }
@@ -114,13 +113,12 @@ public class NamingServer implements Nameserver {
         System.out.println("Exporting IP-adressess ...");
         String writeThis;
         Iterator<HashMap.Entry<Integer, InetAddress>> it = IpAdresses.entrySet().iterator();
-        int i = 0;
         BufferedWriter outputWriter = null;
         try {
             File outputFile = new File("test.txt");
             outputWriter = new BufferedWriter(new FileWriter(outputFile));
             while (it.hasNext()) {
-                HashMap.Entry pair = (HashMap.Entry) it.next();
+                HashMap.Entry pair = it.next();
                 writeThis = "Hash: " + pair.getValue() + "  IP: " + pair.getKey();
                 outputWriter.write(writeThis);
                 outputWriter.newLine();
@@ -128,12 +126,11 @@ public class NamingServer implements Nameserver {
             outputWriter.flush();
         } catch (Exception e) {
             e.printStackTrace();
-            ;
         } finally {
             try {
                 outputWriter.close();
             } catch (Exception e) {
-
+                //
             }
         }
         System.out.println("Export completed \n");
@@ -164,9 +161,6 @@ public class NamingServer implements Nameserver {
         NamingServer namingServer = new NamingServer(InetAddress.getByName(ip));
         NamingServerHelloThread helloThread = new NamingServerHelloThread(namingServer);
         helloThread.start();
-
-
+        System.out.println("Namingserver started @" + ip);
     }
-
-
 }

@@ -30,16 +30,16 @@ public class Node implements NodeInterface {
 
     private boolean running = true;
 
-    MulticastSocket socket;
-    InetAddress group;
+    MulticastSocket multicastSocket;
+    InetAddress multicastGroup;
 
     public Node(String nodeName, InetAddress address) throws IOException {
         this.currentName = nodeName;
         this.currentAddress = address;
         this.currentHash = calculateHash(nodeName);
 
-        socket = new MulticastSocket(Ports.MULTICAST_PORT);
-        group = InetAddress.getByName("225.0.113.0");
+        multicastSocket = new MulticastSocket(Ports.MULTICAST_PORT);
+        multicastGroup = InetAddress.getByName("225.0.113.0");
     }
 
     public String getCurrentName() {
@@ -113,7 +113,7 @@ public class Node implements NodeInterface {
             //TODO get ip via rmi
             remoteAddress = InetAddress.getByName("10.10.10.10");
 
-            //Open tcp socket to server @remoteAddress:port
+            //Open tcp multicastSocket to server @remoteAddress:port
             clientSocket = new Socket(remoteAddress, Ports.TCP_PORT);
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
             DataInputStream in = new DataInputStream(clientSocket.getInputStream());
@@ -188,7 +188,7 @@ public class Node implements NodeInterface {
 
             Socket clientSocket;
             try {
-                //Open tcp socket to newNode @newAddress:port
+                //Open tcp multicastSocket to newNode @newAddress:port
                 clientSocket = new Socket(newAddress, Ports.TCP_PORT);
                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
 
@@ -218,12 +218,12 @@ public class Node implements NodeInterface {
     private InetAddress getAddressByName(String hostname) throws IOException {
         byte[] buf;
         buf = ("GETIP|" + currentName).getBytes();
-        DatagramPacket packet = new DatagramPacket(buf, buf.length, group, Ports.MULTICAST_PORT);
-        socket.send(packet);
+        DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Ports.MULTICAST_PORT);
+        multicastSocket.send(packet);
 
         buf = new byte[256];
         packet = new DatagramPacket(buf, buf.length);
-        socket.receive(packet);
+        multicastSocket.receive(packet);
 
         String received = new String(buf);
         if (received.startsWith("REIP")) {
@@ -241,10 +241,10 @@ public class Node implements NodeInterface {
     public void joinNetwork() throws IOException {
         byte[] buf;
         buf = ("HELLO|" + currentName).getBytes();
-        DatagramPacket packet = new DatagramPacket(buf, buf.length, group, Ports.MULTICAST_PORT);
-        socket.send(packet);
+        DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Ports.MULTICAST_PORT);
+        multicastSocket.send(packet);
 
-        socket.joinGroup(group);
+        multicastSocket.joinGroup(multicastGroup);
 
         DatagramSocket uniSocket = new DatagramSocket(Ports.UNICAST_PORT, currentAddress);
 
