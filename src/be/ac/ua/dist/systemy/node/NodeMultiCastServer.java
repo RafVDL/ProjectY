@@ -6,11 +6,11 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.SocketTimeoutException;
 
-public class NodeUDPServer extends Thread {
+public class NodeMultiCastServer extends Thread {
 
     private Node node;
 
-    public NodeUDPServer(Node node) {
+    public NodeMultiCastServer(Node node) {
         this.node = node;
     }
 
