@@ -52,6 +52,10 @@ public class NamingServerHelloThread extends Thread {
 
                     packet = new DatagramPacket(buf, buf.length, packet.getAddress(), Ports.UNICAST_PORT);
                     uniSocket.send(packet);
+                } else if (received.startsWith("QUITNAMING")) {
+                    String[] split = received.split("\\|");
+                    String hostname = split[1];
+                    namingServer.removeNodeFromNetwork(hostname);
                 }
             }
 
@@ -62,5 +66,4 @@ public class NamingServerHelloThread extends Thread {
             e.printStackTrace();
         }
     }
-
 }

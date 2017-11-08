@@ -26,12 +26,23 @@ public class NamingServer implements Nameserver {
     }
 
     public void addNodeToNetwork(String nodeName, InetAddress ip) {
-        System.out.println("Adding " + nodeName + " to table");
         int hash = getHash(nodeName);
+        System.out.println("Adding " + nodeName + " (hash: " + hash + ")" + " to table");
+
         if (!IpAdresses.containsKey(hash)) {
             IpAdresses.put(hash, ip);
         } else {
             System.out.println(hash + " already exists in IpAdresses");
+        }
+    }
+
+    public void removeNodeFromNetwork(String nodeName) {
+        System.out.println("Removing " + nodeName + " from IP-table");
+        int hash = getHash(nodeName);
+        if (IpAdresses.containsKey(hash)) {
+            IpAdresses.remove(hash);
+        } else {
+            System.out.println(hash + " does not exist in IpAdresses");
         }
     }
 
@@ -179,6 +190,13 @@ public class NamingServer implements Nameserver {
                 case "shutdown":
                     namingServer.setRunning(false);
                     System.out.println("Shutdown the network");
+                    break;
+
+                case "table":
+                    namingServer.printIPadresses();
+                    break;
+
+                case "remove":
                     break;
             }
         }
