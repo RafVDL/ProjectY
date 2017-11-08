@@ -27,21 +27,33 @@ public class NamingServer implements Nameserver {
     public void addNodeToNetwork(String nodeName, InetAddress ip) {
         System.out.println("Adding " + nodeName + " to table");
         int hash = getHash(nodeName);
-        IpAdresses.put(hash, ip);
+        if(IpAdresses.containsKey(hash)) {
+            IpAdresses.put(hash, ip);
+        } else {
+            System.out.println(hash + " already exists in IpAdresses");
+        }
     }
 
     public void addMeToNetwork(String nodeName) throws ServerNotActiveException, UnknownHostException {
         InetAddress IP = InetAddress.getByName(RemoteServer.getClientHost());
         System.out.println("Adding " + nodeName + " from IP-table");
-        int hashComputername = getHash(nodeName);
-        IpAdresses.put(hashComputername, IP);
+        int hash = getHash(nodeName);
+        if(IpAdresses.containsKey(hash)) {
+            IpAdresses.put(hash, IP);
+        } else {
+            System.out.println(hash + " already exists in IpAdresses");
+        }
     }
 
     public void removeMeFromNetwork(String nodeName) throws ServerNotActiveException, UnknownHostException {
         InetAddress IP = InetAddress.getByName(RemoteServer.getClientHost());
         System.out.println("Removing " + nodeName + " from IP-table");
-        int hashComputername = getHash(nodeName);
-        IpAdresses.remove(hashComputername, IP);
+        int hash = getHash(nodeName);
+        if(IpAdresses.containsKey(hash)) {
+            IpAdresses.remove(hash, IP);
+        } else {
+            System.out.println(hash + " does not exist in IpAdresses");
+        }
     }
 
     public InetAddress getOwner(String fileName) throws UnknownHostException {
