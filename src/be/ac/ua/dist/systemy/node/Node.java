@@ -308,7 +308,7 @@ public class Node implements NodeInterface {
         packet = new DatagramPacket(buf, buf.length);
         uniSocket.receive(packet);
 
-        String received = new String(buf);
+        String received = new String(buf).trim();
         uniSocket.close();
 
         if (received.startsWith("REIP")) {
@@ -426,11 +426,20 @@ public class Node implements NodeInterface {
 //            e.printStackTrace();
 //        }
         Scanner sc = new Scanner(System.in);
+        InetAddress detectedHostAddress;
+
+        System.out.println("(Detected localHostName is: " + InetAddress.getLocalHost() + ")");
         System.out.print("Enter hostname: ");
         String hostname = sc.nextLine();
-        System.out.println("(Detected localHost is: " + InetAddress.getLocalHost() + ")");
+        if (hostname.isEmpty()){
+            hostname = InetAddress.getLocalHost().getHostName();
+        }
+        System.out.println("(Detected localHostAddress is: " + InetAddress.getLocalHost() + ")");
         System.out.print("Enter IP: ");
         String ip = sc.nextLine();
+        if (ip.isEmpty()){
+            ip = InetAddress.getLocalHost().getHostAddress();
+        }
 
         Node node = new Node(hostname, InetAddress.getByName(ip));
         NodeMultiCastServer udpServer = new NodeMultiCastServer(node);

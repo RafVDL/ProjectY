@@ -171,9 +171,13 @@ public class NamingServer implements NameserverInterface {
 //            e.printStackTrace();
 //        }
         Scanner sc = new Scanner(System.in);
-        System.out.println("(Detected localHost is: " + InetAddress.getLocalHost() + ")");
+        InetAddress detectedHostAddress = InetAddress.getLocalHost();
+        System.out.println("(Detected localHost is: " + detectedHostAddress + ")");
         System.out.print("Enter IP: ");
         String ip = sc.nextLine();
+        if (ip.isEmpty()){
+            ip = detectedHostAddress.getHostAddress();
+        }
 
         NamingServer namingServer = new NamingServer(InetAddress.getByName(ip));
         NamingServerHelloThread helloThread = new NamingServerHelloThread(namingServer);
@@ -193,6 +197,7 @@ public class NamingServer implements NameserverInterface {
 
                 case "table":
                 case "tab":
+                case "tb":
                     namingServer.printIPadresses();
                     break;
             }
