@@ -347,6 +347,7 @@ public class Node implements NodeInterface {
         PrintWriter out;
         try {
             clientSocket = new Socket();
+            clientSocket.setSoLinger(true, 5);
             clientSocket.connect(new InetSocketAddress(prevAddress, Ports.TCP_PORT), 1000);
             out = new PrintWriter(clientSocket.getOutputStream(), true);
 
@@ -365,9 +366,12 @@ public class Node implements NodeInterface {
             e.printStackTrace();
         }
 
+        if (prevName.equals(nextName)){
+            return;
+        }
         try {
             clientSocket = new Socket();
-            clientSocket.connect(new InetSocketAddress(prevAddress, Ports.TCP_PORT), 1000);
+            clientSocket.connect(new InetSocketAddress(nextAddress, Ports.TCP_PORT), 1000);
             out = new PrintWriter(clientSocket.getOutputStream(), true);
 
             //Send neighbour update command.
