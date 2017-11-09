@@ -1,4 +1,4 @@
-package be.ac.ua.dist.systemy.nameserver.NameServerPackage;
+package be.ac.ua.dist.systemy.namingServer;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -161,13 +161,13 @@ public class NamingServer implements NameserverInterface {
 //            NameserverInterface stub = (NameserverInterface) UnicastRemoteObject.exportObject(obj, 0);
 //
 //            Registry registry = LocateRegistry.createRegistry(Ports.RMI_PORT);
-//            registry.bind("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer", stub);
+//            registry.bind("NamingServer", stub);
 //
-//            System.err.println("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer Ready");
+//            System.err.println("NamingServer Ready");
 //            stub.addMeToNetwork("Thomas-NameserverInterface");
 //
 //        }catch (Exception e) {
-//            System.err.println("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer exception: " + e.toString());
+//            System.err.println("NamingServer exception: " + e.toString());
 //            e.printStackTrace();
 //        }
         Scanner sc = new Scanner(System.in);

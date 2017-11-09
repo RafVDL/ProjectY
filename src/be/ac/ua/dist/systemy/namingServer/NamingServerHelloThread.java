@@ -1,4 +1,4 @@
-package be.ac.ua.dist.systemy.nameserver.NameServerPackage;
+package be.ac.ua.dist.systemy.namingServer;
 
 import be.ac.ua.dist.systemy.Ports;
 

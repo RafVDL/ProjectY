@@ -400,7 +400,7 @@ public class Node implements NodeInterface {
 
     public static void main(String[] args) throws IOException, NotBoundException, ServerNotActiveException {
 //        Registry registry = LocateRegistry.getRegistry("192.168.137.1", RMI_PORT);
-//        NameserverInterface stub = (NameserverInterface) registry.lookup("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer");
+//        NameserverInterface stub = (NameserverInterface) registry.lookup("NamingServer");
 //
 //        stub.addMeToNetwork("e");
 //        stub.printIPadresses();
