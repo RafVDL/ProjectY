@@ -175,6 +175,7 @@ public class NamingServer implements Nameserver {
 //            e.printStackTrace();
 //        }
         Scanner sc = new Scanner(System.in);
+        System.out.println("(Detected localHost is: " + InetAddress.getLocalHost() + ")");
         System.out.print("Enter IP: ");
         String ip = sc.nextLine();
 
@@ -184,19 +185,19 @@ public class NamingServer implements Nameserver {
         System.out.println("Namingserver started @" + ip);
 
         while (namingServer.running) {
-            String cmd = sc.nextLine();
+            String cmd = sc.nextLine().toLowerCase();
 
             switch (cmd) {
                 case "shutdown":
+                case "shut":
+                case "sh":
                     namingServer.setRunning(false);
                     System.out.println("Shutdown the network");
                     break;
 
                 case "table":
+                case "tab":
                     namingServer.printIPadresses();
-                    break;
-
-                case "remove":
                     break;
             }
         }

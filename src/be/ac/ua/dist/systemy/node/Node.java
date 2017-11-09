@@ -424,6 +424,7 @@ public class Node implements NodeInterface {
         Scanner sc = new Scanner(System.in);
         System.out.print("Enter hostname: ");
         String hostname = sc.nextLine();
+        System.out.println("(Detected localHost is: " + InetAddress.getLocalHost() + ")");
         System.out.print("Enter IP: ");
         String ip = sc.nextLine();
 
@@ -435,15 +436,19 @@ public class Node implements NodeInterface {
         node.joinNetwork();
 
         while (node.running) {
-            String cmd = sc.nextLine();
-
+            String cmd = sc.nextLine().toLowerCase();
             switch (cmd) {
                 case "shutdown":
+                case "shut":
+                case "sh":
                     node.setRunning(false);
                     node.leaveNetwork();
                     System.out.println("Left the network");
                     break;
                 case "neighbours":
+                case "neighbors":
+                case "neigh":
+                case "nb":
                     System.out.println("Prev: " + node.prevName + " === Next: " + node.nextName);
                     break;
             }
