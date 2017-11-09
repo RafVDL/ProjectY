@@ -9,9 +9,10 @@ import java.rmi.server.RemoteServer;
 import java.rmi.server.ServerNotActiveException;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Scanner;
 
-public class NamingServer implements Nameserver {
+public class NamingServer implements NameserverInterface {
     public final InetAddress serverIP; //commentaar
     HashMap<Integer, InetAddress> ipAdresses = new HashMap<>();
 
@@ -32,7 +33,7 @@ public class NamingServer implements Nameserver {
         if (!ipAdresses.containsKey(hash)) {
             ipAdresses.put(hash, ip);
         } else {
-            System.out.println(hash + " already exists in ipAdresses");
+            System.out.println(hash + " already exists in ipAddresses");
         }
     }
 
@@ -42,7 +43,7 @@ public class NamingServer implements Nameserver {
         if (ipAdresses.containsKey(hash)) {
             ipAdresses.remove(hash);
         } else {
-            System.out.println(hash + " does not exist in ipAdresses");
+            System.out.println(hash + " does not exist in ipAddresses");
         }
     }
 
@@ -53,7 +54,7 @@ public class NamingServer implements Nameserver {
         if (ipAdresses.containsKey(hash)) {
             ipAdresses.put(hash, IP);
         } else {
-            System.out.println(hash + " already exists in ipAdresses");
+            System.out.println(hash + " already exists in ipAddresses");
         }
     }
 
@@ -64,7 +65,7 @@ public class NamingServer implements Nameserver {
         if (ipAdresses.containsKey(hash)) {
             ipAdresses.remove(hash, IP);
         } else {
-            System.out.println(hash + " does not exist in ipAdresses");
+            System.out.println(hash + " does not exist in ipAddresses");
         }
     }
 
@@ -80,10 +81,7 @@ public class NamingServer implements Nameserver {
         int highestHash = 0;
 
 
-        Iterator<HashMap.Entry<Integer, InetAddress>> it = ipAdresses.entrySet().iterator();
-
-        while (it.hasNext()) {
-            HashMap.Entry<Integer, InetAddress> pair = it.next();
+        for (Map.Entry<Integer, InetAddress> pair : ipAdresses.entrySet()) {
             if (pair.getKey() < hashFileName) {
                 if (currentHash == 0) {
                     currentHash = pair.getKey();
@@ -111,19 +109,17 @@ public class NamingServer implements Nameserver {
     }
 
     public void printIPadresses() {
-        System.out.println("Printing IP-adresses to Console:");
-        Iterator<HashMap.Entry<Integer, InetAddress>> it = ipAdresses.entrySet().iterator();
-        while (it.hasNext()) {
-            HashMap.Entry pair = it.next();
-            System.out.println("Hash: " + pair.getKey());
-            System.out.println("IP: " + pair.getValue() + "\n");
-        }
+        System.out.println("Printing IP-addresses to Console:");
+        ipAdresses.forEach((key, value) -> {
+            System.out.println("Hash: " + key);
+            System.out.println("IP: " + value + "\n");
+        });
         System.out.println("Print completed \n");
 
     }
 
     public void exportIPadresses() {
-        System.out.println("Exporting IP-adressess ...");
+        System.out.println("Exporting IP-addressess ...");
         String writeThis;
         Iterator<HashMap.Entry<Integer, InetAddress>> it = ipAdresses.entrySet().iterator();
         BufferedWriter outputWriter = null;
@@ -162,13 +158,13 @@ public class NamingServer implements Nameserver {
 //        try {
 //            System.setProperty("java.rmi.server.hostname", serverIP);
 //            NamingServer obj = new NamingServer();
-//            Nameserver stub = (Nameserver) UnicastRemoteObject.exportObject(obj, 0);
+//            NameserverInterface stub = (NameserverInterface) UnicastRemoteObject.exportObject(obj, 0);
 //
 //            Registry registry = LocateRegistry.createRegistry(Ports.RMI_PORT);
 //            registry.bind("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer", stub);
 //
 //            System.err.println("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer Ready");
-//            stub.addMeToNetwork("Thomas-Nameserver");
+//            stub.addMeToNetwork("Thomas-NameserverInterface");
 //
 //        }catch (Exception e) {
 //            System.err.println("be.ac.ua.dist.systemy.nameserver.NameServerPackage.NamingServer exception: " + e.toString());
