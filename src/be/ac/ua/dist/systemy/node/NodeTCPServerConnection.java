@@ -56,7 +56,9 @@ public class NodeTCPServerConnection extends Thread {
 
                     if (node.getPrevName().equals(oldNeighbour)) {
                         node.updatePrev(null, newNeighbour);
-                    } else if (node.getNextName().equals(oldNeighbour)) {
+                    }
+
+                    if (node.getNextName().equals(oldNeighbour)) {
                         node.updateNext(null, newNeighbour);
                     }
                     break;
