@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.rmi.RemoteException;
 import java.rmi.server.RemoteServer;
 import java.rmi.server.ServerNotActiveException;
 import java.util.HashMap;
@@ -26,9 +27,8 @@ public class NamingServer implements NameserverInterface {
         return Math.abs(nodeName.hashCode() % 32768);
     }
 
-    public void addNodeToNetwork(String nodeName, InetAddress ip) {
-        int hash = getHash(nodeName);
-        System.out.println("Adding " + nodeName + " (hash: " + hash + ")" + " to table");
+    public void addNodeToNetwork(int hash, InetAddress ip) {
+        System.out.println("Adding " + " (hash: " + hash + ")" + " to table");
 
         if (!ipAddresses.containsKey(hash)) {
             ipAddresses.put(hash, ip);
@@ -47,27 +47,27 @@ public class NamingServer implements NameserverInterface {
         }
     }
 
-    public void addMeToNetwork(String nodeName) throws ServerNotActiveException, UnknownHostException {
-        InetAddress IP = InetAddress.getByName(RemoteServer.getClientHost());
-        System.out.println("Adding " + nodeName + " from IP-table");
-        int hash = getHash(nodeName);
-        if (ipAddresses.containsKey(hash)) {
-            ipAddresses.put(hash, IP);
-        } else {
-            System.out.println(hash + " already exists in ipAddresses");
-        }
-    }
-
-    public void removeMeFromNetwork(String nodeName) throws ServerNotActiveException, UnknownHostException {
-        InetAddress IP = InetAddress.getByName(RemoteServer.getClientHost());
-        System.out.println("Removing " + nodeName + " from IP-table");
-        int hash = getHash(nodeName);
-        if (ipAddresses.containsKey(hash)) {
-            ipAddresses.remove(hash, IP);
-        } else {
-            System.out.println(hash + " does not exist in ipAddresses");
-        }
-    }
+//    public void addMeToNetwork(String nodeName) throws ServerNotActiveException, UnknownHostException {
+//        InetAddress IP = InetAddress.getByName(RemoteServer.getClientHost());
+//        System.out.println("Adding " + nodeName + " from IP-table");
+//        int hash = getHash(nodeName);
+//        if (ipAddresses.containsKey(hash)) {
+//            ipAddresses.put(hash, IP);
+//        } else {
+//            System.out.println(hash + " already exists in ipAddresses");
+//        }
+//    }
+//
+//    public void removeMeFromNetwork(String nodeName) throws ServerNotActiveException, UnknownHostException {
+//        InetAddress IP = InetAddress.getByName(RemoteServer.getClientHost());
+//        System.out.println("Removing " + nodeName + " from IP-table");
+//        int hash = getHash(nodeName);
+//        if (ipAddresses.containsKey(hash)) {
+//            ipAddresses.remove(hash, IP);
+//        } else {
+//            System.out.println(hash + " does not exist in ipAddresses");
+//        }
+//    }
 
     public InetAddress getOwner(String fileName) throws UnknownHostException {
         System.out.println("Getting owner of file: " + fileName);
@@ -128,7 +128,7 @@ public class NamingServer implements NameserverInterface {
             outputWriter = new BufferedWriter(new FileWriter(outputFile));
             while (it.hasNext()) {
                 HashMap.Entry pair = it.next();
-                writeThis = "Hash: " + pair.getValue() + "  IP: " + pair.getKey();
+                writeThis = "Hash: " + pair.getKey() + "  IP: " + pair.getValue();
                 outputWriter.write(writeThis);
                 outputWriter.newLine();
             }
@@ -143,6 +143,32 @@ public class NamingServer implements NameserverInterface {
             }
         }
         System.out.println("Export completed \n");
+    }
+
+    public int[] getNeighbours(int hashNode) throws RemoteException{
+        Iterator<HashMap.Entry<Integer, InetAddress>> it = ipAddresses.entrySet().iterator();
+        int[] neighbours = new int[2];
+        int prevHash = 0;
+        int nextHash = 0;
+        boolean found = false;
+        while (it.hasNext()&&!found) {
+            HashMap.Entry<Integer, InetAddress> pair = it.next();
+            if(pair.getKey() == hashNode){
+                prevHash = pair.getKey();
+                if(it.hasNext()){
+                    pair = it.next();
+                    nextHash = pair.getKey();
+                }else {
+                    it = ipAddresses.entrySet().iterator();
+                    pair = it.next();
+                    nextHash = pair.getKey();
+                }
+                found = true;
+            }
+        }
+        neighbours[0] = prevHash;
+        neighbours[1] = nextHash;
+        return neighbours;
     }
 
     public boolean isRunning() {
