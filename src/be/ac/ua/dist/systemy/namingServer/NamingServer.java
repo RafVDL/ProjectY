@@ -37,9 +37,8 @@ public class NamingServer implements NameserverInterface {
         }
     }
 
-    public void removeNodeFromNetwork(String nodeName) {
-        System.out.println("Removing " + nodeName + " from IP-table");
-        int hash = getHash(nodeName);
+    public void removeNodeFromNetwork(int hash) {
+        System.out.println("Removing " + hash + " from IP-table");
         if (ipAddresses.containsKey(hash)) {
             ipAddresses.remove(hash);
         } else {

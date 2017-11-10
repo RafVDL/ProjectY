@@ -2,10 +2,7 @@ package be.ac.ua.dist.systemy.node;
 
 import be.ac.ua.dist.systemy.Ports;
 
-import java.io.DataInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.*;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -24,8 +21,7 @@ public class Node implements NodeInterface {
 
     private InetAddress prevAddress;
     private InetAddress nextAddress;
-    private String prevName;
-    private String nextName;
+
     private int prevHash;
     private int nextHash;
 
@@ -59,6 +55,14 @@ public class Node implements NodeInterface {
         this.ownAddress = ownAddress;
     }
 
+    public int getOwnHash() {
+        return ownHash;
+    }
+
+    public void setOwnHash(int hash) {
+        this.ownHash = hash;
+    }
+
     public InetAddress getPrevAddress() {
         return prevAddress;
     }
@@ -75,20 +79,20 @@ public class Node implements NodeInterface {
         this.nextAddress = nextAddress;
     }
 
-    public void setPrevName(String prevName) {
-        this.prevName = prevName;
+    public int getPrevHash() {
+        return prevHash;
     }
 
-    public void setNextName(String nextName) {
-        this.nextName = nextName;
+    public void setPrevHash(int prevHash) {
+        this.prevHash = prevHash;
     }
 
-    public String getNextName() {
-        return nextName;
+    public int getNextHash() {
+        return nextHash;
     }
 
-    public String getPrevName() {
-        return prevName;
+    public void setNextHash(int nextHash) {
+        this.nextHash = nextHash;
     }
 
     @Override
@@ -148,42 +152,40 @@ public class Node implements NodeInterface {
      * Updates the next neighbour of this node
      *
      * @param newAddress of the next neighbour
-     * @param newName    of the next neighbour
+     * @param newHash    of the next neighbour
      */
     @Override
-    public void updateNext(InetAddress newAddress, String newName) {
+    public void updateNext(InetAddress newAddress, int newHash) {
         if (newAddress == null) {
             try {
-                newAddress = getAddressByName(newName);
+                newAddress = getAddressByName(newHash);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
 
-        nextHash = calculateHash(newName);
         nextAddress = newAddress;
-        nextName = newName;
+        nextHash = newHash;
     }
 
     /**
      * Updates the previous neighbour of this node
      *
      * @param newAddress of the previous neighbour
-     * @param newName    of the previous neighbour
+     * @param newHash    of the previous neighbour
      */
     @Override
-    public void updatePrev(InetAddress newAddress, String newName) {
+    public void updatePrev(InetAddress newAddress, int newHash) {
         if (newAddress == null) {
             try {
-                newAddress = getAddressByName(newName);
+                newAddress = getAddressByName(newHash);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
 
-        prevHash = calculateHash(newName);
         prevAddress = newAddress;
-        prevName = newName;
+        prevHash = newHash;
     }
 
     /**
@@ -197,43 +199,51 @@ public class Node implements NodeInterface {
      * this case the existing Node should always update the joining Node.
      *
      * @param newAddress the IP-address of the joining node
-     * @param newName    the name of the joining node
+     * @param newHash    the hash of the joining node
      */
-    public void updateNeighbours(InetAddress newAddress, String newName) {
-        int newHash = calculateHash(newName);
-
-
+    public void updateNeighbours(InetAddress newAddress, int newHash) {
         if ((ownHash == prevHash) && (ownHash == nextHash)) {
             // NodeCount is currently 0, always update self and the joining Node.
 
             try {
-                Socket clientSocket = new Socket(newAddress, Ports.TCP_PORT);
-                sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownName, ownName);
+                Socket clientSocket = new Socket();
+                clientSocket.setSoLinger(true, 5);
+                clientSocket.connect(new InetSocketAddress(newAddress, Ports.TCP_PORT));
+                sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR");
+                DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
+                dos.writeInt(ownHash);
+                dos.writeInt(ownHash);
                 clientSocket.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
-            updatePrev(newAddress, newName);
-            updateNext(newAddress, newName);
+            updatePrev(newAddress, newHash);
+            updateNext(newAddress, newHash);
 
         } else if ((newHash > ownHash) && (newHash < nextHash)) {
             // Joining Node sits between this Node and next neighbour.
 
             try {
-                Socket clientSocket = new Socket(newAddress, Ports.TCP_PORT);
-                sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownName, nextName);
+                Socket clientSocket = new Socket();
+                clientSocket.setSoLinger(true, 5);
+                clientSocket.connect(new InetSocketAddress(newAddress, Ports.TCP_PORT));
+                sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR");
+                DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
+                dos.write(ownHash);
+                dos.writeInt(newHash);
+                dos.close();
                 clientSocket.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
-            updateNext(newAddress, newName);
+            updateNext(newAddress, newHash);
 
         } else if ((newHash > prevHash) && (newHash < ownHash)) {
             // Joining Node sits between previous neighbour and this Node.
 
-            updatePrev(newAddress, newName);
+            updatePrev(newAddress, newHash);
         }
 
 //        if ((newHash > ownHash && newHash < nextHash) || (ownHash == nextHash && newHash > ownHash)) {
@@ -296,9 +306,9 @@ public class Node implements NodeInterface {
         }
     }
 
-    private InetAddress getAddressByName(String hostname) throws IOException {
+    private InetAddress getAddressByName(int hash) throws IOException {
         byte[] buf;
-        buf = ("GETIP|" + hostname).getBytes();
+        buf = ("GETIP|" + hash).getBytes();
         DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Ports.MULTICAST_PORT);
         multicastSocket.send(packet);
 
@@ -334,31 +344,33 @@ public class Node implements NodeInterface {
 
     public void leaveNetwork() throws IOException {
         byte[] buf;
-        buf = ("QUITNAMING|" + ownName).getBytes();
+        buf = ("QUITNAMING|" + ownHash).getBytes();
         DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Ports.MULTICAST_PORT);
         multicastSocket.send(packet);
         multicastSocket.leaveGroup(multicastGroup);
         multicastSocket.close();
 
-        if (ownName.equals(nextName) && ownName.equals(prevName))
+        if (ownHash == nextHash && ownHash == prevHash)
             return;
 
         Socket clientSocket;
+        DataOutputStream dos;
         PrintWriter out;
         try {
             clientSocket = new Socket();
             clientSocket.setSoLinger(true, 5);
             clientSocket.connect(new InetSocketAddress(prevAddress, Ports.TCP_PORT), 1000);
-            out = new PrintWriter(clientSocket.getOutputStream(), true);
+            dos = new DataOutputStream(clientSocket.getOutputStream());
+            out = new PrintWriter(dos, true);
 
             //Send neighbour update command.
             out.println("QUIT");
             //Send neighbours
-            out.println(ownName);
-            out.println(nextName);
+            dos.writeInt(ownHash);
+            dos.writeInt(nextHash);
 
             //Close everything.
-            out.close();
+            dos.close();
             clientSocket.close();
         } catch (SocketTimeoutException e) {
             // handle node disconnected
@@ -366,28 +378,34 @@ public class Node implements NodeInterface {
             e.printStackTrace();
         }
 
-        if (prevName.equals(nextName)){
+        if (prevHash == nextHash) {
             return;
         }
+
         try {
             clientSocket = new Socket();
             clientSocket.connect(new InetSocketAddress(nextAddress, Ports.TCP_PORT), 1000);
-            out = new PrintWriter(clientSocket.getOutputStream(), true);
+            dos = new DataOutputStream(clientSocket.getOutputStream());
+            out = new PrintWriter(dos, true);
 
             //Send neighbour update command.
             out.println("QUIT");
             //Send neighbours
-            out.println(ownName);
-            out.println(prevName);
+            dos.writeInt(ownHash);
+            dos.writeInt(prevHash);
 
             //Close everything.
-            out.close();
+            dos.close();
             clientSocket.close();
         } catch (SocketTimeoutException e) {
             // handle node disconnected
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void handleFailure(String node) {
+
     }
 
     private int calculateHash(String name) {
@@ -431,13 +449,13 @@ public class Node implements NodeInterface {
         System.out.println("(Detected localHostName is: " + InetAddress.getLocalHost() + ")");
         System.out.print("Enter hostname: ");
         String hostname = sc.nextLine();
-        if (hostname.isEmpty()){
+        if (hostname.isEmpty()) {
             hostname = InetAddress.getLocalHost().getHostName();
         }
         System.out.println("(Detected localHostAddress is: " + InetAddress.getLocalHost() + ")");
         System.out.print("Enter IP: ");
         String ip = sc.nextLine();
-        if (ip.isEmpty()){
+        if (ip.isEmpty()) {
             ip = InetAddress.getLocalHost().getHostAddress();
         }
 
@@ -462,7 +480,7 @@ public class Node implements NodeInterface {
                 case "neighbors":
                 case "neigh":
                 case "nb":
-                    System.out.println("Prev: " + node.prevName + " === Next: " + node.nextName);
+                    System.out.println("Prev: " + node.prevHash + " === Next: " + node.nextHash);
                     break;
             }
         }

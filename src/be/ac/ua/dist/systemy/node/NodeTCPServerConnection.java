@@ -33,32 +33,32 @@ public class NodeTCPServerConnection extends Thread {
                 case "NODECOUNT":
                     int nodecount = dis.readInt();
                     if (nodecount < 1) {
-                        node.updatePrev(node.getOwnAddress(), node.getOwnName());
-                        node.updateNext(node.getOwnAddress(), node.getOwnName());
+                        node.updatePrev(node.getOwnAddress(), node.getOwnHash());
+                        node.updateNext(node.getOwnAddress(), node.getOwnHash());
                     }
                     break;
 
                 case "PREV_NEXT_NEIGHBOUR":
-                    String prevName = in.readLine();
-                    String nextName = in.readLine();
+                    int prevHash = dis.readInt();
+                    int nextHash = dis.readInt();
 
-                    node.updatePrev(clientSocket.getInetAddress(), prevName);
-                    node.updateNext(null, nextName);
+                    node.updatePrev(clientSocket.getInetAddress(), prevHash);
+                    node.updateNext(null, nextHash);
 //                    node.updateNeighbours(clientSocket.getInetAddress(), prevName);
 //                    node.updateNeighbours(null, nextName);
                     break;
 
                 case "QUIT":
-                    String oldNeighbour = in.readLine();
-                    if (oldNeighbour.equals(node.getOwnName()))
+                    int oldNeighbour = dis.readInt();
+                    if (oldNeighbour == node.getOwnHash())
                         break;
-                    String newNeighbour = in.readLine();
+                    int newNeighbour = dis.readInt();
 
-                    if (node.getPrevName().equals(oldNeighbour)) {
+                    if (node.getPrevHash() == oldNeighbour) {
                         node.updatePrev(null, newNeighbour);
                     }
 
-                    if (node.getNextName().equals(oldNeighbour)) {
+                    if (node.getNextHash() == oldNeighbour) {
                         node.updateNext(null, newNeighbour);
                     }
                     break;

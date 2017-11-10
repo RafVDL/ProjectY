@@ -32,7 +32,7 @@ public class NamingServerHelloThread extends Thread {
                 String received = new String(packet.getData()).trim();
                 if (received.startsWith("HELLO")) {
                     String[] split = received.split("\\|");
-                    String hostname = split[1];
+                    int hash = Integer.parseInt(split[1]);
 
                     Socket tcpSocket;
                     DataOutputStream dos;
@@ -57,23 +57,23 @@ public class NamingServerHelloThread extends Thread {
                         e.printStackTrace();
                     }
 
-                    namingServer.addNodeToNetwork(hostname, packet.getAddress());
+                    namingServer.addNodeToNetwork(hash, packet.getAddress());
 
                 } else if (received.startsWith("GETIP")) {
                     String[] split = received.split("\\|");
-                    String hostname = split[1];
-                    if (namingServer.ipAddresses.containsKey(Math.abs(hostname.hashCode() % 32768))) {
-                        buf = ("REIP|" + hostname + "|" + namingServer.ipAddresses.get(Math.abs(hostname.hashCode() % 32768)).getHostAddress()).getBytes();
+                    int hash = Integer.parseInt(split[1]);
+                    if (namingServer.ipAddresses.containsKey(hash)) {
+                        buf = ("REIP|" + hash + "|" + namingServer.ipAddresses.get(hash).getHostAddress()).getBytes();
                     } else {
-                        buf = ("REIP|" + hostname + "|NOT_FOUND").getBytes();
+                        buf = ("REIP|" + hash + "|NOT_FOUND").getBytes();
                     }
 
                     packet = new DatagramPacket(buf, buf.length, packet.getAddress(), Ports.UNICAST_PORT);
                     uniSocket.send(packet);
                 } else if (received.startsWith("QUITNAMING")) {
                     String[] split = received.split("\\|");
-                    String hostname = split[1];
-                    namingServer.removeNodeFromNetwork(hostname);
+                    int hash = Integer.parseInt(split[1]);
+                    namingServer.removeNodeFromNetwork(hash);
                 }
             }
 
