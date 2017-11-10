@@ -460,6 +460,9 @@ public class Node implements NodeInterface {
         }
 
         Node node = new Node(hostname, InetAddress.getByName(ip));
+
+        System.out.println("Hash: " + node.getOwnHash());
+
         NodeMultiCastServer udpServer = new NodeMultiCastServer(node);
         udpServer.start();
         NodeTCPServer tcpServerThread = new NodeTCPServer(node);
