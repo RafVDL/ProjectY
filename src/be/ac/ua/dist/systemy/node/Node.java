@@ -335,7 +335,7 @@ public class Node implements NodeInterface {
 
     public void joinNetwork() throws IOException {
         byte[] buf;
-        buf = ("HELLO|" + ownName).getBytes();
+        buf = ("HELLO|" + ownHash).getBytes();
         DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Ports.MULTICAST_PORT);
         multicastSocket.send(packet);
 
