@@ -209,10 +209,7 @@ public class Node implements NodeInterface {
                 Socket clientSocket = new Socket();
                 clientSocket.setSoLinger(true, 5);
                 clientSocket.connect(new InetSocketAddress(newAddress, Ports.TCP_PORT));
-                sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR");
-                DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
-                dos.writeInt(ownHash);
-                dos.writeInt(ownHash);
+                sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownHash, ownHash);
                 clientSocket.close();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -228,11 +225,7 @@ public class Node implements NodeInterface {
                 Socket clientSocket = new Socket();
                 clientSocket.setSoLinger(true, 5);
                 clientSocket.connect(new InetSocketAddress(newAddress, Ports.TCP_PORT));
-                sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR");
-                DataOutputStream dos = new DataOutputStream(clientSocket.getOutputStream());
-                dos.write(ownHash);
-                dos.writeInt(newHash);
-                dos.close();
+                sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownHash, newHash);
                 clientSocket.close();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -298,6 +291,21 @@ public class Node implements NodeInterface {
             out.println(cmd);
             for (String arg : args) {
                 out.println(arg);
+            }
+
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void sendTcpCmd(Socket socket, String cmd, int... args) {
+        try {
+            DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
+            PrintWriter out = new PrintWriter(dos, true);
+            out.println(cmd);
+            for (int arg : args) {
+               dos.writeInt(arg);
             }
 
             out.close();
