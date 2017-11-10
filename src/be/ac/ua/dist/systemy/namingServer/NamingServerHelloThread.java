@@ -45,7 +45,7 @@ public class NamingServerHelloThread extends Thread {
                         out = new PrintWriter(dos, true);
 
                         out.println("NODECOUNT");
-                        dos.writeInt(namingServer.ipAdresses.size());
+                        dos.writeInt(namingServer.ipAddresses.size());
                         dos.flush();
 
                         //Close everything.
@@ -62,8 +62,8 @@ public class NamingServerHelloThread extends Thread {
                 } else if (received.startsWith("GETIP")) {
                     String[] split = received.split("\\|");
                     String hostname = split[1];
-                    if (namingServer.ipAdresses.containsKey(Math.abs(hostname.hashCode() % 32768))) {
-                        buf = ("REIP|" + hostname + "|" + namingServer.ipAdresses.get(Math.abs(hostname.hashCode() % 32768)).getHostAddress()).getBytes();
+                    if (namingServer.ipAddresses.containsKey(Math.abs(hostname.hashCode() % 32768))) {
+                        buf = ("REIP|" + hostname + "|" + namingServer.ipAddresses.get(Math.abs(hostname.hashCode() % 32768)).getHostAddress()).getBytes();
                     } else {
                         buf = ("REIP|" + hostname + "|NOT_FOUND").getBytes();
                     }
