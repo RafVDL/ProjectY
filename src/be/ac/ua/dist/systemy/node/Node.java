@@ -27,8 +27,8 @@ public class Node implements NodeInterface {
 
     private boolean running = true;
 
-    MulticastSocket multicastSocket;
-    InetAddress multicastGroup;
+    private MulticastSocket multicastSocket;
+    private InetAddress multicastGroup;
 
     public Node(String nodeName, InetAddress address) throws IOException {
         this.ownName = nodeName;
@@ -233,7 +233,7 @@ public class Node implements NodeInterface {
 
             updateNext(newAddress, newHash);
 
-        } else if ((newHash > prevHash) && (newHash < ownHash)) {
+        } else if ((newHash > prevHash || (prevHash >= nextHash && newHash > prevHash)) && (newHash < ownHash)) {
             // Joining Node sits between previous neighbour and this Node.
 
             updatePrev(newAddress, newHash);
