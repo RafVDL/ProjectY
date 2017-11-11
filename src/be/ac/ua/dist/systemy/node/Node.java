@@ -12,9 +12,8 @@ import java.util.Scanner;
 
 public class Node implements NodeInterface {
 
-    private String ownName;
-    private InetAddress ownAddress;
-    private int ownHash;
+    private final InetAddress ownAddress;
+    private final int ownHash;
     private List<String> localFiles;
     private List<String> replicatedFiles;
     private List<String> downloadedFiles;
@@ -27,11 +26,10 @@ public class Node implements NodeInterface {
 
     private boolean running = true;
 
-    MulticastSocket multicastSocket;
-    InetAddress multicastGroup;
+    private MulticastSocket multicastSocket;
+    private InetAddress multicastGroup;
 
     public Node(String nodeName, InetAddress address) throws IOException {
-        this.ownName = nodeName;
         this.ownAddress = address;
         this.ownHash = calculateHash(nodeName);
 
@@ -39,60 +37,28 @@ public class Node implements NodeInterface {
         multicastGroup = InetAddress.getByName("225.0.113.0");
     }
 
-    public String getOwnName() {
-        return ownName;
-    }
-
-    public void setOwnName(String ownName) {
-        this.ownName = ownName;
-    }
-
     public InetAddress getOwnAddress() {
         return ownAddress;
-    }
-
-    public void setOwnAddress(InetAddress ownAddress) {
-        this.ownAddress = ownAddress;
     }
 
     public int getOwnHash() {
         return ownHash;
     }
 
-    public void setOwnHash(int hash) {
-        this.ownHash = hash;
-    }
-
     public InetAddress getPrevAddress() {
         return prevAddress;
-    }
-
-    public void setPrevAddress(InetAddress prevAddress) {
-        this.prevAddress = prevAddress;
     }
 
     public InetAddress getNextAddress() {
         return nextAddress;
     }
 
-    public void setNextAddress(InetAddress nextAddress) {
-        this.nextAddress = nextAddress;
-    }
-
     public int getPrevHash() {
         return prevHash;
     }
 
-    public void setPrevHash(int prevHash) {
-        this.prevHash = prevHash;
-    }
-
     public int getNextHash() {
         return nextHash;
-    }
-
-    public void setNextHash(int nextHash) {
-        this.nextHash = nextHash;
     }
 
     @Override
@@ -218,14 +184,22 @@ public class Node implements NodeInterface {
             updatePrev(newAddress, newHash);
             updateNext(newAddress, newHash);
 
-        } else if ((newHash > ownHash) && (newHash < nextHash)) {
+        } else if ((prevHash < ownHash && newHash < ownHash && newHash > prevHash)
+                || (prevHash > ownHash && newHash < ownHash)
+                || (prevHash >= nextHash && newHash > prevHash && newHash < ownHash)) {
+            // Joining Node sits between previous neighbour and this Node.
+
+            updatePrev(newAddress, newHash);
+        } else if ((nextHash > ownHash && newHash > ownHash && newHash < nextHash)
+                || (nextHash < ownHash && newHash > ownHash)
+                || (nextHash <= prevHash && newHash < nextHash)) {
             // Joining Node sits between this Node and next neighbour.
 
             try {
                 Socket clientSocket = new Socket();
                 clientSocket.setSoLinger(true, 5);
                 clientSocket.connect(new InetSocketAddress(newAddress, Ports.TCP_PORT));
-                sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownHash, newHash);
+                sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownHash, nextHash);
                 clientSocket.close();
             } catch (IOException e) {
                 e.printStackTrace();
@@ -233,10 +207,6 @@ public class Node implements NodeInterface {
 
             updateNext(newAddress, newHash);
 
-        } else if ((newHash > prevHash) && (newHash < ownHash)) {
-            // Joining Node sits between previous neighbour and this Node.
-
-            updatePrev(newAddress, newHash);
         }
 
 //        if ((newHash > ownHash && newHash < nextHash) || (ownHash == nextHash && newHash > ownHash)) {
@@ -305,7 +275,7 @@ public class Node implements NodeInterface {
             PrintWriter out = new PrintWriter(dos, true);
             out.println(cmd);
             for (int arg : args) {
-               dos.writeInt(arg);
+                dos.writeInt(arg);
             }
 
             out.close();
@@ -378,7 +348,7 @@ public class Node implements NodeInterface {
             dos.writeInt(nextHash);
 
             //Close everything.
-            dos.close();
+            out.close();
             clientSocket.close();
         } catch (SocketTimeoutException e) {
             // handle node disconnected
