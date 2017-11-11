@@ -184,9 +184,15 @@ public class Node implements NodeInterface {
             updatePrev(newAddress, newHash);
             updateNext(newAddress, newHash);
 
+        } else if ((prevHash < ownHash && newHash < ownHash && newHash > prevHash)
+                || (prevHash > ownHash && newHash < ownHash)
+                || (prevHash >= nextHash && newHash > prevHash && newHash < ownHash)) {
+            // Joining Node sits between previous neighbour and this Node.
+
+            updatePrev(newAddress, newHash);
         } else if ((nextHash > ownHash && newHash > ownHash && newHash < nextHash)
                 || (nextHash < ownHash && newHash > ownHash)
-                || (nextHash <= prevHash && newHash < nextHash && newHash > ownHash)) {
+                || (nextHash <= prevHash && newHash < nextHash)) {
             // Joining Node sits between this Node and next neighbour.
 
             try {
@@ -201,12 +207,6 @@ public class Node implements NodeInterface {
 
             updateNext(newAddress, newHash);
 
-        } else if ((prevHash < ownHash && newHash < ownHash && newHash > prevHash)
-                || (prevHash > ownHash && newHash < ownHash)
-                || (prevHash >= nextHash && newHash > prevHash && newHash < ownHash)) {
-            // Joining Node sits between previous neighbour and this Node.
-
-            updatePrev(newAddress, newHash);
         }
 
 //        if ((newHash > ownHash && newHash < nextHash) || (ownHash == nextHash && newHash > ownHash)) {
@@ -348,7 +348,7 @@ public class Node implements NodeInterface {
             dos.writeInt(nextHash);
 
             //Close everything.
-            dos.close();
+            out.close();
             clientSocket.close();
         } catch (SocketTimeoutException e) {
             // handle node disconnected
