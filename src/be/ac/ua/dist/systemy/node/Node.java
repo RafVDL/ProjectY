@@ -154,6 +154,11 @@ public class Node implements NodeInterface {
         prevHash = newHash;
     }
 
+
+    public void updateNeighbours(InetAddress newAddress, int newHash) {
+        this.updateNeighbours(newAddress, newHash, true);
+    }
+
     /**
      * Gets invoked when a new Node is joining the network. (via NodeMultiCastServer)
      * <p>
@@ -167,36 +172,40 @@ public class Node implements NodeInterface {
      * @param newAddress the IP-address of the joining node
      * @param newHash    the hash of the joining node
      */
-    public void updateNeighbours(InetAddress newAddress, int newHash) {
+    public void updateNeighbours(InetAddress newAddress, int newHash, boolean updateNext) {
         if ((ownHash == prevHash) && (ownHash == nextHash)) {
             // NodeCount is currently 0, always update self and the joining Node.
 
-            try {
-                Socket clientSocket = new Socket();
-                clientSocket.setSoLinger(true, 5);
-                clientSocket.connect(new InetSocketAddress(newAddress, Ports.TCP_PORT));
-                sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownHash, ownHash);
-                clientSocket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (updateNext) {
+                try {
+                    Socket clientSocket = new Socket();
+                    clientSocket.setSoLinger(true, 5);
+                    clientSocket.connect(new InetSocketAddress(newAddress, Ports.TCP_PORT));
+                    sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownHash, ownHash);
+                    clientSocket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
             updatePrev(newAddress, newHash);
             updateNext(newAddress, newHash);
 
         } else if ((nextHash > ownHash && newHash > ownHash && newHash < nextHash)
-                || (prevHash < ownHash && newHash > ownHash)
+                || (nextHash < ownHash && newHash > ownHash)
                 || (nextHash <= prevHash && newHash < nextHash)) {
             // Joining Node sits between this Node and next neighbour.
 
-            try {
-                Socket clientSocket = new Socket();
-                clientSocket.setSoLinger(true, 5);
-                clientSocket.connect(new InetSocketAddress(newAddress, Ports.TCP_PORT));
-                sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownHash, newHash);
-                clientSocket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (updateNext) {
+                try {
+                    Socket clientSocket = new Socket();
+                    clientSocket.setSoLinger(true, 5);
+                    clientSocket.connect(new InetSocketAddress(newAddress, Ports.TCP_PORT));
+                    sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownHash, ownHash);
+                    clientSocket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
             updateNext(newAddress, newHash);
