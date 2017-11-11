@@ -193,7 +193,7 @@ public class Node implements NodeInterface {
                 Socket clientSocket = new Socket();
                 clientSocket.setSoLinger(true, 5);
                 clientSocket.connect(new InetSocketAddress(newAddress, Ports.TCP_PORT));
-                sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownHash, newHash);
+                sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownHash, nextHash);
                 clientSocket.close();
             } catch (IOException e) {
                 e.printStackTrace();
