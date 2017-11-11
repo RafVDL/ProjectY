@@ -186,7 +186,7 @@ public class Node implements NodeInterface {
 
         } else if ((nextHash > ownHash && newHash > ownHash && newHash < nextHash)
                 || (nextHash < ownHash && newHash > ownHash)
-                || (nextHash <= prevHash && newHash < nextHash)) {
+                || (nextHash <= prevHash && newHash < nextHash && newHash > ownHash)) {
             // Joining Node sits between this Node and next neighbour.
 
             try {
@@ -203,7 +203,7 @@ public class Node implements NodeInterface {
 
         } else if ((prevHash < ownHash && newHash < ownHash && newHash > prevHash)
                 || (prevHash > ownHash && newHash < ownHash)
-                || (prevHash >= nextHash && newHash > prevHash)) {
+                || (prevHash >= nextHash && newHash > prevHash && newHash < ownHash)) {
             // Joining Node sits between previous neighbour and this Node.
 
             updatePrev(newAddress, newHash);
