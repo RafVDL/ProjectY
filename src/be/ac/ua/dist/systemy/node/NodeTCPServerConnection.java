@@ -42,10 +42,10 @@ public class NodeTCPServerConnection extends Thread {
                     int prevHash = dis.readInt();
                     int nextHash = dis.readInt();
 
-//                    node.updatePrev(clientSocket.getInetAddress(), prevHash);
-//                    node.updateNext(null, nextHash);
-                    node.updateNeighbours(clientSocket.getInetAddress(), prevHash, false);
-                    node.updateNeighbours(null, nextHash, false);
+                    node.updatePrev(clientSocket.getInetAddress(), prevHash);
+                    node.updateNext(null, nextHash);
+//                    node.updateNeighbours(clientSocket.getInetAddress(), prevName);
+//                    node.updateNeighbours(null, nextName);
                     break;
 
                 case "QUIT":
