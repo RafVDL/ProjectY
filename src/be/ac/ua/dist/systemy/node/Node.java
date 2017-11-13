@@ -7,6 +7,7 @@ import java.net.*;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.server.ServerNotActiveException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
@@ -398,6 +399,35 @@ public class Node implements NodeInterface {
         this.running = running;
     }
 
+    /**
+     * Iterates through a folder and returns a List containing all filenames including extensions.
+     *
+     * @param folderPath to explore
+     * @return the List containing the filenames
+     */
+    public List<String> discoverFiles(String folderPath) {
+        File folder = new File(folderPath);
+        File[] listOfFiles = folder.listFiles();
+        List<String> fileNames = new ArrayList<>();
+        if (listOfFiles == null) {
+            //TODO call failure?
+            System.out.println("Folder path does not point to a folder (" + folderPath + ")");
+            return null;
+        }
+
+        for (File file : listOfFiles) {
+            if (file.isFile()) {
+                System.out.println("Found file " + file.getName());
+                fileNames.add(file.getName());
+            } else if (file.isDirectory()) {
+                System.out.println("Not checking files in nested folder " + file.getName());
+            }
+        }
+
+        System.out.println("Finished discovery of " + folder.getName());
+        return fileNames;
+    }
+
     public static void main(String[] args) throws IOException, NotBoundException, ServerNotActiveException {
 //        Registry registry = LocateRegistry.getRegistry("192.168.137.1", RMI_PORT);
 //        NameserverInterface stub = (NameserverInterface) registry.lookup("NamingServer");
@@ -421,9 +451,9 @@ public class Node implements NodeInterface {
 //        } catch (AlreadyBoundException e) {
 //            e.printStackTrace();
 //        }
-        Scanner sc = new Scanner(System.in);
-        InetAddress detectedHostAddress;
 
+        // Get IP and hostname
+        Scanner sc = new Scanner(System.in);
         System.out.println("(Detected localHostName is: " + InetAddress.getLocalHost() + ")");
         System.out.print("Enter hostname: ");
         String hostname = sc.nextLine();
@@ -437,16 +467,26 @@ public class Node implements NodeInterface {
             ip = InetAddress.getLocalHost().getHostAddress();
         }
 
-        Node node = new Node(hostname, InetAddress.getByName(ip));
 
+        // Create Node object
+        Node node = new Node(hostname, InetAddress.getByName(ip));
         System.out.println("Hash: " + node.getOwnHash());
 
+
+        // Start tcp and multiCast servers
         NodeMultiCastServer udpServer = new NodeMultiCastServer(node);
         udpServer.start();
         NodeTCPServer tcpServerThread = new NodeTCPServer(node);
         tcpServerThread.start();
         node.joinNetwork();
 
+
+        // Discover local files
+        node.localFiles = node.discoverFiles("localFiles");
+        node.replicatedFiles = node.discoverFiles("replicatedFiles");
+
+
+        // Listen for commands
         while (node.running) {
             String cmd = sc.nextLine().toLowerCase();
             switch (cmd) {
@@ -462,6 +502,16 @@ public class Node implements NodeInterface {
                 case "neigh":
                 case "nb":
                     System.out.println("Prev: " + node.prevHash + " === Next: " + node.nextHash);
+                    break;
+
+                case "localFiles":
+                case "lf":
+                    System.out.println("Local files: "+node.localFiles);
+                    break;
+
+                case "replicatedFiles":
+                case "rf":
+                    System.out.println("Replicated files: "+node.replicatedFiles);
                     break;
             }
         }
