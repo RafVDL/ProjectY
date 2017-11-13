@@ -428,6 +428,14 @@ public class Node implements NodeInterface {
         return fileNames;
     }
 
+    public void replicateFiles() {
+        for (String fileName : localFiles) {
+            //TODO: Send fileName to NamingServer, return IP of owner
+            //TODO: If owner==self, only replicate to previous neighbour.
+            //TODO: Else send copy to previous neighbour and update file in replicated list.
+        }
+    }
+
     public static void main(String[] args) throws IOException, NotBoundException, ServerNotActiveException {
 //        Registry registry = LocateRegistry.getRegistry("192.168.137.1", RMI_PORT);
 //        NameserverInterface stub = (NameserverInterface) registry.lookup("NamingServer");
@@ -506,12 +514,12 @@ public class Node implements NodeInterface {
 
                 case "localFiles":
                 case "lf":
-                    System.out.println("Local files: "+node.localFiles);
+                    System.out.println("Local files: " + node.localFiles);
                     break;
 
                 case "replicatedFiles":
                 case "rf":
-                    System.out.println("Replicated files: "+node.replicatedFiles);
+                    System.out.println("Replicated files: " + node.replicatedFiles);
                     break;
             }
         }
