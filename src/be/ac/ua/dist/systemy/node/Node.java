@@ -210,48 +210,10 @@ public class Node implements NodeInterface {
             updateNext(newAddress, newHash);
 
         }
-
-//        if ((newHash > ownHash && newHash < nextHash) || (ownHash == nextHash && newHash > ownHash)) {
-//            // New node sits between this node and next node.
-//            if (newAddress == null) {
-//                try {
-//                    newAddress = getAddressByHash(newName);
-//                } catch (IOException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//
-//            Socket clientSocket;
-//            try {
-//                //Open tcp multiCastSocket to newNode @newAddress:port
-//                clientSocket = new Socket(newAddress, Ports.TCP_PORT);
-//                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-//
-//                //Send neighbour update command.
-//                out.println("PREV_NEXT_NEIGHBOUR");
-//                //Send neighbours
-//                out.println(ownName);
-//                out.println(nextName);
-//
-//                //Close everything.
-//                out.close();
-//                clientSocket.close();
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//
-//            updateNext(newAddress, newName);
-//
-//        } else if ((newHash < ownHash && newHash > prevHash) || (ownHash == nextHash && newHash < ownHash)) {
-//            // New node sits between this node and the previous node.
-//            // Only update own neighbours.
-//
-//            updatePrev(newAddress, newName);
-//        }
     }
 
     /**
-     * Sends a command via tcp with optional extra parameters.
+     * Sends a command via tcp with optional extra String parameters.
      *
      * @param socket to use for sending
      * @param cmd    to send
