@@ -1,12 +1,17 @@
 package be.ac.ua.dist.systemy.node;
 
 import be.ac.ua.dist.systemy.Ports;
+import be.ac.ua.dist.systemy.namingServer.NameserverInterface;
 
 import java.io.*;
 import java.net.*;
+import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.rmi.server.ServerNotActiveException;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -77,15 +82,11 @@ public class Node implements NodeInterface {
         return downloadedFiles;
     }
 
-    public void downloadFile(String fileName) {
-        InetAddress remoteAddress;
+    public void downloadFile(String fileName, InetAddress remoteAddress) {
         Socket clientSocket;
 
         try {
-            //TODO get ip via rmi
-            remoteAddress = InetAddress.getByName("10.10.10.10");
-
-            //Open tcp multicastSocket to server @remoteAddress:port
+            //Open tcp socket to server @remoteAddress:port
             clientSocket = new Socket(remoteAddress, Ports.TCP_PORT);
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
             DataInputStream in = new DataInputStream(clientSocket.getInputStream());
@@ -125,7 +126,7 @@ public class Node implements NodeInterface {
     public void updateNext(InetAddress newAddress, int newHash) {
         if (newAddress == null) {
             try {
-                newAddress = getAddressByName(newHash);
+                newAddress = getAddressByHash(newHash);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -145,7 +146,7 @@ public class Node implements NodeInterface {
     public void updatePrev(InetAddress newAddress, int newHash) {
         if (newAddress == null) {
             try {
-                newAddress = getAddressByName(newHash);
+                newAddress = getAddressByHash(newHash);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -214,7 +215,7 @@ public class Node implements NodeInterface {
 //            // New node sits between this node and next node.
 //            if (newAddress == null) {
 //                try {
-//                    newAddress = getAddressByName(newName);
+//                    newAddress = getAddressByHash(newName);
 //                } catch (IOException e) {
 //                    e.printStackTrace();
 //                }
@@ -285,7 +286,7 @@ public class Node implements NodeInterface {
         }
     }
 
-    private InetAddress getAddressByName(int hash) throws IOException {
+    private InetAddress getAddressByHash(int hash) throws IOException {
         byte[] buf;
         buf = ("GETIP|" + hash).getBytes();
         DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Ports.MULTICAST_PORT);
@@ -428,38 +429,67 @@ public class Node implements NodeInterface {
         return fileNames;
     }
 
+    /**
+     * Method should be run at Node startup
+     *
+     * For each file in the list of local files, the NamingServer gets asked who the owner should be. If this Node should
+     * be the owner, the file gets duplicated to the previous neighbour via RMI. If this node should not be the owner, the
+     * file gets duplicated to the new owner and this Node updates itself to hold the file as replicated.
+     */
     public void replicateFiles() {
         for (String fileName : localFiles) {
-            //TODO: Send fileName to NamingServer, return IP of owner
-            //TODO: If owner==self, only replicate to previous neighbour.
-            //TODO: Else send copy to previous neighbour and update file in replicated list.
+            InetAddress ownerAddress;
+
+            try {
+                //TODO: get NamingServer ip.
+                InetAddress namingServerAddress = null;
+                // Get ownerAddress from NamingServer via RMI.
+                Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Ports.RMI_PORT);
+                NameserverInterface namingServerStub = (NameserverInterface) namingServerRegistry.lookup("NamingServer");
+                ownerAddress = namingServerStub.getOwner(fileName);
+
+                if (ownerAddress == null) {
+                    continue;
+                }
+
+                if (ownerAddress.equals(ownAddress)) {
+                    // Replicate to previous neighbour -> initiate downloadFile via RMI and update its replicatedFile List.
+                    Registry nodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Ports.RMI_PORT);
+                    NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
+                    nodeStub.downloadFile(fileName, ownAddress);
+                    nodeStub.getReplicatedFileList().add(fileName);
+                } else {
+                    // Else send copy to new owner and update own replicatedFile List.
+                    Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Ports.RMI_PORT);
+                    NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
+                    nodeStub.downloadFile(fileName, ownerAddress);
+                    localFiles.remove(fileName);
+                    replicatedFiles.add(fileName);
+                }
+            } catch (IOException | NotBoundException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Should be run at Node startup.
+     *
+     * Export self to local RMI registry.
+     */
+    public void initializeRMI() {
+        try {
+            System.setProperty("java.rmi.server.hostname", ownAddress.getHostAddress());
+            Registry registry = LocateRegistry.createRegistry(Ports.RMI_PORT);
+            NodeInterface nodeStub = (NodeInterface) UnicastRemoteObject.exportObject(this, 0);
+            registry.bind("Node", nodeStub);
+        } catch (AlreadyBoundException | RemoteException e) {
+            e.printStackTrace();
+            //TODO: failure?
         }
     }
 
     public static void main(String[] args) throws IOException, NotBoundException, ServerNotActiveException {
-//        Registry registry = LocateRegistry.getRegistry("192.168.137.1", RMI_PORT);
-//        NameserverInterface stub = (NameserverInterface) registry.lookup("NamingServer");
-//
-//        stub.addMeToNetwork("e");
-//        stub.printIPadresses();
-//        stub.getOwner("test.txt");
-//        stub.exportIPadresses();
-//        stub.removeMeFromNetwork("e");
-//        stub.printIPadresses();
-
-
-//        Node node = new Node("Node1", InetAddress.getByName("192.168.137.10"));
-//        NodeInterface nodeStub = (NodeInterface) UnicastRemoteObject.exportObject(node, 0);
-//
-//
-//        try {
-//            registry.bind("be.ac.ua.dist.systemy.node.Node", nodeStub);
-//            node.joinNetwork();
-//
-//        } catch (AlreadyBoundException e) {
-//            e.printStackTrace();
-//        }
-
         // Get IP and hostname
         Scanner sc = new Scanner(System.in);
         System.out.println("(Detected localHostName is: " + InetAddress.getLocalHost() + ")");
@@ -476,8 +506,9 @@ public class Node implements NodeInterface {
         }
 
 
-        // Create Node object
+        // Create Node object and initialize
         Node node = new Node(hostname, InetAddress.getByName(ip));
+        node.initializeRMI();
         System.out.println("Hash: " + node.getOwnHash());
 
 

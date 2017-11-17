@@ -11,4 +11,5 @@ public interface NodeInterface extends Remote {
     List<String> getDownloadedFileList() throws RemoteException;
     void updateNext(InetAddress newAddress, int newHash);
     void updatePrev(InetAddress newAddress, int newHash);
+    void downloadFile(String fileName, InetAddress remoteAddress);
 }
