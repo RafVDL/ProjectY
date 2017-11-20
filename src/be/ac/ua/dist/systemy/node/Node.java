@@ -519,9 +519,8 @@ public class Node implements NodeInterface {
                 e.printStackTrace();
             }
         }
-
+        //TODO: Remove files in replicatedFiles/ ?
         node.localFiles = node.discoverFiles(Constants.LOCAL_FILES_PATH);
-        node.replicatedFiles = node.discoverFiles(Constants.REPLICATED_FILES_PATH);
         node.replicateFiles();
 
 
