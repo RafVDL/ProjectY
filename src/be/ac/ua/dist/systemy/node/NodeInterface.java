@@ -13,7 +13,7 @@ public interface NodeInterface extends Remote {
 
     List<String> getDownloadedFileList() throws RemoteException;
 
-    void downloadFile(String sourceFileName, String targetFileName, InetAddress remoteAddress);
+    void downloadFile(String sourceFileName, String targetFileName, InetAddress remoteAddress) throws RemoteException;
 
     void updateNext(InetAddress newAddress, int newHash) throws RemoteException;
 
