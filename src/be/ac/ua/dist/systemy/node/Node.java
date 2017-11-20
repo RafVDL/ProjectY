@@ -426,12 +426,6 @@ public class Node implements NodeInterface {
             return;
         }
 
-        Iterator<String> it = localFiles.iterator();
-
-        while (it.hasNext()) {
-
-        }
-
         Iterator<String> iterator = localFiles.iterator();
 
         while (iterator.hasNext()) {
