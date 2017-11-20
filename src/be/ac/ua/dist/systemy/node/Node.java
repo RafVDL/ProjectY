@@ -419,8 +419,6 @@ public class Node implements NodeInterface {
             InetAddress ownerAddress;
 
             try {
-                //TODO: get NamingServer ip.
-                InetAddress namingServerAddress = null;
                 // Get ownerAddress from NamingServer via RMI.
                 Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Ports.RMI_PORT);
                 NameserverInterface namingServerStub = (NameserverInterface) namingServerRegistry.lookup("NamingServer");
@@ -500,6 +498,7 @@ public class Node implements NodeInterface {
 
         // Discover local files
         node.localFiles = node.discoverFiles("localFiles");
+        node.replicateFiles();
         node.replicatedFiles = node.discoverFiles("replicatedFiles");
 
 
