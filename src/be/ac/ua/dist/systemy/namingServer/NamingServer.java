@@ -1,19 +1,23 @@
 package be.ac.ua.dist.systemy.namingServer;
 
+import be.ac.ua.dist.systemy.Ports;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.rmi.AlreadyBoundException;
 import java.rmi.RemoteException;
-import java.rmi.server.RemoteServer;
-import java.rmi.server.ServerNotActiveException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Scanner;
 
-public class NamingServer implements NameserverInterface {
+public class NamingServer implements NamingServerInterface {
     public final InetAddress serverIP; //commentaar
     HashMap<Integer, InetAddress> ipAddresses = new HashMap<>();
 
@@ -37,7 +41,7 @@ public class NamingServer implements NameserverInterface {
         }
     }
 
-    public void removeNodeFromNetwork(int hash) throws RemoteException{
+    public void removeNodeFromNetwork(int hash) throws RemoteException {
         System.out.println("Removing " + hash + " from IP-table");
         if (ipAddresses.containsKey(hash)) {
             ipAddresses.remove(hash);
@@ -134,28 +138,24 @@ public class NamingServer implements NameserverInterface {
         System.out.println("Export completed \n");
     }
 
-    public InetAddress getIPNode(int hashNode) throws RemoteException{
-        if (ipAddresses.containsKey(hashNode)){
-            return ipAddresses.get(hashNode);
-        }else{
-            return null;
-        }
+    public InetAddress getIPNode(int hashNode) throws RemoteException {
+        return ipAddresses.getOrDefault(hashNode, null);
     }
 
-    public int[] getNeighbours(int hashNode) throws RemoteException{
+    public int[] getNeighbours(int hashNode) throws RemoteException {
         Iterator<HashMap.Entry<Integer, InetAddress>> it = ipAddresses.entrySet().iterator();
         int[] neighbours = new int[2];
         int prevHash = 0;
         int nextHash = 0;
         boolean found = false;
-        while (it.hasNext()&&!found) {
+        while (it.hasNext() && !found) {
             HashMap.Entry<Integer, InetAddress> pair = it.next();
-            if(pair.getKey() == hashNode){
+            if (pair.getKey() == hashNode) {
                 prevHash = pair.getKey();
-                if(it.hasNext()){
+                if (it.hasNext()) {
                     pair = it.next();
                     nextHash = pair.getKey();
-                }else {
+                } else {
                     it = ipAddresses.entrySet().iterator();
                     pair = it.next();
                     nextHash = pair.getKey();
@@ -176,33 +176,30 @@ public class NamingServer implements NameserverInterface {
         this.running = running;
     }
 
-    public static void main(String[] args) throws UnknownHostException {
+    public void initializeRMI() {
+        try {
+            System.setProperty("java.rmi.server.hostname", serverIP.getHostAddress());
+            Registry registry = LocateRegistry.createRegistry(Ports.RMI_PORT);
+            NamingServerInterface stub = (NamingServerInterface) UnicastRemoteObject.exportObject(this, 0);
+            registry.bind("NamingServer", stub);
+        } catch (AlreadyBoundException | RemoteException e) {
+            System.err.println("NamingServer exception: " + e.toString());
+            e.printStackTrace();
+        }
+    }
 
-//        try {
-//            System.setProperty("java.rmi.server.hostname", serverIP);
-//            NamingServer obj = new NamingServer();
-//            NameserverInterface stub = (NameserverInterface) UnicastRemoteObject.exportObject(obj, 0);
-//
-//            Registry registry = LocateRegistry.createRegistry(Ports.RMI_PORT);
-//            registry.bind("NamingServer", stub);
-//
-//            System.err.println("NamingServer Ready");
-//            stub.addMeToNetwork("Thomas-NameserverInterface");
-//
-//        }catch (Exception e) {
-//            System.err.println("NamingServer exception: " + e.toString());
-//            e.printStackTrace();
-//        }
+    public static void main(String[] args) throws UnknownHostException {
         Scanner sc = new Scanner(System.in);
         InetAddress detectedHostAddress = InetAddress.getLocalHost();
         System.out.println("(Detected localHost is: " + detectedHostAddress + ")");
         System.out.print("Enter IP: ");
         String ip = sc.nextLine();
-        if (ip.isEmpty()){
+        if (ip.isEmpty()) {
             ip = detectedHostAddress.getHostAddress();
         }
 
         NamingServer namingServer = new NamingServer(InetAddress.getByName(ip));
+        namingServer.initializeRMI();
         NamingServerHelloThread helloThread = new NamingServerHelloThread(namingServer);
         helloThread.start();
         System.out.println("Namingserver started @" + ip);

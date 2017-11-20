@@ -1,7 +1,7 @@
 package be.ac.ua.dist.systemy.node;
 
 import be.ac.ua.dist.systemy.Ports;
-import be.ac.ua.dist.systemy.namingServer.NameserverInterface;
+import be.ac.ua.dist.systemy.namingServer.NamingServerInterface;
 
 import java.io.*;
 import java.net.*;
@@ -423,7 +423,7 @@ public class Node implements NodeInterface {
             try {
                 // Get ownerAddress from NamingServer via RMI.
                 Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Ports.RMI_PORT);
-                NameserverInterface namingServerStub = (NameserverInterface) namingServerRegistry.lookup("NamingServer");
+                NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
                 ownerAddress = namingServerStub.getOwner(fileName);
 
                 if (ownerAddress == null) {
@@ -509,6 +509,7 @@ public class Node implements NodeInterface {
                 e.printStackTrace();
             }
         }
+
         node.localFiles = node.discoverFiles("localFiles");
         node.replicateFiles();
         node.replicatedFiles = node.discoverFiles("replicatedFiles");

@@ -7,7 +7,7 @@ import java.rmi.RemoteException;
 import java.rmi.server.RemoteServer;
 import java.rmi.server.ServerNotActiveException;
 
-public interface NameserverInterface extends Remote {
+public interface NamingServerInterface extends Remote {
 
     InetAddress getOwner(String fileName) throws UnknownHostException, RemoteException;
 //    void addMeToNetwork(String nodeName) throws RemoteException, ServerNotActiveException, UnknownHostException;

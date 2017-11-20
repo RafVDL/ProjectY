@@ -2,16 +2,11 @@ package be.ac.ua.dist.systemy.node;
 import be.ac.ua.dist.systemy.Ports;
 import be.ac.ua.dist.systemy.namingServer.*;
 
-import java.io.DataInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.*;
-import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.*;
-import java.rmi.server.UnicastRemoteObject;
 
 import static be.ac.ua.dist.systemy.Ports.RMI_PORT;
 
@@ -30,7 +25,7 @@ public class FailureHandler {
 
     public void repairFailedNode() throws RemoteException, NotBoundException {
         Registry registry = LocateRegistry.getRegistry(node.getNamingServerAddress().getHostAddress(), RMI_PORT);
-        NameserverInterface stub = (NameserverInterface) registry.lookup("NamingServer");
+        NamingServerInterface stub = (NamingServerInterface) registry.lookup("NamingServer");
 
         neighboursHash = stub.getNeighbours(hashFailedNode);
         neighboursIP[0] = stub.getIPNode(neighboursHash[0]);
