@@ -445,7 +445,7 @@ public class Node implements NodeInterface {
                     // Else send copy to new owner and update own replicatedFile List.
                     Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Ports.RMI_PORT);
                     NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
-                    nodeStub.downloadFile(fileName, ownerAddress);
+                    nodeStub.downloadFile(fileName, ownAddress);
                     localFiles.remove(fileName);
                     replicatedFiles.add(fileName);
                 }
