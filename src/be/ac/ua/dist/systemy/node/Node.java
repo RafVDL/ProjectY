@@ -1,10 +1,12 @@
 package be.ac.ua.dist.systemy.node;
 
-import be.ac.ua.dist.systemy.Ports;
+import be.ac.ua.dist.systemy.Constants;
 import be.ac.ua.dist.systemy.namingServer.NamingServerInterface;
 
 import java.io.*;
 import java.net.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -40,7 +42,7 @@ public class Node implements NodeInterface {
         this.ownAddress = address;
         this.ownHash = calculateHash(nodeName);
 
-        multicastSocket = new MulticastSocket(Ports.MULTICAST_PORT);
+        multicastSocket = new MulticastSocket(Constants.MULTICAST_PORT);
         multicastGroup = InetAddress.getByName("225.0.113.0");
     }
 
@@ -96,7 +98,7 @@ public class Node implements NodeInterface {
 
         try {
             //Open tcp socket to server @remoteAddress:port
-            clientSocket = new Socket(remoteAddress, Ports.TCP_PORT);
+            clientSocket = new Socket(remoteAddress, Constants.TCP_PORT);
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
             DataInputStream in = new DataInputStream(clientSocket.getInputStream());
             FileOutputStream fos = new FileOutputStream(fileName);
@@ -185,7 +187,7 @@ public class Node implements NodeInterface {
             try {
                 Socket clientSocket = new Socket();
                 clientSocket.setSoLinger(true, 5);
-                clientSocket.connect(new InetSocketAddress(newAddress, Ports.TCP_PORT));
+                clientSocket.connect(new InetSocketAddress(newAddress, Constants.TCP_PORT));
                 sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownHash, ownHash);
                 clientSocket.close();
             } catch (IOException e) {
@@ -210,7 +212,7 @@ public class Node implements NodeInterface {
             try {
                 Socket clientSocket = new Socket();
                 clientSocket.setSoLinger(true, 5);
-                clientSocket.connect(new InetSocketAddress(newAddress, Ports.TCP_PORT));
+                clientSocket.connect(new InetSocketAddress(newAddress, Constants.TCP_PORT));
                 sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownHash, nextHash);
                 clientSocket.close();
             } catch (IOException e) {
@@ -262,10 +264,10 @@ public class Node implements NodeInterface {
     private InetAddress getAddressByHash(int hash) throws IOException {
         byte[] buf;
         buf = ("GETIP|" + hash).getBytes();
-        DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Ports.MULTICAST_PORT);
+        DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Constants.MULTICAST_PORT);
         multicastSocket.send(packet);
 
-        DatagramSocket uniSocket = new DatagramSocket(Ports.UNICAST_PORT, ownAddress);
+        DatagramSocket uniSocket = new DatagramSocket(Constants.UNICAST_PORT, ownAddress);
 
         buf = new byte[256];
         packet = new DatagramPacket(buf, buf.length);
@@ -289,7 +291,7 @@ public class Node implements NodeInterface {
     public void joinNetwork() throws IOException {
         byte[] buf;
         buf = ("HELLO|" + ownHash).getBytes();
-        DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Ports.MULTICAST_PORT);
+        DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Constants.MULTICAST_PORT);
         multicastSocket.send(packet);
 
         multicastSocket.joinGroup(multicastGroup);
@@ -298,7 +300,7 @@ public class Node implements NodeInterface {
     public void leaveNetwork() throws IOException {
         byte[] buf;
         buf = ("QUITNAMING|" + ownHash).getBytes();
-        DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Ports.MULTICAST_PORT);
+        DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Constants.MULTICAST_PORT);
         multicastSocket.send(packet);
         multicastSocket.leaveGroup(multicastGroup);
         multicastSocket.close();
@@ -312,7 +314,7 @@ public class Node implements NodeInterface {
         try {
             clientSocket = new Socket();
             clientSocket.setSoLinger(true, 5);
-            clientSocket.connect(new InetSocketAddress(prevAddress, Ports.TCP_PORT), 1000);
+            clientSocket.connect(new InetSocketAddress(prevAddress, Constants.TCP_PORT), 1000);
             dos = new DataOutputStream(clientSocket.getOutputStream());
             out = new PrintWriter(dos, true);
 
@@ -337,7 +339,7 @@ public class Node implements NodeInterface {
 
         try {
             clientSocket = new Socket();
-            clientSocket.connect(new InetSocketAddress(nextAddress, Ports.TCP_PORT), 1000);
+            clientSocket.connect(new InetSocketAddress(nextAddress, Constants.TCP_PORT), 1000);
             dos = new DataOutputStream(clientSocket.getOutputStream());
             out = new PrintWriter(dos, true);
 
@@ -417,7 +419,7 @@ public class Node implements NodeInterface {
      * file gets duplicated to the new owner and this Node updates itself to hold the file as replicated.
      */
     public void replicateFiles() {
-        if (prevHash == ownHash && nextHash==ownHash) {
+        if (prevHash == ownHash && nextHash == ownHash) {
             // This node is the only node in the network and will always be owner of all files.
             return;
         }
@@ -427,7 +429,7 @@ public class Node implements NodeInterface {
 
             try {
                 // Get ownerAddress from NamingServer via RMI.
-                Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Ports.RMI_PORT);
+                Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
                 NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
                 ownerAddress = namingServerStub.getOwner(fileName);
 
@@ -437,17 +439,18 @@ public class Node implements NodeInterface {
 
                 if (ownerAddress.equals(ownAddress)) {
                     // Replicate to previous neighbour -> initiate downloadFile via RMI and update its replicatedFile List.
-                    Registry nodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Ports.RMI_PORT);
+                    Registry nodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
                     NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
                     nodeStub.downloadFile(fileName, ownAddress);
                     nodeStub.getReplicatedFileList().add(fileName);
                 } else {
                     // Else send copy to new owner and update own replicatedFile List.
-                    Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Ports.RMI_PORT);
+                    Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
                     NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
                     nodeStub.downloadFile(fileName, ownAddress);
                     localFiles.remove(fileName);
                     replicatedFiles.add(fileName);
+                    Files.move(Paths.get(Constants.LOCAL_FILES_PATH + fileName), Paths.get(Constants.REPLICATED_FILES_PATH + fileName));
                 }
             } catch (IOException | NotBoundException e) {
                 e.printStackTrace();
@@ -463,7 +466,7 @@ public class Node implements NodeInterface {
     public void initializeRMI() {
         try {
             System.setProperty("java.rmi.server.hostname", ownAddress.getHostAddress());
-            Registry registry = LocateRegistry.createRegistry(Ports.RMI_PORT);
+            Registry registry = LocateRegistry.createRegistry(Constants.RMI_PORT);
             NodeInterface nodeStub = (NodeInterface) UnicastRemoteObject.exportObject(this, 0);
             registry.bind("Node", nodeStub);
         } catch (AlreadyBoundException | RemoteException e) {
@@ -515,8 +518,8 @@ public class Node implements NodeInterface {
             }
         }
 
-        node.localFiles = node.discoverFiles("localFiles");
-        node.replicatedFiles = node.discoverFiles("replicatedFiles");
+        node.localFiles = node.discoverFiles(Constants.LOCAL_FILES_PATH);
+        node.replicatedFiles = node.discoverFiles(Constants.REPLICATED_FILES_PATH);
         node.replicateFiles();
 
 

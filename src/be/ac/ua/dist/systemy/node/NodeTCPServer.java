@@ -1,6 +1,6 @@
 package be.ac.ua.dist.systemy.node;
 
-import be.ac.ua.dist.systemy.Ports;
+import be.ac.ua.dist.systemy.Constants;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -22,7 +22,7 @@ public class NodeTCPServer extends Thread {
     @Override
     public void run() {
         try {
-            ServerSocket serverSocket = new ServerSocket(Ports.TCP_PORT);
+            ServerSocket serverSocket = new ServerSocket(Constants.TCP_PORT);
             serverSocket.setSoTimeout(2000);
             System.out.println("Started NodeTCPServer, listening for other Nodes.");
             while (node.isRunning()) {

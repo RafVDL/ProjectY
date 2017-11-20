@@ -1,6 +1,6 @@
 package be.ac.ua.dist.systemy.namingServer;
 
-import be.ac.ua.dist.systemy.Ports;
+import be.ac.ua.dist.systemy.Constants;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -179,7 +179,7 @@ public class NamingServer implements NamingServerInterface {
     public void initializeRMI() {
         try {
             System.setProperty("java.rmi.server.hostname", serverIP.getHostAddress());
-            Registry registry = LocateRegistry.createRegistry(Ports.RMI_PORT);
+            Registry registry = LocateRegistry.createRegistry(Constants.RMI_PORT);
             NamingServerInterface stub = (NamingServerInterface) UnicastRemoteObject.exportObject(this, 0);
             registry.bind("NamingServer", stub);
         } catch (AlreadyBoundException | RemoteException e) {

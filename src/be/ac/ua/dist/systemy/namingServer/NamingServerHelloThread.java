@@ -1,6 +1,6 @@
 package be.ac.ua.dist.systemy.namingServer;
 
-import be.ac.ua.dist.systemy.Ports;
+import be.ac.ua.dist.systemy.Constants;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -18,8 +18,8 @@ public class NamingServerHelloThread extends Thread {
     public void run() {
         MulticastSocket multicastSocket;
         try {
-            multicastSocket = new MulticastSocket(Ports.MULTICAST_PORT);
-            DatagramSocket uniSocket = new DatagramSocket(Ports.UNICAST_PORT, namingServer.serverIP);
+            multicastSocket = new MulticastSocket(Constants.MULTICAST_PORT);
+            DatagramSocket uniSocket = new DatagramSocket(Constants.UNICAST_PORT, namingServer.serverIP);
             InetAddress group = InetAddress.getByName("225.0.113.0");
             multicastSocket.joinGroup(group);
 
@@ -40,7 +40,7 @@ public class NamingServerHelloThread extends Thread {
                     try {
                         tcpSocket = new Socket();
                         tcpSocket.setSoLinger(true, 5);
-                        tcpSocket.connect(new InetSocketAddress(packet.getAddress(), Ports.TCP_PORT), 1000);
+                        tcpSocket.connect(new InetSocketAddress(packet.getAddress(), Constants.TCP_PORT), 1000);
                         dos = new DataOutputStream(tcpSocket.getOutputStream());
                         out = new PrintWriter(dos, true);
 
@@ -68,7 +68,7 @@ public class NamingServerHelloThread extends Thread {
                         buf = ("REIP|" + hash + "|NOT_FOUND").getBytes();
                     }
 
-                    packet = new DatagramPacket(buf, buf.length, packet.getAddress(), Ports.UNICAST_PORT);
+                    packet = new DatagramPacket(buf, buf.length, packet.getAddress(), Constants.UNICAST_PORT);
                     uniSocket.send(packet);
                 } else if (received.startsWith("QUITNAMING")) {
                     String[] split = received.split("\\|");
