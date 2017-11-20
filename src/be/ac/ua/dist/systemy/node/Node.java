@@ -24,12 +24,12 @@ public class Node implements NodeInterface {
     private List<String> replicatedFiles;
     private List<String> downloadedFiles;
 
-    private InetAddress namingServerAddress;
+    private volatile InetAddress namingServerAddress;
     private InetAddress prevAddress;
     private InetAddress nextAddress;
 
-    private int prevHash;
-    private int nextHash;
+    private volatile int prevHash;
+    private volatile int nextHash;
 
     private boolean running = true;
 
