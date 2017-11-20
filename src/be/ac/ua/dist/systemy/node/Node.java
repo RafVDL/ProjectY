@@ -93,7 +93,8 @@ public class Node implements NodeInterface {
         return downloadedFiles;
     }
 
-    public void downloadFile(String fileName, InetAddress remoteAddress) {
+    @Override
+    public void downloadFile(String sourceFileName, String targetFileName, InetAddress remoteAddress) {
         Socket clientSocket;
 
         try {
@@ -101,11 +102,11 @@ public class Node implements NodeInterface {
             clientSocket = new Socket(remoteAddress, Constants.TCP_PORT);
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
             DataInputStream in = new DataInputStream(clientSocket.getInputStream());
-            FileOutputStream fos = new FileOutputStream(fileName);
+            FileOutputStream fos = new FileOutputStream(targetFileName);
 
             //Request file at the server
             out.println("REQUESTFILE");
-            out.println(fileName);
+            out.println(sourceFileName);
             //Initialize buffers
             int fileSize = in.readInt();
             byte[] buffer = new byte[1024 * 10]; // 10 kB
@@ -441,13 +442,13 @@ public class Node implements NodeInterface {
                     // Replicate to previous neighbour -> initiate downloadFile via RMI and update its replicatedFile List.
                     Registry nodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
                     NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
-                    nodeStub.downloadFile(fileName, ownAddress);
+                    nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + fileName, Constants.REPLICATED_FILES_PATH + fileName, ownAddress);
                     nodeStub.getReplicatedFileList().add(fileName);
                 } else {
                     // Else send copy to new owner and update own replicatedFile List.
                     Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
                     NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
-                    nodeStub.downloadFile(fileName, ownAddress);
+                    nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + fileName, Constants.LOCAL_FILES_PATH + fileName, ownAddress);
                     localFiles.remove(fileName);
                     replicatedFiles.add(fileName);
                     Files.move(Paths.get(Constants.LOCAL_FILES_PATH + fileName), Paths.get(Constants.REPLICATED_FILES_PATH + fileName));
