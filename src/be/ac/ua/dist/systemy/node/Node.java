@@ -176,7 +176,7 @@ public class Node implements NodeInterface {
      * @param newAddress the IP-address of the joining node
      * @param newHash    the hash of the joining node
      */
-    public void updateNeighbours(InetAddress newAddress, int newHash) {
+    public void updateNeighbours(InetAddress newAddress, int newHash) throws RemoteException, NotBoundException {
         if ((ownHash == prevHash) && (ownHash == nextHash)) {
             // NodeCount is currently 0, always update self and the joining Node.
 
@@ -187,6 +187,7 @@ public class Node implements NodeInterface {
                 sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownHash, ownHash);
                 clientSocket.close();
             } catch (IOException e) {
+                handleFailure(newHash);
                 e.printStackTrace();
             }
 
@@ -212,6 +213,7 @@ public class Node implements NodeInterface {
                 clientSocket.close();
             } catch (IOException e) {
                 e.printStackTrace();
+                handleFailure(newHash);
             }
 
             updateNext(newAddress, newHash);
@@ -391,8 +393,9 @@ public class Node implements NodeInterface {
         }
     }
 
-    public void handleFailure(String node) {
-
+    public void handleFailure(int hashFailedNode) throws RemoteException, NotBoundException {
+        FailureHandler failureHandler = new FailureHandler(hashFailedNode, this);
+        failureHandler.repairFailedNode();
     }
 
     private int calculateHash(String name) {
