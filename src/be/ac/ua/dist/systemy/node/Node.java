@@ -516,8 +516,8 @@ public class Node implements NodeInterface {
         }
 
         node.localFiles = node.discoverFiles("localFiles");
-        node.replicateFiles();
         node.replicatedFiles = node.discoverFiles("replicatedFiles");
+        node.replicateFiles();
 
 
         // Listen for commands
