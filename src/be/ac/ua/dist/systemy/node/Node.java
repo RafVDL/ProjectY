@@ -46,7 +46,7 @@ public class Node implements NodeInterface {
         return ownHash;
     }
 
-    public void addNamingServerAddress(InetAddress ipAddress){
+    public void addNamingServerAddress(InetAddress ipAddress) {
         this.namingServerAddress = ipAddress;
     }
 
@@ -176,7 +176,7 @@ public class Node implements NodeInterface {
      * @param newAddress the IP-address of the joining node
      * @param newHash    the hash of the joining node
      */
-    public void updateNeighbours(InetAddress newAddress, int newHash) throws RemoteException, NotBoundException {
+    public void updateNeighbours(InetAddress newAddress, int newHash) {
         if ((ownHash == prevHash) && (ownHash == nextHash)) {
             // NodeCount is currently 0, always update self and the joining Node.
 
@@ -393,9 +393,13 @@ public class Node implements NodeInterface {
         }
     }
 
-    public void handleFailure(int hashFailedNode) throws RemoteException, NotBoundException {
-        FailureHandler failureHandler = new FailureHandler(hashFailedNode, this);
-        failureHandler.repairFailedNode();
+    public void handleFailure(int hashFailedNode) {
+        try {
+            FailureHandler failureHandler = new FailureHandler(hashFailedNode, this);
+            failureHandler.repairFailedNode();
+        } catch (RemoteException | NotBoundException e) {
+            e.printStackTrace();
+        }
     }
 
     private int calculateHash(String name) {
