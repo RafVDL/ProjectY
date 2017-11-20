@@ -32,7 +32,7 @@ public class NodeTCPServerConnection extends Thread {
 
                 case "NODECOUNT":
                     int nodecount = dis.readInt();
-                    node.addNamingServerAddress(clientSocket.getInetAddress());
+                    node.setNamingServerAddress(clientSocket.getInetAddress());
                     if (nodecount < 1) {
                         node.updatePrev(node.getOwnAddress(), node.getOwnHash());
                         node.updateNext(node.getOwnAddress(), node.getOwnHash());

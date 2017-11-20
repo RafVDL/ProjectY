@@ -52,7 +52,7 @@ public class Node implements NodeInterface {
         return ownHash;
     }
 
-    public void addNamingServerAddress(InetAddress ipAddress) {
+    public void setNamingServerAddress(InetAddress ipAddress) {
         this.namingServerAddress = ipAddress;
     }
 
@@ -500,7 +500,14 @@ public class Node implements NodeInterface {
 
         // Discover local files
         while (node.namingServerAddress == null || node.prevHash == 0 || node.nextHash == 0) {
-            // Wait until successfully joined the network.
+            try {
+                System.out.println("Naming: " + node.namingServerAddress);
+                System.out.println("Prev: " + node.prevHash);
+                System.out.println("Next: " + node.nextHash);
+                Thread.sleep(1);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
         node.localFiles = node.discoverFiles("localFiles");
         node.replicateFiles();
