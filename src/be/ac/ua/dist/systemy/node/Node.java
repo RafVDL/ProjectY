@@ -15,6 +15,7 @@ import java.rmi.registry.Registry;
 import java.rmi.server.ServerNotActiveException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
 
@@ -425,7 +426,16 @@ public class Node implements NodeInterface {
             return;
         }
 
-        for (String fileName : localFiles) {
+        Iterator<String> it = localFiles.iterator();
+
+        while (it.hasNext()) {
+
+        }
+
+        Iterator<String> iterator = localFiles.iterator();
+
+        while (iterator.hasNext()) {
+            String fileName = iterator.next();
             InetAddress ownerAddress;
 
             try {
@@ -449,7 +459,7 @@ public class Node implements NodeInterface {
                     Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
                     NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
                     nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + fileName, Constants.LOCAL_FILES_PATH + fileName, ownAddress);
-                    localFiles.remove(fileName);
+                    iterator.remove();
                     replicatedFiles.add(fileName);
                     Files.move(Paths.get(Constants.LOCAL_FILES_PATH + fileName), Paths.get(Constants.REPLICATED_FILES_PATH + fileName));
                 }
@@ -510,9 +520,6 @@ public class Node implements NodeInterface {
         // Discover local files
         while (node.namingServerAddress == null || node.prevHash == 0 || node.nextHash == 0) {
             try {
-                System.out.println("Naming: " + node.namingServerAddress);
-                System.out.println("Prev: " + node.prevHash);
-                System.out.println("Next: " + node.nextHash);
                 Thread.sleep(1);
             } catch (Exception e) {
                 e.printStackTrace();
