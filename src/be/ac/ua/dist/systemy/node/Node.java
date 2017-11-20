@@ -417,6 +417,11 @@ public class Node implements NodeInterface {
      * file gets duplicated to the new owner and this Node updates itself to hold the file as replicated.
      */
     public void replicateFiles() {
+        if (prevHash == ownHash && nextHash==ownHash) {
+            // This node is the only node in the network and will always be owner of all files.
+            return;
+        }
+
         for (String fileName : localFiles) {
             InetAddress ownerAddress;
 
