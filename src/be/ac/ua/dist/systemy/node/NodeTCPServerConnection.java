@@ -27,7 +27,7 @@ public class NodeTCPServerConnection extends Thread {
             switch (in.readLine()) {
                 case "REQUESTFILE":
                     String fileName = in.readLine();
-                    sendFile(dos, "localFiles/" + fileName);
+                    sendFile(dos, fileName);
                     break;
 
                 case "NODECOUNT":
