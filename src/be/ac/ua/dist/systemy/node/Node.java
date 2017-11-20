@@ -386,6 +386,8 @@ public class Node implements NodeInterface {
      */
     public List<String> discoverFiles(String folderPath) {
         File folder = new File(folderPath);
+        if (!folder.exists())
+            folder.mkdir();
         File[] listOfFiles = folder.listFiles();
         List<String> fileNames = new ArrayList<>();
         if (listOfFiles == null) {
@@ -409,7 +411,7 @@ public class Node implements NodeInterface {
 
     /**
      * Method should be run at Node startup
-     *
+     * <p>
      * For each file in the list of local files, the NamingServer gets asked who the owner should be. If this Node should
      * be the owner, the file gets duplicated to the previous neighbour via RMI. If this node should not be the owner, the
      * file gets duplicated to the new owner and this Node updates itself to hold the file as replicated.
@@ -450,7 +452,7 @@ public class Node implements NodeInterface {
 
     /**
      * Should be run at Node startup.
-     *
+     * <p>
      * Export self to local RMI registry.
      */
     public void initializeRMI() {
