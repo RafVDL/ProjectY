@@ -24,6 +24,7 @@ public class Node implements NodeInterface {
     private List<String> replicatedFiles;
     private List<String> downloadedFiles;
 
+    private InetAddress namingServerAddress;
     private InetAddress prevAddress;
     private InetAddress nextAddress;
 
@@ -49,6 +50,14 @@ public class Node implements NodeInterface {
 
     public int getOwnHash() {
         return ownHash;
+    }
+
+    public void addNamingServerAddress(InetAddress ipAddress) {
+        this.namingServerAddress = ipAddress;
+    }
+
+    public InetAddress getNamingServerAddress() {
+        return namingServerAddress;
     }
 
     public InetAddress getPrevAddress() {
@@ -180,6 +189,7 @@ public class Node implements NodeInterface {
                 sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownHash, ownHash);
                 clientSocket.close();
             } catch (IOException e) {
+                handleFailure(newHash);
                 e.printStackTrace();
             }
 
@@ -205,6 +215,7 @@ public class Node implements NodeInterface {
                 clientSocket.close();
             } catch (IOException e) {
                 e.printStackTrace();
+                handleFailure(newHash);
             }
 
             updateNext(newAddress, newHash);
@@ -219,7 +230,7 @@ public class Node implements NodeInterface {
      * @param cmd    to send
      * @param args   to include (optional)
      */
-    private void sendTcpCmd(Socket socket, String cmd, String... args) {
+    public void sendTcpCmd(Socket socket, String cmd, String... args) {
         try {
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             out.println(cmd);
@@ -233,7 +244,7 @@ public class Node implements NodeInterface {
         }
     }
 
-    private void sendTcpCmd(Socket socket, String cmd, int... args) {
+    public void sendTcpCmd(Socket socket, String cmd, int... args) {
         try {
             DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
             PrintWriter out = new PrintWriter(dos, true);
@@ -346,8 +357,13 @@ public class Node implements NodeInterface {
         }
     }
 
-    public void handleFailure(String node) {
-
+    public void handleFailure(int hashFailedNode) {
+        try {
+            FailureHandler failureHandler = new FailureHandler(hashFailedNode, this);
+            failureHandler.repairFailedNode();
+        } catch (RemoteException | NotBoundException e) {
+            e.printStackTrace();
+        }
     }
 
     private int calculateHash(String name) {

@@ -32,6 +32,7 @@ public class NodeTCPServerConnection extends Thread {
 
                 case "NODECOUNT":
                     int nodecount = dis.readInt();
+                    node.addNamingServerAddress(clientSocket.getInetAddress());
                     if (nodecount < 1) {
                         node.updatePrev(node.getOwnAddress(), node.getOwnHash());
                         node.updateNext(node.getOwnAddress(), node.getOwnHash());
@@ -42,10 +43,21 @@ public class NodeTCPServerConnection extends Thread {
                     int prevHash = dis.readInt();
                     int nextHash = dis.readInt();
 
+
                     node.updatePrev(clientSocket.getInetAddress(), prevHash);
                     node.updateNext(null, nextHash);
 //                    node.updateNeighbours(clientSocket.getInetAddress(), prevName);
 //                    node.updateNeighbours(null, nextName);
+                    break;
+
+                case "PREV_NEIGHBOUR":
+                    prevHash = dis.readInt();
+                    node.updatePrev(clientSocket.getInetAddress(), prevHash);
+                    break;
+
+                case "NEXT_NEIGHBOUR":
+                    nextHash = dis.readInt();
+                    node.updateNext(clientSocket.getInetAddress(), nextHash);
                     break;
 
                 case "QUIT":

@@ -37,7 +37,7 @@ public class NamingServer implements NameserverInterface {
         }
     }
 
-    public void removeNodeFromNetwork(int hash) {
+    public void removeNodeFromNetwork(int hash) throws RemoteException{
         System.out.println("Removing " + hash + " from IP-table");
         if (ipAddresses.containsKey(hash)) {
             ipAddresses.remove(hash);
@@ -56,17 +56,7 @@ public class NamingServer implements NameserverInterface {
 //            System.out.println(hash + " already exists in ipAddresses");
 //        }
 //    }
-//
-//    public void removeMeFromNetwork(String nodeName) throws ServerNotActiveException, UnknownHostException {
-//        InetAddress IP = InetAddress.getByName(RemoteServer.getClientHost());
-//        System.out.println("Removing " + nodeName + " from IP-table");
-//        int hash = getHash(nodeName);
-//        if (ipAddresses.containsKey(hash)) {
-//            ipAddresses.remove(hash, IP);
-//        } else {
-//            System.out.println(hash + " does not exist in ipAddresses");
-//        }
-//    }
+
 
     public InetAddress getOwner(String fileName) throws UnknownHostException {
         System.out.println("Getting owner of file: " + fileName);
@@ -142,6 +132,14 @@ public class NamingServer implements NameserverInterface {
             }
         }
         System.out.println("Export completed \n");
+    }
+
+    public InetAddress getIPNode(int hashNode) throws RemoteException{
+        if (ipAddresses.containsKey(hashNode)){
+            return ipAddresses.get(hashNode);
+        }else{
+            return null;
+        }
     }
 
     public int[] getNeighbours(int hashNode) throws RemoteException{
