@@ -498,10 +498,13 @@ public class Node implements NodeInterface {
         node.joinNetwork();
 
 
-        // Discover local files
-        node.localFiles = node.discoverFiles("localFiles");
-        node.replicateFiles();
-        node.replicatedFiles = node.discoverFiles("replicatedFiles");
+        // Discover local files when successfully joined the network
+        while (node.namingServerAddress==null){
+            node.localFiles = node.discoverFiles("localFiles");
+            node.replicateFiles();
+            node.replicatedFiles = node.discoverFiles("replicatedFiles");
+        }
+
 
 
         // Listen for commands
