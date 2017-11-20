@@ -14,12 +14,12 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Scanner;
+import java.util.TreeMap;
 
 public class NamingServer implements NamingServerInterface {
     public final InetAddress serverIP; //commentaar
-    HashMap<Integer, InetAddress> ipAddresses = new HashMap<>();
+    TreeMap<Integer, InetAddress> ipAddresses = new TreeMap<>();
 
     private boolean running = true;
 
@@ -66,39 +66,15 @@ public class NamingServer implements NamingServerInterface {
         System.out.println("Getting owner of file: " + fileName);
         int hashFileName = getHash(fileName);
         System.out.println("Hash of file = " + hashFileName);
-        InetAddress currentIP;
-        currentIP = InetAddress.getByAddress(new byte[]{0, 0, 0, 0});
-        int currentHash = 0;
-        InetAddress highestIP;
-        highestIP = InetAddress.getByAddress(new byte[]{0, 0, 0, 0});
-        int highestHash = 0;
+        Integer currentHash = ipAddresses.floorKey(hashFileName);
 
+        if (currentHash == null)
+            currentHash = ipAddresses.lastKey();
 
-        for (Map.Entry<Integer, InetAddress> pair : ipAddresses.entrySet()) {
-            if (pair.getKey() < hashFileName) {
-                if (currentHash == 0) {
-                    currentHash = pair.getKey();
-                    currentIP = pair.getValue();
-                } else if (pair.getKey() > currentHash) {
-                    currentHash = pair.getKey();
-                    currentIP = pair.getValue();
-                }
-            } else if (pair.getKey() > highestHash) {
-                highestHash = pair.getKey();
-                highestIP = pair.getValue();
-            }
+        InetAddress currentIP = ipAddresses.get(currentHash);
 
-
-        }
-
-        if (currentIP.equals(InetAddress.getByAddress(new byte[]{0, 0, 0, 0}))) {
-            System.out.println("No smaller hash found, owner is: " + highestHash + "\n");
-            return highestIP;
-        } else {
-            System.out.println("Owner is " + currentHash + "\n");
-            return currentIP;
-        }
-
+        System.out.println("Owner is " + currentHash);
+        return currentIP;
     }
 
     public void printIPadresses() {
