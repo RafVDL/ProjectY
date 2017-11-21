@@ -27,7 +27,7 @@ public class NetworkManager {
         return packets.get(id);
     }
 
-    public static void registerListener(Class<? extends Packet> clazz, PacketListener listener) {
+    public static <T extends Packet> void registerListener(Class<T> clazz, PacketListener<T> listener) {
         packetListeners.computeIfAbsent(clazz, k -> new ArrayList<>());
         packetListeners.get(clazz).add(listener);
     }
