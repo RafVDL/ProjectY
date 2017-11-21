@@ -1,7 +1,6 @@
 package be.ac.ua.dist.systemy.networking.tcp;
 
-import be.ac.ua.dist.systemy.networking.Client;
-import be.ac.ua.dist.systemy.networking.NetworkingHandler;
+import be.ac.ua.dist.systemy.networking.NetworkManager;
 import be.ac.ua.dist.systemy.networking.packet.Packet;
 
 import java.io.DataInputStream;
@@ -27,14 +26,14 @@ public class TCPListenerRunnable implements Runnable {
             is.readNBytes(buf, 0, 2);
             ByteBuffer byteBuffer = ByteBuffer.wrap(buf);
 
-            Class<? extends Packet> packetClazz = NetworkingHandler.getPacketById(byteBuffer.getShort());
+            Class<? extends Packet> packetClazz = NetworkManager.getPacketById(byteBuffer.getShort());
 
-            Packet packet = packetClazz.getConstructor(Client.class).newInstance(new TCPClient(clientSocket));
+            Packet packet = packetClazz.getConstructor().newInstance();
             DataInputStream dis = new DataInputStream(is);
             packet.receive(dis);
             dis.close();
 
-            NetworkingHandler.getPacketListeners(packetClazz).forEach(packetListener -> packetListener.receivePacket(packet));
+            NetworkManager.getPacketListeners(packetClazz).forEach(packetListener -> packetListener.receivePacket(packet, new TCPClient(clientSocket)));
         } catch (IOException | IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
             e.printStackTrace();
         }

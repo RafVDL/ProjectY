@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class NetworkingHandler {
+public class NetworkManager {
 
     private static Map<Integer, Class<? extends Packet>> packets = new HashMap<>();
     private static Map<Class<? extends Packet>, List<PacketListener>> packetListeners = new HashMap<>();
@@ -19,7 +19,7 @@ public class NetworkingHandler {
         packets.put(0x01, NodeCountPacket.class);
     }
 
-    private NetworkingHandler() {
+    private NetworkManager() {
 
     }
 

@@ -1,7 +1,5 @@
 package be.ac.ua.dist.systemy.networking.packet;
 
-import be.ac.ua.dist.systemy.networking.Client;
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -10,8 +8,8 @@ public class HelloPacket extends Packet {
 
     private int hash;
 
-    public HelloPacket(Client client) {
-        super(0x00, client);
+    public HelloPacket() {
+        super(0x00);
     }
 
     @Override

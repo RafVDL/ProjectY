@@ -1,7 +1,5 @@
 package be.ac.ua.dist.systemy.networking.packet;
 
-import be.ac.ua.dist.systemy.networking.Client;
-
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -10,8 +8,8 @@ public class NodeCountPacket extends Packet {
 
     private int nodeCount;
 
-    public NodeCountPacket(Client client) {
-        super(0x01, client);
+    public NodeCountPacket() {
+        super(0x01);
     }
 
     @Override

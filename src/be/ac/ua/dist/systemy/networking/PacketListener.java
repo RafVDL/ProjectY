@@ -2,8 +2,8 @@ package be.ac.ua.dist.systemy.networking;
 
 import be.ac.ua.dist.systemy.networking.packet.Packet;
 
-public interface PacketListener {
+public interface PacketListener<E extends Packet> {
 
-    void receivePacket(Packet packet);
+    void receivePacket(E packet, Client client);
 
 }

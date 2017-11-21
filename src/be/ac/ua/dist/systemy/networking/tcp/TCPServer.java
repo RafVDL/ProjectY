@@ -10,7 +10,7 @@ import java.net.SocketTimeoutException;
 
 public class TCPServer implements Server, Runnable {
 
-    private boolean running;
+    private boolean running = true;
     private InetAddress address;
     private int port;
 
