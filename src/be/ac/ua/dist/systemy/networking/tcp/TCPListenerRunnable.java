@@ -23,7 +23,9 @@ public class TCPListenerRunnable implements Runnable {
         try {
             InputStream is = clientSocket.getInputStream();
             byte[] buf = new byte[2]; // 2 byte (short) packet ID
-            is.readNBytes(buf, 0, 2);
+            int byteRead = is.read(buf, 0, 2);
+            if (byteRead < 2)
+                return;
             ByteBuffer byteBuffer = ByteBuffer.wrap(buf);
 
             Class<? extends Packet> packetClazz = NetworkManager.getPacketById(byteBuffer.getShort());
