@@ -480,6 +480,17 @@ public class Node implements NodeInterface {
         }
     }
 
+    public void clearDir(String folderPath){
+        File folder = new File(folderPath);
+        for (File file:folder.listFiles()        ) {
+            if (file.isDirectory()){
+                clearDir(file.getPath());
+            }
+            file.delete();
+        }
+        System.out.println("Cleared dir "+folderPath);
+    }
+
     public static void main(String[] args) throws IOException, NotBoundException, ServerNotActiveException {
         // Get IP and hostname
         Scanner sc = new Scanner(System.in);
@@ -519,9 +530,10 @@ public class Node implements NodeInterface {
                 e.printStackTrace();
             }
         }
-        //TODO: Remove files in replicatedFiles/ ?
+        node.clearDir(Constants.REPLICATED_FILES_PATH);
         node.localFiles = node.discoverFiles(Constants.LOCAL_FILES_PATH);
         node.replicateFiles();
+        node.replicatedFiles = node.discoverFiles(Constants.REPLICATED_FILES_PATH);
 
 
         // Listen for commands
