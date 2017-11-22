@@ -414,7 +414,7 @@ public class Node implements NodeInterface {
     }
 
     /**
-     * Method should be run at Node startup
+     * Method should be run at Node startup and when a new higher neighbour joins
      * <p>
      * For each file in the list of local files, the NamingServer gets asked who the owner should be. If this Node should
      * be the owner, the file gets duplicated to the previous neighbour via RMI. If this node should not be the owner, the
@@ -480,15 +480,15 @@ public class Node implements NodeInterface {
         }
     }
 
-    public void clearDir(String folderPath){
+    public void clearDir(String folderPath) {
         File folder = new File(folderPath);
-        for (File file:folder.listFiles()        ) {
-            if (file.isDirectory()){
+        for (File file : folder.listFiles()) {
+            if (file.isDirectory()) {
                 clearDir(file.getPath());
             }
             file.delete();
         }
-        System.out.println("Cleared dir "+folderPath);
+        System.out.println("Cleared dir " + folderPath);
     }
 
     public static void main(String[] args) throws IOException, NotBoundException, ServerNotActiveException {
@@ -567,3 +567,5 @@ public class Node implements NodeInterface {
         }
     }
 }
+
+//TODO: Add file logs when replicating.

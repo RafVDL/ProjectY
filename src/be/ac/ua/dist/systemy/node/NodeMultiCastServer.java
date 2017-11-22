@@ -35,8 +35,10 @@ public class NodeMultiCastServer extends Thread {
                         String[] split = received.split("\\|");
                         int hash = Integer.parseInt(split[1]);
 
-                        if (hash != node.getOwnHash())
+                        if (hash != node.getOwnHash()) {
                             node.updateNeighbours(packet.getAddress(), hash);
+                            node.replicateFiles();
+                        }
                     }
 //                } else if (received.startsWith("HELLOR")) { // response from already existing node
 //                    String[] split = received.split("\\|");
