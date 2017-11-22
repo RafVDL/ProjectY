@@ -11,7 +11,9 @@ public interface NodeInterface extends Remote {
 
     List<String> getReplicatedFileList() throws RemoteException;
 
-    List<String> getDownloadedFileList() throws RemoteException;
+    void addLocalFileList(String fileName) throws RemoteException;
+
+    void addReplicatedFileList(String fileName) throws RemoteException;
 
     void downloadFile(String sourceFileName, String targetFileName, InetAddress remoteAddress) throws RemoteException;
 
