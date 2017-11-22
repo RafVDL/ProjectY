@@ -7,10 +7,6 @@ import java.util.Set;
 
 public interface NodeInterface extends Remote {
 
-    Set<String> getLocalFilesSet() throws RemoteException;
-
-    Set<String> getReplicatedFilesSet() throws RemoteException;
-
     void addLocalFileList(String fileName) throws RemoteException;
 
     void addReplicatedFileList(String fileName) throws RemoteException;

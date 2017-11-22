@@ -14,7 +14,10 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.ServerNotActiveException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Scanner;
+import java.util.Set;
 
 public class Node implements NodeInterface {
 
@@ -73,16 +76,6 @@ public class Node implements NodeInterface {
 
     public int getNextHash() {
         return nextHash;
-    }
-
-    @Override
-    public Set<String> getLocalFilesSet() throws RemoteException {
-        return localFiles;
-    }
-
-    @Override
-    public Set<String> getReplicatedFilesSet() throws RemoteException {
-        return replicatedFiles;
     }
 
     @Override
@@ -249,6 +242,13 @@ public class Node implements NodeInterface {
         }
     }
 
+    /**
+     * Sends a command via tcp with optional extra int parameters.
+     *
+     * @param socket to use for sending
+     * @param cmd    to send
+     * @param args   to include (optional)
+     */
     public void sendTcpCmd(Socket socket, String cmd, int... args) {
         try {
             DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
@@ -385,7 +385,7 @@ public class Node implements NodeInterface {
     }
 
     /**
-     * Iterates through a folder and returns a List containing all filenames including extensions.
+     * Iterates through a folder and returns a Set containing all filenames including extensions.
      *
      * @param folderPath to explore
      * @return the List containing the filenames
@@ -483,6 +483,11 @@ public class Node implements NodeInterface {
         }
     }
 
+    /**
+     * Clears all files and subfolders in a specified folder.
+     *
+     * @param folderPath to clear
+     */
     public void clearDir(String folderPath) {
         File folder = new File(folderPath);
         if (!folder.exists())
