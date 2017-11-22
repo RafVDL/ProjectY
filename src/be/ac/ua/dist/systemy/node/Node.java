@@ -533,9 +533,9 @@ public class Node implements NodeInterface {
             }
         }
         node.clearDir(Constants.REPLICATED_FILES_PATH);
+        node.replicatedFiles = new ArrayList<>();
         node.localFiles = node.discoverFiles(Constants.LOCAL_FILES_PATH);
         node.replicateFiles();
-        node.replicatedFiles = node.discoverFiles(Constants.REPLICATED_FILES_PATH);
 
 
         // Listen for commands
