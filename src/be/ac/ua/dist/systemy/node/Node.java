@@ -482,6 +482,8 @@ public class Node implements NodeInterface {
 
     public void clearDir(String folderPath) {
         File folder = new File(folderPath);
+        if (!folder.exists())
+            folder.mkdir();
         for (File file : folder.listFiles()) {
             if (file.isDirectory()) {
                 clearDir(file.getPath());
