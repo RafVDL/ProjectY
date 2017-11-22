@@ -3,13 +3,13 @@ package be.ac.ua.dist.systemy.node;
 import java.net.InetAddress;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.util.List;
+import java.util.Set;
 
 public interface NodeInterface extends Remote {
 
-    List<String> getLocalFileList() throws RemoteException;
+    Set<String> getLocalFilesSet() throws RemoteException;
 
-    List<String> getReplicatedFileList() throws RemoteException;
+    Set<String> getReplicatedFilesSet() throws RemoteException;
 
     void addLocalFileList(String fileName) throws RemoteException;
 

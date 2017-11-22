@@ -14,17 +14,14 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.ServerNotActiveException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 
 public class Node implements NodeInterface {
 
     private final InetAddress ownAddress;
     private final int ownHash;
-    private List<String> localFiles;
-    private List<String> replicatedFiles;
+    private Set<String> localFiles;
+    private Set<String> replicatedFiles;
 
     private volatile InetAddress namingServerAddress;
     private InetAddress prevAddress;
@@ -79,12 +76,12 @@ public class Node implements NodeInterface {
     }
 
     @Override
-    public List<String> getLocalFileList() throws RemoteException {
+    public Set<String> getLocalFilesSet() throws RemoteException {
         return localFiles;
     }
 
     @Override
-    public List<String> getReplicatedFileList() throws RemoteException {
+    public Set<String> getReplicatedFilesSet() throws RemoteException {
         return replicatedFiles;
     }
 
@@ -393,12 +390,12 @@ public class Node implements NodeInterface {
      * @param folderPath to explore
      * @return the List containing the filenames
      */
-    public List<String> discoverFiles(String folderPath) {
+    public Set<String> discoverFiles(String folderPath) {
         File folder = new File(folderPath);
         if (!folder.exists())
             folder.mkdir();
         File[] listOfFiles = folder.listFiles();
-        List<String> fileNames = new ArrayList<>();
+        Set<String> fileNames = new HashSet<>();
         if (listOfFiles == null) {
             //TODO call failure?
             System.out.println("Folder path does not point to a folder (" + folderPath + ")");
@@ -539,7 +536,7 @@ public class Node implements NodeInterface {
             }
         }
         node.clearDir(Constants.REPLICATED_FILES_PATH);
-        node.replicatedFiles = new ArrayList<>();
+        node.replicatedFiles = new HashSet<>();
         node.localFiles = node.discoverFiles(Constants.LOCAL_FILES_PATH);
         node.replicateFiles();
 
