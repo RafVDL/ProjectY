@@ -194,15 +194,22 @@ public class Node implements NodeInterface {
             updatePrev(newAddress, newHash);
             updateNext(newAddress, newHash);
 
-        } else if ((prevHash < ownHash && newHash < ownHash && newHash > prevHash)
-                || (prevHash > ownHash && newHash < ownHash)
-                || (prevHash >= nextHash && newHash > prevHash && newHash < ownHash)) {
+
+        } else if ((prevHash < ownHash && newHash < ownHash && newHash > prevHash) // 1, 13
+                || (prevHash > ownHash && newHash < ownHash) // 6
+                || (prevHash > ownHash && newHash > prevHash) // 5
+                || ((prevHash == nextHash) && ((prevHash > ownHash && newHash > prevHash) // 15
+                || (prevHash > ownHash && newHash < ownHash)  // 16
+                || (prevHash < ownHash && newHash < ownHash && newHash < prevHash)))) { // 17
             // Joining Node sits between previous neighbour and this Node.
 
             updatePrev(newAddress, newHash);
-        } else if ((nextHash > ownHash && newHash > ownHash && newHash < nextHash)
-                || (nextHash < ownHash && newHash > ownHash)
-                || (nextHash <= prevHash && newHash < nextHash)) {
+        } else if ((nextHash > ownHash && newHash > ownHash && newHash < nextHash) // 2, 8
+                || (nextHash < ownHash && newHash > ownHash) // 10
+                || (nextHash < ownHash && newHash < nextHash) // 11
+                || ((prevHash == nextHash) && (prevHash > ownHash && newHash < prevHash && newHash > ownHash) // 14
+                || (prevHash < ownHash && newHash < prevHash) // 18
+                || (prevHash < ownHash && newHash > ownHash))) { // 19
             // Joining Node sits between this Node and next neighbour.
 
             try {
