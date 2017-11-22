@@ -341,6 +341,7 @@ public class Node implements NodeInterface {
 
         try {
             clientSocket = new Socket();
+            clientSocket.setSoLinger(true, 5);
             clientSocket.connect(new InetSocketAddress(nextAddress, Constants.TCP_PORT), 1000);
             dos = new DataOutputStream(clientSocket.getOutputStream());
             out = new PrintWriter(dos, true);
