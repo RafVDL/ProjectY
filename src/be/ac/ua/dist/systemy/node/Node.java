@@ -553,7 +553,8 @@ public class Node implements NodeInterface {
         node.replicateFiles();
 
         // Start file update watcher
-        FileUpdateWatcher fileUpdateWatcher = new FileUpdateWatcher(node, Constants.LOCAL_FILES_PATH);
+        FileUpdateWatcher fileUpdateWatcherThread = new FileUpdateWatcher(node, Constants.LOCAL_FILES_PATH);
+        fileUpdateWatcherThread.start();
         //TODO: add watcher for REPLICATED_FILES_PATH.
 
 
