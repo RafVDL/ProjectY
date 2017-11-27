@@ -199,8 +199,7 @@ public class Node implements NodeInterface {
                 || (prevHash > ownHash && newHash < ownHash) // 6
                 || (prevHash > ownHash && newHash > prevHash) // 5
                 || ((prevHash == nextHash) && ((prevHash > ownHash && newHash > prevHash) // 15
-                || (prevHash > ownHash && newHash < ownHash)  // 16
-                || (prevHash < ownHash && newHash < ownHash && newHash < prevHash)))) { // 17
+                || (prevHash > ownHash && newHash < ownHash)))) { // 16
             // Joining Node sits between previous neighbour and this Node.
 
             updatePrev(newAddress, newHash);
@@ -209,7 +208,8 @@ public class Node implements NodeInterface {
                 || (nextHash < ownHash && newHash < nextHash) // 11
                 || ((prevHash == nextHash) && (prevHash > ownHash && newHash < prevHash && newHash > ownHash) // 14
                 || (prevHash < ownHash && newHash < prevHash) // 18
-                || (prevHash < ownHash && newHash > ownHash))) { // 19
+                || (prevHash < ownHash && newHash > ownHash) // 19
+                || (prevHash < ownHash && newHash < ownHash && newHash < prevHash))) { 
             // Joining Node sits between this Node and next neighbour.
 
             try {
