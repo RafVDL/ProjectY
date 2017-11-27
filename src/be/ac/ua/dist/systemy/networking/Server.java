@@ -6,6 +6,6 @@ public interface Server {
 
     boolean startServer(InetAddress address, int port);
 
-    void setRunning(boolean running);
+    void stop();
 
 }

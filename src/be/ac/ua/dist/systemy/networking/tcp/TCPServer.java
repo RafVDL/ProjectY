@@ -24,8 +24,8 @@ public class TCPServer implements Server, Runnable {
     }
 
     @Override
-    public void setRunning(boolean running) {
-        this.running = running;
+    public void stop() {
+        this.running = false;
     }
 
     @Override
