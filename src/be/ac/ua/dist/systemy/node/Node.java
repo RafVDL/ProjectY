@@ -552,6 +552,10 @@ public class Node implements NodeInterface {
         node.localFiles = node.discoverFiles(Constants.LOCAL_FILES_PATH);
         node.replicateFiles();
 
+        // Start file update watcher
+        FileUpdateWatcher fileUpdateWatcher = new FileUpdateWatcher(node, Constants.LOCAL_FILES_PATH);
+        //TODO: add watcher for REPLICATED_FILES_PATH.
+
 
         // Listen for commands
         while (node.running) {
