@@ -6,6 +6,7 @@ import be.ac.ua.dist.systemy.networking.packet.Packet;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
@@ -28,10 +29,13 @@ public class UDPClient implements Client {
             ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
             DataOutputStream dos = new DataOutputStream(baos);
 
-            dos.writeInt(packet.getId());
+            dos.writeShort(packet.getId());
             packet.send(dos);
 
             dos.close();
+
+            DatagramPacket datagramPacket = new DatagramPacket(baos.toByteArray(), baos.size(), address, port);
+            socket.send(datagramPacket);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -39,7 +43,7 @@ public class UDPClient implements Client {
 
     @Override
     public void close() {
-        // UDP: no socket to close!
+        socket.close();
     }
 
 }
