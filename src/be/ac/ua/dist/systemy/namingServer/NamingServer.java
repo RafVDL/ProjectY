@@ -187,6 +187,8 @@ public class NamingServer implements NamingServerInterface {
 
         NetworkManager.registerListener(HelloPacket.class, ((packet, client) -> {
             try {
+                client.close();
+
                 Client tcpClient = NetworkManager.getTCPClient(client.getAddress(), Constants.TCP_PORT);
                 NodeCountPacket nodeCountPacket = new NodeCountPacket(namingServer.ipAddresses.size());
                 tcpClient.sendPacket(nodeCountPacket);

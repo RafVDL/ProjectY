@@ -47,6 +47,7 @@ public class TCPConnection implements Connection {
             System.out.println("[TCP] Sending packet with id " + packet.getId() + " to " + socket.getInetAddress().getHostAddress());
 
         dos.writeShort(packet.getId());
+        dos.writeInt(NetworkManager.getSenderHash());
         packet.send(dos);
     }
 
