@@ -39,7 +39,8 @@ public class NodeMultiCastServer extends Thread {
 
                         if (hash != node.getOwnHash()) {
                             node.updateNeighbours(packet.getAddress(), hash);
-                            node.replicateFiles();
+//                            node.replicateFiles();
+                            node.discoverFiles(Constants.LOCAL_FILES_PATH);
                         }
                     }
 //                } else if (received.startsWith("HELLOR")) { // response from already existing node

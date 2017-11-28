@@ -13,6 +13,8 @@ public interface NodeInterface extends Remote {
 
     void downloadFile(String sourceFileName, String targetFileName, InetAddress remoteAddress) throws RemoteException;
 
+    void deleteFileFromNetwork(String path, String fileName) throws RemoteException;
+
     void updateNext(InetAddress newAddress, int newHash) throws RemoteException;
 
     void updatePrev(InetAddress newAddress, int newHash) throws RemoteException;

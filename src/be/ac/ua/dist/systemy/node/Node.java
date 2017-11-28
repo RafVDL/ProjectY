@@ -79,12 +79,12 @@ public class Node implements NodeInterface {
     }
 
     @Override
-    public void addLocalFileList(String fileName) throws RemoteException {
+    public void addLocalFileList(String fileName) {
         localFiles.add(fileName);
     }
 
     @Override
-    public void addReplicatedFileList(String fileName) throws RemoteException {
+    public void addReplicatedFileList(String fileName) {
         replicatedFiles.add(fileName);
     }
 
@@ -121,6 +121,25 @@ public class Node implements NodeInterface {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Removes a file from the network. This includes the actual file on disk as well as the lists.
+     *
+     * @param path     where the file is located
+     * @param fileName to remove
+     */
+    @Override
+    public void deleteFileFromNetwork(String path, String fileName) {
+        File file = new File(path + "/" + fileName);
+        if (!file.isFile()) {
+            System.out.println("Trying to delete something that is not a file (skipping)");
+            return;
+        }
+
+        localFiles.remove(fileName);
+        replicatedFiles.remove(fileName);
+        file.delete();
     }
 
     /**
@@ -209,7 +228,7 @@ public class Node implements NodeInterface {
                 || ((prevHash == nextHash) && (prevHash > ownHash && newHash < prevHash && newHash > ownHash) // 14
                 || (prevHash < ownHash && newHash < prevHash) // 18
                 || (prevHash < ownHash && newHash > ownHash) // 19
-                || (prevHash < ownHash && newHash < ownHash && newHash < prevHash))) { 
+                || (prevHash < ownHash && newHash < ownHash && newHash < prevHash))) {
             // Joining Node sits between this Node and next neighbour.
 
             try {
@@ -412,7 +431,8 @@ public class Node implements NodeInterface {
         for (File file : listOfFiles) {
             if (file.isFile()) {
                 System.out.println("Found file " + file.getName());
-                fileNames.add(file.getName());
+//                fileNames.add(file.getName());
+                addFileToNetwork(file.getName());
             } else if (file.isDirectory()) {
                 System.out.println("Not checking files in nested folder " + file.getName());
             }
@@ -470,6 +490,60 @@ public class Node implements NodeInterface {
             } catch (IOException | NotBoundException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    /**
+     * Introduces a (local)file in the network.
+     * <p>
+     * The NamingServer gets asked who the owner of the file should be. If this Node should
+     * be the owner, the file gets duplicated to the previous neighbour via RMI. If this node should not be the owner, the
+     * file gets duplicated to the new owner and this Node updates itself to hold the file as replicated.
+     *
+     * @param fileName to introduce in the network (should always be located in the LOCAL_FILES_PATH)
+     */
+    public void addFileToNetwork(String fileName) {
+        File file = new File(Constants.LOCAL_FILES_PATH + fileName);
+        if (!file.isFile()) {
+            System.out.println("Trying to add something that is not a file (skipping)");
+            return;
+        }
+
+        if (prevHash == ownHash && nextHash == ownHash) {
+            // This node is the only node in the network and will always be owner of the file.
+            localFiles.add(fileName);
+            return;
+        }
+
+        try {
+            // Get ownerAddress from NamingServer via RMI.
+            Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
+            NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+            InetAddress ownerAddress = namingServerStub.getOwner(fileName);
+
+            if (ownerAddress == null) {
+                return;
+            }
+
+            if (ownerAddress.equals(ownAddress)) {
+                localFiles.add(fileName);
+                // Replicate to previous neighbour -> initiate downloadFile via RMI and update its replicatedFiles List.
+                Registry nodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
+                NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
+                nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + fileName, Constants.REPLICATED_FILES_PATH + fileName, ownAddress);
+                nodeStub.addReplicatedFileList(fileName);
+            } else {
+                replicatedFiles.add(fileName);
+                // Else send copy to new owner and update own replicatedFiles List as well as new owner's localFiles list.
+                Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
+                NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
+                nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + fileName, Constants.LOCAL_FILES_PATH + fileName, ownAddress);
+                nodeStub.addLocalFileList(fileName);
+                replicatedFiles.add(fileName);
+                Files.move(Paths.get(Constants.LOCAL_FILES_PATH + fileName), Paths.get(Constants.REPLICATED_FILES_PATH + fileName));
+            }
+        } catch (IOException | NotBoundException e) {
+            e.printStackTrace();
         }
     }
 
@@ -550,7 +624,7 @@ public class Node implements NodeInterface {
         node.clearDir(Constants.REPLICATED_FILES_PATH);
         node.replicatedFiles = new HashSet<>();
         node.localFiles = node.discoverFiles(Constants.LOCAL_FILES_PATH);
-        node.replicateFiles();
+//        node.replicateFiles();
 
         // Start file update watcher
         FileUpdateWatcher fileUpdateWatcherThread = new FileUpdateWatcher(node, Constants.LOCAL_FILES_PATH);
@@ -591,3 +665,4 @@ public class Node implements NodeInterface {
 }
 
 //TODO: Add file logs when replicating.
+//TODO: Check for files in /localFiles and /replicatedFiles at the same time.

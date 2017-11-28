@@ -33,14 +33,17 @@ public class FileUpdateWatcher extends Thread {
 
                     if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
                         System.out.println("Watcher detected: [NEW] - " + event.context());
+                        node.addFileToNetwork(file.getName());
                     } else if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
                         System.out.println("Watcher detected: [DEL] - " + event.context());
+                        // Do nothing apparently.
 
                     /* When file is modified, file system first creates it with 0 bytes and fires a modify event
                     and then writes data on it. Then it fires the modify event again.
                     => check for fileSize > 0 */
                     } else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY && file.length() > 0) {
                         System.out.println("Watcher detected: [MOD] - " + event.context());
+                        // Do nothing apparently.
                     }
                 }
             }
