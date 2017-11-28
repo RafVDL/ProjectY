@@ -19,6 +19,7 @@ public class TCPConnection implements Connection {
         clientSocket = new Socket();
         clientSocket.setSoLinger(true, 5);
         clientSocket.connect(new InetSocketAddress(address, port));
+        dos = new DataOutputStream(clientSocket.getOutputStream());
     }
 
     public TCPConnection(Socket socket) throws IOException {
