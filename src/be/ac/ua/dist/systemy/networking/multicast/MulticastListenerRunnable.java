@@ -3,7 +3,6 @@ package be.ac.ua.dist.systemy.networking.multicast;
 import be.ac.ua.dist.systemy.Constants;
 import be.ac.ua.dist.systemy.networking.NetworkManager;
 import be.ac.ua.dist.systemy.networking.packet.Packet;
-import be.ac.ua.dist.systemy.networking.udp.UDPClient;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -34,7 +33,7 @@ public class MulticastListenerRunnable implements Runnable {
 
             NetworkManager.getPacketListeners(packetClazz).forEach(packetListener -> {
                 try {
-                    packetListener.receivePacket(packet, new UDPClient(datagramPacket.getAddress(), Constants.UNICAST_PORT));
+                    packetListener.receivePacket(packet, NetworkManager.getUDPClient(datagramPacket.getAddress(), Constants.UNICAST_PORT));
                 } catch (SocketException e) {
                     e.printStackTrace();
                 }

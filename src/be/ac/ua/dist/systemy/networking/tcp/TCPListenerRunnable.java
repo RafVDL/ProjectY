@@ -29,7 +29,13 @@ public class TCPListenerRunnable implements Runnable {
             Packet packet = packetClazz.getConstructor().newInstance();
             packet.receive(dis);
 
-            NetworkManager.getPacketListeners(packetClazz).forEach(packetListener -> packetListener.receivePacket(packet, new TCPClient(clientSocket)));
+            NetworkManager.getPacketListeners(packetClazz).forEach(packetListener -> {
+                try {
+                    packetListener.receivePacket(packet, NetworkManager.getTCPClient(clientSocket.getInetAddress(), clientSocket.getPort(), clientSocket));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
         } catch (IOException | IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
             e.printStackTrace();
         }
