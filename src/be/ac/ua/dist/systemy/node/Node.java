@@ -2,6 +2,12 @@ package be.ac.ua.dist.systemy.node;
 
 import be.ac.ua.dist.systemy.Constants;
 import be.ac.ua.dist.systemy.namingServer.NamingServerInterface;
+import be.ac.ua.dist.systemy.networking.NetworkManager;
+import be.ac.ua.dist.systemy.networking.Server;
+import be.ac.ua.dist.systemy.networking.multicast.MulticastServer;
+import be.ac.ua.dist.systemy.networking.packet.HelloPacket;
+import be.ac.ua.dist.systemy.networking.packet.NodeCountPacket;
+import be.ac.ua.dist.systemy.networking.tcp.TCPServer;
 
 import java.io.*;
 import java.net.*;
@@ -170,7 +176,7 @@ public class Node implements NodeInterface {
     }
 
     /**
-     * Gets invoked when a new Node is joining the network. (via NodeMultiCastServer)
+     * Gets invoked when a new Node is joining the network.
      * <p>
      * Existing Node checks if the new Node becomes a new neighbour of this Node. If so, it checks whether the new node
      * becomes a previous or next neighbour. If it is a previous, the existing Node only updates its own neighbours.
@@ -502,12 +508,24 @@ public class Node implements NodeInterface {
         node.initializeRMI();
         System.out.println("Hash: " + node.getOwnHash());
 
+        NetworkManager.setSenderHash(node.getOwnHash());
+
+        NetworkManager.registerListener(HelloPacket.class, ((packet, client) -> {
+            if (packet.getSenderHash() != node.getOwnHash())
+                node.updateNeighbours(client.getAddress(), packet.getSenderHash());
+        }));
+
+        NetworkManager.registerListener(NodeCountPacket.class, ((packet, client) -> {
+            System.out.println("NodeCount: " + packet.getNodeCount());
+        }));
 
         // Start tcp and multiCast servers
-        NodeMultiCastServer udpServer = new NodeMultiCastServer(node);
-        udpServer.start();
-        NodeTCPServer tcpServerThread = new NodeTCPServer(node);
-        tcpServerThread.start();
+        Server multicastServer = new MulticastServer();
+        multicastServer.startServer(InetAddress.getByName(ip), Constants.MULTICAST_PORT);
+
+        Server tcpServer = new TCPServer();
+        tcpServer.startServer(InetAddress.getByName(ip), Constants.TCP_PORT);
+
         node.joinNetwork();
 
 

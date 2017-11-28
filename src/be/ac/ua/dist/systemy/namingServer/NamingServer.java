@@ -190,6 +190,8 @@ public class NamingServer implements NamingServerInterface {
                 Client tcpClient = NetworkManager.getTCPClient(client.getAddress(), Constants.TCP_PORT);
                 NodeCountPacket nodeCountPacket = new NodeCountPacket(namingServer.ipAddresses.size());
                 tcpClient.sendPacket(nodeCountPacket);
+
+                namingServer.addNodeToNetwork(packet.getSenderHash(), client.getAddress());
             } catch (IOException e) {
                 e.printStackTrace();
             }
