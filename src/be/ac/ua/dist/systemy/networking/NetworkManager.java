@@ -1,8 +1,6 @@
 package be.ac.ua.dist.systemy.networking;
 
-import be.ac.ua.dist.systemy.networking.packet.HelloPacket;
-import be.ac.ua.dist.systemy.networking.packet.NodeCountPacket;
-import be.ac.ua.dist.systemy.networking.packet.Packet;
+import be.ac.ua.dist.systemy.networking.packet.*;
 import be.ac.ua.dist.systemy.networking.tcp.TCPConnection;
 import be.ac.ua.dist.systemy.networking.udp.UDPConnection;
 
@@ -21,14 +19,23 @@ public class NetworkManager {
     private static Map<Class<? extends Packet>, List<PacketListener>> packetListeners = new HashMap<>();
 
     static {
-        packets.put(0x00, HelloPacket.class);
-        packets.put(0x01, NodeCountPacket.class);
+        packets.put(Packet.ID.HELLO, HelloPacket.class);
+        packets.put(Packet.ID.NODECOUNT, NodeCountPacket.class);
+        packets.put(Packet.ID.GETIP, GetIPPacket.class);
+        packets.put(Packet.ID.QUITNAMING, QuitNamingPacket.class);
+        packets.put(Packet.ID.IPRESPONSE, IPResponsePacket.class);
     }
 
     private NetworkManager() {
 
     }
 
+    /**
+     * Returns the Class of the given packet ID
+     *
+     * @param id
+     * @return
+     */
     public static Class<? extends Packet> getPacketById(int id) {
         return packets.get(id);
     }

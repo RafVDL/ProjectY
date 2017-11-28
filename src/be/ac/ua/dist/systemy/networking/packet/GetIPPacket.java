@@ -4,15 +4,15 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class HelloPacket extends Packet {
+public class GetIPPacket extends Packet {
 
     private int hash;
 
-    public HelloPacket() {
-        super(ID.HELLO);
+    public GetIPPacket() {
+        super(ID.GETIP);
     }
 
-    public HelloPacket(int hash) {
+    public GetIPPacket(int hash) {
         this();
         this.hash = hash;
     }

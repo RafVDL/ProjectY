@@ -9,7 +9,12 @@ public class NodeCountPacket extends Packet {
     private int nodeCount;
 
     public NodeCountPacket() {
-        super(0x01);
+        super(ID.NODECOUNT);
+    }
+
+    public NodeCountPacket(int nodeCount) {
+        this();
+        this.nodeCount = nodeCount;
     }
 
     @Override
