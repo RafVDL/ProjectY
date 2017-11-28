@@ -12,34 +12,40 @@ import java.net.Socket;
 
 public class TCPConnection implements Connection {
 
-    private Socket clientSocket;
+    private Socket socket;
     private DataOutputStream dos;
 
     public TCPConnection(InetAddress address, int port) throws IOException {
-        clientSocket = new Socket();
-        clientSocket.setSoLinger(true, 5);
-        clientSocket.connect(new InetSocketAddress(address, port));
-        dos = new DataOutputStream(clientSocket.getOutputStream());
+        socket = new Socket();
+        socket.setSoLinger(true, 5);
+        socket.connect(new InetSocketAddress(address, port));
+        dos = new DataOutputStream(socket.getOutputStream());
     }
 
     public TCPConnection(Socket socket) throws IOException {
-        clientSocket = socket;
-        dos = new DataOutputStream(clientSocket.getOutputStream());
+        this.socket = socket;
+        dos = new DataOutputStream(this.socket.getOutputStream());
     }
 
     @Override
     public boolean isClosed() {
-        return clientSocket.isClosed();
+        return socket.isClosed();
     }
 
     @Override
     public void close() throws IOException {
+        if (NetworkManager.DEBUG())
+            System.out.println("[TCP] Closing socket to " + socket.getInetAddress().getHostAddress());
+
         dos.close();
-        clientSocket.close();
+        socket.close();
     }
 
     @Override
     public void sendPacket(Packet packet) throws IOException {
+        if (NetworkManager.DEBUG())
+            System.out.println("[TCP] Sending packet with id " + packet.getId() + " to " + socket.getInetAddress().getHostAddress());
+
         dos.writeShort(packet.getId());
         packet.send(dos);
     }
@@ -53,4 +59,5 @@ public class TCPConnection implements Connection {
     public void flush() throws IOException {
         dos.flush();
     }
+
 }

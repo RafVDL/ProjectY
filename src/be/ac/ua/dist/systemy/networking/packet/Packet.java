@@ -17,27 +17,27 @@ public abstract class Packet {
         /**
          * Packet sent using multicast to join the network.
          */
-        public static final int HELLO = 0x00;
+        public static final short HELLO = 0x00;
 
         /**
          * Sent by the naming server as (TCP) response to a {@link #HELLO} packet.
          */
-        public static final int NODECOUNT = 0x01;
+        public static final short NODECOUNT = 0x01;
 
         /**
          * Requests a node's ip using multicast.
          */
-        public static final int GETIP = 0x02;
+        public static final short GETIP = 0x02;
 
         /**
          * Sent by a node using multicast to the naming server to notify it is quitting the network.
          */
-        public static final int QUITNAMING = 0x03;
+        public static final short QUITNAMING = 0x03;
 
         /**
          * Sent by naming server as response to a {@link #GETIP} packet.
          */
-        public static final int IPRESPONSE = 0x04;
+        public static final short IPRESPONSE = 0x04;
 
     }
 

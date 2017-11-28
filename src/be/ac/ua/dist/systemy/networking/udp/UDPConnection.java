@@ -1,6 +1,7 @@
 package be.ac.ua.dist.systemy.networking.udp;
 
 import be.ac.ua.dist.systemy.networking.Connection;
+import be.ac.ua.dist.systemy.networking.NetworkManager;
 import be.ac.ua.dist.systemy.networking.packet.Packet;
 
 import java.io.ByteArrayOutputStream;
@@ -33,11 +34,17 @@ public class UDPConnection implements Connection {
 
     @Override
     public void close() {
+        if (NetworkManager.DEBUG())
+            System.out.println("[UDP] Closing socket to " + socket.getInetAddress().getHostAddress());
+
         socket.close();
     }
 
     @Override
     public void sendPacket(Packet packet) throws IOException {
+        if (NetworkManager.DEBUG())
+            System.out.println("[UDP] Sending packet with id " + packet.getId() + " to " + socket.getInetAddress().getHostAddress());
+
         flush();
 
         dos.writeShort(packet.getId());
@@ -53,6 +60,9 @@ public class UDPConnection implements Connection {
 
     @Override
     public void flush() throws IOException {
+        if (baos.size() == 0)
+            return;
+
         DatagramPacket datagramPacket = new DatagramPacket(baos.toByteArray(), baos.size(), address, port);
         socket.send(datagramPacket);
         baos.reset();

@@ -15,19 +15,28 @@ import java.util.Map;
 
 public class NetworkManager {
 
-    private static Map<Integer, Class<? extends Packet>> packets = new HashMap<>();
+    private static boolean debug = false;
+
+    private static Map<Short, Class<? extends Packet>> packets = new HashMap<>();
     private static Map<Class<? extends Packet>, List<PacketListener>> packetListeners = new HashMap<>();
 
     static {
-        packets.put(Packet.ID.HELLO, HelloPacket.class);
-        packets.put(Packet.ID.NODECOUNT, NodeCountPacket.class);
-        packets.put(Packet.ID.GETIP, GetIPPacket.class);
-        packets.put(Packet.ID.QUITNAMING, QuitNamingPacket.class);
-        packets.put(Packet.ID.IPRESPONSE, IPResponsePacket.class);
+        registerPacket(Packet.ID.HELLO, HelloPacket.class);
+        registerPacket(Packet.ID.NODECOUNT, NodeCountPacket.class);
+        registerPacket(Packet.ID.GETIP, GetIPPacket.class);
+        registerPacket(Packet.ID.QUITNAMING, QuitNamingPacket.class);
+        registerPacket(Packet.ID.IPRESPONSE, IPResponsePacket.class);
     }
 
     private NetworkManager() {
 
+    }
+
+    public static void registerPacket(short id, Class<? extends Packet> clazz) {
+        if (debug)
+            System.out.println("[NetworkManager] Registered packet " + id + " to class " + clazz.getName());
+
+        packets.put(id, clazz);
     }
 
     /**
@@ -36,7 +45,7 @@ public class NetworkManager {
      * @param id
      * @return
      */
-    public static Class<? extends Packet> getPacketById(int id) {
+    public static Class<? extends Packet> getPacketById(short id) {
         return packets.get(id);
     }
 
@@ -59,6 +68,14 @@ public class NetworkManager {
 
     public static Client getTCPClient(InetAddress address, int port, Socket socket) throws IOException {
         return new Client(address, port, new TCPConnection(socket));
+    }
+
+    public static boolean DEBUG() {
+        return debug;
+    }
+
+    public static void setDebugging(boolean debug) {
+        NetworkManager.debug = debug;
     }
 
 }
