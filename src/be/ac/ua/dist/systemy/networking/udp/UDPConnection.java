@@ -48,6 +48,7 @@ public class UDPConnection implements Connection {
         flush();
 
         dos.writeShort(packet.getId());
+        dos.writeInt(NetworkManager.getSenderHash());
         packet.send(dos);
 
         flush();

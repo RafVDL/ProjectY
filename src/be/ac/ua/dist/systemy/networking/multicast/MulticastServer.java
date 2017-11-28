@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.net.SocketTimeoutException;
 
 public class MulticastServer implements Server, Runnable {
 
@@ -33,17 +34,22 @@ public class MulticastServer implements Server, Runnable {
         try {
             multicastSocket = new MulticastSocket(port);
             multicastSocket.setLoopbackMode(false);
+            multicastSocket.setSoTimeout(2500);
             multicastSocket.joinGroup(address);
 
             DatagramPacket packet;
             while (running) {
-                byte[] buf = new byte[1024];
-                packet = new DatagramPacket(buf, buf.length);
-                multicastSocket.receive(packet);
+                try {
+                    byte[] buf = new byte[1024];
+                    packet = new DatagramPacket(buf, buf.length);
+                    multicastSocket.receive(packet);
 
-                MulticastListenerRunnable runnable = new MulticastListenerRunnable(packet);
-                Thread thread = new Thread(runnable);
-                thread.start();
+                    MulticastListenerRunnable runnable = new MulticastListenerRunnable(packet);
+                    Thread thread = new Thread(runnable);
+                    thread.start();
+                } catch (SocketTimeoutException e) {
+                    // don't do anything
+                }
             }
 
             multicastSocket.leaveGroup(address);

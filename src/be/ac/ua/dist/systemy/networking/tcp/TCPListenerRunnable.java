@@ -35,7 +35,10 @@ public class TCPListenerRunnable implements Runnable {
                 return;
             }
 
+            int senderHash = dis.readInt();
+
             Packet packet = packetClazz.getConstructor().newInstance();
+            packet.setSenderHash(senderHash);
             packet.receive(dis);
 
             NetworkManager.getPacketListeners(packetClazz).forEach(packetListener -> {

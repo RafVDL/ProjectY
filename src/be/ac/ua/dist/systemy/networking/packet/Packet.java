@@ -42,13 +42,27 @@ public abstract class Packet {
     }
 
     private final int id;
+    private int senderHash;
 
     public Packet(int id) {
+        this(id, -1);
+    }
+
+    public Packet(int id, int senderHash) {
         this.id = id;
+        this.senderHash = senderHash;
     }
 
     public int getId() {
         return id;
+    }
+
+    public int getSenderHash() {
+        return senderHash;
+    }
+
+    public void setSenderHash(int senderHash) {
+        this.senderHash = senderHash;
     }
 
     public abstract void receive(DataInputStream dis) throws IOException;

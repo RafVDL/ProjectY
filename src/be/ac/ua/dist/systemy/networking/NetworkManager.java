@@ -20,6 +20,8 @@ public class NetworkManager {
     private static Map<Short, Class<? extends Packet>> packets = new HashMap<>();
     private static Map<Class<? extends Packet>, List<PacketListener>> packetListeners = new HashMap<>();
 
+    private static int senderHash;
+
     static {
         registerPacket(Packet.ID.HELLO, HelloPacket.class);
         registerPacket(Packet.ID.NODECOUNT, NodeCountPacket.class);
@@ -76,6 +78,14 @@ public class NetworkManager {
 
     public static void setDebugging(boolean debug) {
         NetworkManager.debug = debug;
+    }
+
+    public static int getSenderHash() {
+        return senderHash;
+    }
+
+    public static void setSenderHash(int senderHash) {
+        NetworkManager.senderHash = senderHash;
     }
 
 }
