@@ -38,6 +38,8 @@ public class MulticastListenerRunnable implements Runnable {
                     e.printStackTrace();
                 }
             });
+
+            dis.close();
         } catch (IOException | NoSuchMethodException | InstantiationException | InvocationTargetException | IllegalAccessException e) {
             e.printStackTrace();
         }

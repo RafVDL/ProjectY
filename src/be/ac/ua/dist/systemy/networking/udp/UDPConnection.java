@@ -17,6 +17,9 @@ public class UDPConnection implements Connection {
     private final InetAddress address;
     private final int port;
 
+    private ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
+    private DataOutputStream dos = new DataOutputStream(baos);
+
     public UDPConnection(InetAddress address, int port) throws SocketException {
         socket = new DatagramSocket();
         this.address = address;
@@ -35,16 +38,23 @@ public class UDPConnection implements Connection {
 
     @Override
     public void sendPacket(Packet packet) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream(1024);
-        DataOutputStream dos = new DataOutputStream(baos);
+        flush();
 
         dos.writeShort(packet.getId());
         packet.send(dos);
 
-        dos.close();
-
-        DatagramPacket datagramPacket = new DatagramPacket(baos.toByteArray(), baos.size(), address, port);
-        socket.send(datagramPacket);
+        flush();
     }
 
+    @Override
+    public DataOutputStream getDataOutputStream() {
+        return dos;
+    }
+
+    @Override
+    public void flush() throws IOException {
+        DatagramPacket datagramPacket = new DatagramPacket(baos.toByteArray(), baos.size(), address, port);
+        socket.send(datagramPacket);
+        baos.reset();
+    }
 }

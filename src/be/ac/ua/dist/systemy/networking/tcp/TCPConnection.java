@@ -1,6 +1,7 @@
 package be.ac.ua.dist.systemy.networking.tcp;
 
 import be.ac.ua.dist.systemy.networking.Connection;
+import be.ac.ua.dist.systemy.networking.NetworkManager;
 import be.ac.ua.dist.systemy.networking.packet.Packet;
 
 import java.io.DataOutputStream;
@@ -42,4 +43,13 @@ public class TCPConnection implements Connection {
         packet.send(dos);
     }
 
+    @Override
+    public DataOutputStream getDataOutputStream() {
+        return dos;
+    }
+
+    @Override
+    public void flush() throws IOException {
+        dos.flush();
+    }
 }
