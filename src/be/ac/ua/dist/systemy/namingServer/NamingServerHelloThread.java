@@ -20,7 +20,7 @@ public class NamingServerHelloThread extends Thread {
         try {
             multicastSocket = new MulticastSocket(Constants.MULTICAST_PORT);
             DatagramSocket uniSocket = new DatagramSocket(Constants.UNICAST_PORT, namingServer.serverIP);
-            InetAddress group = InetAddress.getByName("225.0.113.0");
+            InetAddress group = InetAddress.getByName(Constants.MULTICAST_ADDRESS);
             multicastSocket.joinGroup(group);
 
             DatagramPacket packet;

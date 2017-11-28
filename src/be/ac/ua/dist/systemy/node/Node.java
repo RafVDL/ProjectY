@@ -43,7 +43,7 @@ public class Node implements NodeInterface {
         this.ownHash = calculateHash(nodeName);
 
         multicastSocket = new MulticastSocket(Constants.MULTICAST_PORT);
-        multicastGroup = InetAddress.getByName("225.0.113.0");
+        multicastGroup = InetAddress.getByName(Constants.MULTICAST_ADDRESS);
     }
 
     public InetAddress getOwnAddress() {

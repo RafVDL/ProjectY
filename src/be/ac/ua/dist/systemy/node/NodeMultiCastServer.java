@@ -1,5 +1,7 @@
 package be.ac.ua.dist.systemy.node;
 
+import be.ac.ua.dist.systemy.Constants;
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
@@ -20,7 +22,7 @@ public class NodeMultiCastServer extends Thread {
         try {
             socket = new MulticastSocket(4446);
             socket.setSoTimeout(2000);
-            InetAddress group = InetAddress.getByName("225.0.113.0");
+            InetAddress group = InetAddress.getByName(Constants.MULTICAST_ADDRESS);
             socket.joinGroup(group);
 
             DatagramPacket packet;
