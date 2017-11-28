@@ -416,30 +416,28 @@ public class Node implements NodeInterface {
      * @param folderPath to explore
      * @return the List containing the filenames
      */
-    public Set<String> discoverFiles(String folderPath) {
+    public void discoverFiles(String folderPath) {
         File folder = new File(folderPath);
         if (!folder.exists())
             folder.mkdir();
         File[] listOfFiles = folder.listFiles();
-        Set<String> fileNames = new HashSet<>();
         if (listOfFiles == null) {
             //TODO call failure?
             System.out.println("Folder path does not point to a folder (" + folderPath + ")");
-            return null;
+            return;
         }
 
         for (File file : listOfFiles) {
             if (file.isFile()) {
                 System.out.println("Found file " + file.getName());
 //                fileNames.add(file.getName());
-                addFileToNetwork(file.getName());
+                addFileToNetwork(file.getParent() + "/", file.getName());
             } else if (file.isDirectory()) {
                 System.out.println("Not checking files in nested folder " + file.getName());
             }
         }
 
         System.out.println("Finished discovery of " + folder.getName());
-        return fileNames;
     }
 
     /**
@@ -494,16 +492,16 @@ public class Node implements NodeInterface {
     }
 
     /**
-     * Introduces a (local)file in the network.
+     * Introduces a file in the network.
      * <p>
      * The NamingServer gets asked who the owner of the file should be. If this Node should
      * be the owner, the file gets duplicated to the previous neighbour via RMI. If this node should not be the owner, the
      * file gets duplicated to the new owner and this Node updates itself to hold the file as replicated.
      *
-     * @param fileName to introduce in the network (should always be located in the LOCAL_FILES_PATH)
+     * @param fileName to introduce in the network
      */
-    public void addFileToNetwork(String fileName) {
-        File file = new File(Constants.LOCAL_FILES_PATH + fileName);
+    public void addFileToNetwork(String path, String fileName) {
+        File file = new File(path + fileName);
         if (!file.isFile()) {
             System.out.println("Trying to add something that is not a file (skipping)");
             return;
@@ -622,8 +620,9 @@ public class Node implements NodeInterface {
             }
         }
         node.clearDir(Constants.REPLICATED_FILES_PATH);
+        node.localFiles = new HashSet<>();
         node.replicatedFiles = new HashSet<>();
-        node.localFiles = node.discoverFiles(Constants.LOCAL_FILES_PATH);
+        node.discoverFiles(Constants.LOCAL_FILES_PATH);
 //        node.replicateFiles();
 
         // Start file update watcher
