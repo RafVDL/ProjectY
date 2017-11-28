@@ -524,12 +524,13 @@ public class Node implements NodeInterface {
             }
 
             if (ownerAddress.equals(ownAddress)) {
-                localFiles.add(fileName);
                 // Replicate to previous neighbour -> initiate downloadFile via RMI and update its replicatedFiles List.
                 Registry nodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
                 NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
                 nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + fileName, Constants.REPLICATED_FILES_PATH + fileName, ownAddress);
                 nodeStub.addReplicatedFileList(fileName);
+
+                localFiles.add(fileName);
             } else {
                 replicatedFiles.add(fileName);
                 // Else send copy to new owner and update own replicatedFiles List as well as new owner's localFiles list.
@@ -537,6 +538,8 @@ public class Node implements NodeInterface {
                 NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
                 nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + fileName, Constants.LOCAL_FILES_PATH + fileName, ownAddress);
                 nodeStub.addLocalFileList(fileName);
+
+                localFiles.remove(fileName);
                 replicatedFiles.add(fileName);
                 Files.move(Paths.get(Constants.LOCAL_FILES_PATH + fileName), Paths.get(Constants.REPLICATED_FILES_PATH + fileName));
             }
