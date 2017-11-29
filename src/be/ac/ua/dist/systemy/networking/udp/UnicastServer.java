@@ -28,7 +28,7 @@ public class UnicastServer implements Server, Runnable {
     @Override
     public void run() {
         try {
-            DatagramSocket socket = new MulticastSocket(port);
+            DatagramSocket socket = new MulticastSocket(new InetSocketAddress(address, port));
             socket.setSoTimeout(2500);
 
             DatagramPacket packet;
