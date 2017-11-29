@@ -17,12 +17,12 @@ public class FileRequestPacket extends Packet {
 
     @Override
     public void receive(DataInputStream dis) throws IOException {
-
+        fileName = dis.readUTF();
     }
 
     @Override
     public void send(DataOutputStream dos) throws IOException {
-
+        dos.writeUTF(fileName);
     }
 
 }
