@@ -1,4 +1,4 @@
-package be.ac.ua.dist.systemy.networking.multicast;
+package be.ac.ua.dist.systemy.networking.udp;
 
 import be.ac.ua.dist.systemy.networking.Server;
 

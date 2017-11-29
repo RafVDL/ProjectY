@@ -35,7 +35,7 @@ public class UDPConnection implements Connection {
     @Override
     public void close() {
         if (NetworkManager.DEBUG())
-            System.out.println("[UDP] Closing socket to " + socket.getInetAddress().getHostAddress());
+            System.out.println("[UDP] Closing socket to " + address.getHostAddress());
 
         socket.close();
     }
@@ -43,7 +43,7 @@ public class UDPConnection implements Connection {
     @Override
     public void sendPacket(Packet packet) throws IOException {
         if (NetworkManager.DEBUG())
-            System.out.println("[UDP] Sending packet with id " + NetworkManager.getPacketIdByObject(packet) + " to " + socket.getInetAddress().getHostAddress());
+            System.out.println("[UDP] Sending packet with id " + NetworkManager.getPacketIdByObject(packet) + " to " + address.getHostAddress());
 
         flush();
 

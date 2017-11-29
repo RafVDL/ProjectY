@@ -27,10 +27,10 @@ public class TCPListenerRunnable implements Runnable {
             Class<? extends Packet> packetClazz = NetworkManager.getPacketById(packetId);
 
             if (NetworkManager.DEBUG())
-                System.out.println("[Multicast] Received packet " + packetId + " from " + socket.getInetAddress().getHostAddress());
+                System.out.println("[TCP] Received packet " + packetId + " from " + socket.getInetAddress().getHostAddress());
 
             if (packetClazz == null) {
-                System.err.println("[Multicast] Received unknown packet id " + packetId + " from " + socket.getInetAddress().getHostAddress());
+                System.err.println("[TCP] Received unknown packet id " + packetId + " from " + socket.getInetAddress().getHostAddress());
                 dis.close();
                 return;
             }

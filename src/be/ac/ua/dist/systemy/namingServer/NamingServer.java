@@ -4,7 +4,7 @@ import be.ac.ua.dist.systemy.Constants;
 import be.ac.ua.dist.systemy.networking.Client;
 import be.ac.ua.dist.systemy.networking.NetworkManager;
 import be.ac.ua.dist.systemy.networking.Server;
-import be.ac.ua.dist.systemy.networking.multicast.MulticastServer;
+import be.ac.ua.dist.systemy.networking.udp.MulticastServer;
 import be.ac.ua.dist.systemy.networking.packet.*;
 
 import java.io.BufferedWriter;
