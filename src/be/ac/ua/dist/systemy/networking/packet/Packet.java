@@ -22,39 +22,43 @@ public abstract class Packet {
         /**
          * Sent by the naming server as (TCP) response to a {@link #HELLO} packet.
          */
-        public static final short NODECOUNT = 0x01;
+        public static final short NODE_COUNT = 0x01;
 
         /**
          * Requests a node's ip using multicast.
          */
-        public static final short GETIP = 0x02;
+        public static final short GET_IP = 0x02;
 
         /**
          * Sent by a node using multicast to the naming server to notify it is quitting the network.
          */
-        public static final short QUITNAMING = 0x03;
+        public static final short QUIT_NAMING = 0x03;
 
         /**
-         * Sent by naming server as response to a {@link #GETIP} packet.
+         * Sent by naming server as response to a {@link #GET_IP} packet.
          */
-        public static final short IPRESPONSE = 0x04;
+        public static final short IP_RESPONSE = 0x04;
+
+        /**
+         * Sent by a node to request a file.
+         */
+        public static final short FILE_REQUEST = 0x10;
+
+        /**
+         * A series of these packets are sent by a node as response to {@link #FILE_REQUEST}.
+         */
+        public static final short FILE_FRAGMENT = 0x11;
 
     }
 
-    private final int id;
     private int senderHash;
 
-    public Packet(int id) {
-        this(id, -1);
+    public Packet() {
+        this(-1);
     }
 
-    public Packet(int id, int senderHash) {
-        this.id = id;
+    public Packet(int senderHash) {
         this.senderHash = senderHash;
-    }
-
-    public int getId() {
-        return id;
     }
 
     public int getSenderHash() {

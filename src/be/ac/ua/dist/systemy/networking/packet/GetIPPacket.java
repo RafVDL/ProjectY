@@ -9,11 +9,9 @@ public class GetIPPacket extends Packet {
     private int hash;
 
     public GetIPPacket() {
-        super(ID.GETIP);
     }
 
     public GetIPPacket(int hash) {
-        this();
         this.hash = hash;
     }
 

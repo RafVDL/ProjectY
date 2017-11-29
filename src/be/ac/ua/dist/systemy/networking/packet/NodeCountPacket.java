@@ -9,11 +9,9 @@ public class NodeCountPacket extends Packet {
     private int nodeCount;
 
     public NodeCountPacket() {
-        super(ID.NODECOUNT);
     }
 
     public NodeCountPacket(int nodeCount) {
-        this();
         this.nodeCount = nodeCount;
     }
 

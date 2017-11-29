@@ -43,11 +43,11 @@ public class UDPConnection implements Connection {
     @Override
     public void sendPacket(Packet packet) throws IOException {
         if (NetworkManager.DEBUG())
-            System.out.println("[UDP] Sending packet with id " + packet.getId() + " to " + socket.getInetAddress().getHostAddress());
+            System.out.println("[UDP] Sending packet with id " + NetworkManager.getPacketIdByObject(packet) + " to " + socket.getInetAddress().getHostAddress());
 
         flush();
 
-        dos.writeShort(packet.getId());
+        dos.writeShort(NetworkManager.getPacketIdByObject(packet));
         dos.writeInt(NetworkManager.getSenderHash());
         packet.send(dos);
 

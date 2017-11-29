@@ -7,7 +7,6 @@ import java.io.IOException;
 public class QuitNamingPacket extends Packet {
 
     public QuitNamingPacket() {
-        super(ID.QUITNAMING);
     }
 
     @Override

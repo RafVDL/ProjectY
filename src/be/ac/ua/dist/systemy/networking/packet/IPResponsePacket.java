@@ -10,11 +10,9 @@ public class IPResponsePacket extends Packet {
     private InetAddress address;
 
     public IPResponsePacket() {
-        super(ID.IPRESPONSE);
     }
 
     public IPResponsePacket(InetAddress address) {
-        this();
         this.address = address;
     }
 

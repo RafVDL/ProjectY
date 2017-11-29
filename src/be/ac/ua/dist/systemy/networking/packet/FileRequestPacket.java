@@ -4,19 +4,25 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class HelloPacket extends Packet {
+public class FileRequestPacket extends Packet {
 
-    public HelloPacket() {
+    private String fileName;
+
+    public FileRequestPacket() {
+    }
+
+    public FileRequestPacket(String fileName) {
+        this.fileName = fileName;
     }
 
     @Override
     public void receive(DataInputStream dis) throws IOException {
-        // empty
+
     }
 
     @Override
     public void send(DataOutputStream dos) throws IOException {
-        // empty
+
     }
 
 }
