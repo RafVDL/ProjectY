@@ -19,7 +19,6 @@ public class NetworkManager {
 
     private static Map<Short, Class<? extends Packet>> packets = new HashMap<>();
     private static Map<Class<? extends Packet>, Short> reversePacketLookup = new HashMap<>();
-    private static Map<Class<? extends Packet>, List<PacketListener>> packetListeners = new HashMap<>();
 
     private static int senderHash;
 
@@ -29,6 +28,9 @@ public class NetworkManager {
         registerPacket(Packet.ID.GET_IP, GetIPPacket.class);
         registerPacket(Packet.ID.QUIT_NAMING, QuitNamingPacket.class);
         registerPacket(Packet.ID.IP_RESPONSE, IPResponsePacket.class);
+        registerPacket(Packet.ID.UPDATE_NEIGHBOUR, UpdateNeighboursPacket.class);
+        registerPacket(Packet.ID.FILE_REQUEST, FileRequestPacket.class);
+        registerPacket(Packet.ID.FILE_FRAGMENT, FileFragmentPacket.class);
     }
 
     private NetworkManager() {
@@ -77,28 +79,6 @@ public class NetworkManager {
      */
     public static short getPacketIdByObject(Packet packet) {
         return getPacketIdByClass(packet.getClass());
-    }
-
-    /**
-     * Adds the given listener to the listeners of the given packet class.
-     *
-     * @param clazz
-     * @param listener
-     * @param <T>
-     */
-    public static <T extends Packet> void registerListener(Class<T> clazz, PacketListener<T> listener) {
-        packetListeners.computeIfAbsent(clazz, k -> new ArrayList<>());
-        packetListeners.get(clazz).add(listener);
-    }
-
-    /**
-     * Returns a list of listeners of the given packet class.
-     *
-     * @param clazz the packet class
-     * @return a list of listeners
-     */
-    public static List<PacketListener> getPacketListeners(Class<? extends Packet> clazz) {
-        return packetListeners.getOrDefault(clazz, new ArrayList<>());
     }
 
     /**

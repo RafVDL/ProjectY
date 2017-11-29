@@ -33,4 +33,13 @@ public class IPResponsePacket extends Packet {
             buf = address.getAddress();
         dos.write(buf);
     }
+
+    public InetAddress getAddress() {
+        return address;
+    }
+
+    public void setAddress(InetAddress address) {
+        this.address = address;
+    }
+
 }

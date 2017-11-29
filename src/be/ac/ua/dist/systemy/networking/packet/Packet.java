@@ -40,6 +40,11 @@ public abstract class Packet {
         public static final short IP_RESPONSE = 0x04;
 
         /**
+         * Updates the receiving node's neighbours.
+         */
+        public static final short UPDATE_NEIGHBOUR = 0x05;
+
+        /**
          * Sent by a node to request a file.
          */
         public static final short FILE_REQUEST = 0x10;

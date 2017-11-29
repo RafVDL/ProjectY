@@ -11,9 +11,11 @@ import java.net.Socket;
 
 public class TCPListenerRunnable implements Runnable {
 
+    private final TCPServer tcpServer;
     private final Socket socket;
 
-    public TCPListenerRunnable(Socket socket) {
+    public TCPListenerRunnable(TCPServer tcpServer, Socket socket) {
+        this.tcpServer = tcpServer;
         this.socket = socket;
     }
 
@@ -41,7 +43,7 @@ public class TCPListenerRunnable implements Runnable {
             packet.setSenderHash(senderHash);
             packet.receive(dis);
 
-            NetworkManager.getPacketListeners(packetClazz).forEach(packetListener -> {
+            tcpServer.getPacketListeners(packetClazz).forEach(packetListener -> {
                 try {
                     packetListener.receivePacket(packet, NetworkManager.getTCPClient(socket.getInetAddress(), socket.getPort(), socket));
                 } catch (IOException e) {

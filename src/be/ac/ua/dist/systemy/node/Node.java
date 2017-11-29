@@ -2,12 +2,13 @@ package be.ac.ua.dist.systemy.node;
 
 import be.ac.ua.dist.systemy.Constants;
 import be.ac.ua.dist.systemy.namingServer.NamingServerInterface;
+import be.ac.ua.dist.systemy.networking.Client;
 import be.ac.ua.dist.systemy.networking.NetworkManager;
 import be.ac.ua.dist.systemy.networking.Server;
-import be.ac.ua.dist.systemy.networking.udp.MulticastServer;
-import be.ac.ua.dist.systemy.networking.packet.HelloPacket;
-import be.ac.ua.dist.systemy.networking.packet.NodeCountPacket;
+import be.ac.ua.dist.systemy.networking.packet.*;
 import be.ac.ua.dist.systemy.networking.tcp.TCPServer;
+import be.ac.ua.dist.systemy.networking.udp.MulticastServer;
+import be.ac.ua.dist.systemy.networking.udp.UnicastServer;
 
 import java.io.*;
 import java.net.*;
@@ -24,6 +25,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class Node implements NodeInterface {
 
@@ -193,11 +196,9 @@ public class Node implements NodeInterface {
             // NodeCount is currently 0, always update self and the joining Node.
 
             try {
-                Socket clientSocket = new Socket();
-                clientSocket.setSoLinger(true, 5);
-                clientSocket.connect(new InetSocketAddress(newAddress, Constants.TCP_PORT));
-                sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownHash, ownHash);
-                clientSocket.close();
+                Client client = NetworkManager.getTCPClient(newAddress, Constants.TCP_PORT);
+                UpdateNeighboursPacket packet = new UpdateNeighboursPacket(ownHash, ownHash);
+                client.sendPacket(packet);
             } catch (IOException e) {
                 handleFailure(newHash);
                 e.printStackTrace();
@@ -218,80 +219,41 @@ public class Node implements NodeInterface {
             // Joining Node sits between this Node and next neighbour.
 
             try {
-                Socket clientSocket = new Socket();
-                clientSocket.setSoLinger(true, 5);
-                clientSocket.connect(new InetSocketAddress(newAddress, Constants.TCP_PORT));
-                sendTcpCmd(clientSocket, "PREV_NEXT_NEIGHBOUR", ownHash, nextHash);
-                clientSocket.close();
+                Client client = NetworkManager.getTCPClient(newAddress, Constants.TCP_PORT);
+                UpdateNeighboursPacket packet = new UpdateNeighboursPacket(ownHash, nextHash);
+                client.sendPacket(packet);
             } catch (IOException e) {
-                e.printStackTrace();
                 handleFailure(newHash);
+                e.printStackTrace();
             }
 
             updateNext(newAddress, newHash);
-
-        }
-    }
-
-    /**
-     * Sends a command via tcp with optional extra String parameters.
-     *
-     * @param socket to use for sending
-     * @param cmd    to send
-     * @param args   to include (optional)
-     */
-    public void sendTcpCmd(Socket socket, String cmd, String... args) {
-        try {
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-            out.println(cmd);
-            for (String arg : args) {
-                out.println(arg);
-            }
-
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void sendTcpCmd(Socket socket, String cmd, int... args) {
-        try {
-            DataOutputStream dos = new DataOutputStream(socket.getOutputStream());
-            PrintWriter out = new PrintWriter(dos, true);
-            out.println(cmd);
-            for (int arg : args) {
-                dos.writeInt(arg);
-            }
-
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
     private InetAddress getAddressByHash(int hash) throws IOException {
-        byte[] buf;
-        buf = ("GETIP|" + hash).getBytes();
-        DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Constants.MULTICAST_PORT);
-        multicastSocket.send(packet);
+        Client client = NetworkManager.getUDPClient(multicastGroup, Constants.MULTICAST_PORT);
 
-        DatagramSocket uniSocket = new DatagramSocket(Constants.UNICAST_PORT, ownAddress);
+        final InetAddress[] address = new InetAddress[1];
 
-        buf = new byte[256];
-        packet = new DatagramPacket(buf, buf.length);
-        uniSocket.receive(packet);
+        CountDownLatch latch = new CountDownLatch(1);
 
-        String received = new String(buf).trim();
-        uniSocket.close();
+        Server unicastServer = new UnicastServer();
+        unicastServer.registerListener(IPResponsePacket.class, ((packet, client1) -> {
+            address[0] = packet.getAddress();
+            unicastServer.stop();
+            latch.countDown();
+        }));
+        unicastServer.startServer(ownAddress, Constants.UNICAST_PORT);
 
-        if (received.startsWith("REIP")) {
-            String[] split = received.split("\\|");
-            String returnedHostname = split[1];
-            String ip = split[2];
-            if (ip.equals("NOT_FOUND")) {
-                return null;
-            }
-            return InetAddress.getByName(ip);
+        GetIPPacket packet = new GetIPPacket(hash);
+        client.sendPacket(packet);
+
+        try {
+            latch.await(1, TimeUnit.SECONDS);
+            return address[0];
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
         return null;
     }
@@ -510,20 +472,22 @@ public class Node implements NodeInterface {
 
         NetworkManager.setSenderHash(node.getOwnHash());
 
-        NetworkManager.registerListener(HelloPacket.class, ((packet, client) -> {
+        // Start tcp and multiCast servers
+        Server multicastServer = new MulticastServer();
+
+        multicastServer.registerListener(HelloPacket.class, ((packet, client) -> {
             if (packet.getSenderHash() != node.getOwnHash())
                 node.updateNeighbours(client.getAddress(), packet.getSenderHash());
         }));
 
-        NetworkManager.registerListener(NodeCountPacket.class, ((packet, client) -> {
-            System.out.println("NodeCount: " + packet.getNodeCount());
-        }));
-
-        // Start tcp and multiCast servers
-        Server multicastServer = new MulticastServer();
         multicastServer.startServer(InetAddress.getByName(ip), Constants.MULTICAST_PORT);
 
         Server tcpServer = new TCPServer();
+
+        tcpServer.registerListener(NodeCountPacket.class, ((packet, client) -> {
+            System.out.println("NodeCount: " + packet.getNodeCount());
+        }));
+
         tcpServer.startServer(InetAddress.getByName(ip), Constants.TCP_PORT);
 
         node.joinNetwork();

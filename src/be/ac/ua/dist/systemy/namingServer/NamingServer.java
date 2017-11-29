@@ -4,8 +4,8 @@ import be.ac.ua.dist.systemy.Constants;
 import be.ac.ua.dist.systemy.networking.Client;
 import be.ac.ua.dist.systemy.networking.NetworkManager;
 import be.ac.ua.dist.systemy.networking.Server;
-import be.ac.ua.dist.systemy.networking.udp.MulticastServer;
 import be.ac.ua.dist.systemy.networking.packet.*;
+import be.ac.ua.dist.systemy.networking.udp.MulticastServer;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -185,7 +185,9 @@ public class NamingServer implements NamingServerInterface {
 
         NetworkManager.setSenderHash(0); // NamingServer exclusive!
 
-        NetworkManager.registerListener(HelloPacket.class, ((packet, client) -> {
+        Server multicastServer = new MulticastServer();
+
+        multicastServer.registerListener(HelloPacket.class, ((packet, client) -> {
             try {
                 client.close();
 
@@ -199,7 +201,7 @@ public class NamingServer implements NamingServerInterface {
             }
         }));
 
-        NetworkManager.registerListener(GetIPPacket.class, ((packet, client) -> {
+        multicastServer.registerListener(GetIPPacket.class, ((packet, client) -> {
             try {
                 IPResponsePacket ipResponsePacket = new IPResponsePacket(namingServer.ipAddresses.get(packet.getHash()));
                 client.sendPacket(ipResponsePacket);
@@ -208,7 +210,7 @@ public class NamingServer implements NamingServerInterface {
             }
         }));
 
-        NetworkManager.registerListener(QuitNamingPacket.class, ((packet, client) -> {
+        multicastServer.registerListener(QuitNamingPacket.class, ((packet, client) -> {
             try {
                 namingServer.removeNodeFromNetwork(packet.getSenderHash());
             } catch (RemoteException e) {
@@ -216,7 +218,6 @@ public class NamingServer implements NamingServerInterface {
             }
         }));
 
-        Server multicastServer = new MulticastServer();
         multicastServer.startServer(InetAddress.getByName("225.0.113.0"), Constants.MULTICAST_PORT);
 
         System.out.println("Namingserver started @" + ip);

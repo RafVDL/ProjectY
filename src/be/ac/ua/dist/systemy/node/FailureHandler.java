@@ -1,12 +1,17 @@
 package be.ac.ua.dist.systemy.node;
+
 import be.ac.ua.dist.systemy.Constants;
-import be.ac.ua.dist.systemy.namingServer.*;
+import be.ac.ua.dist.systemy.namingServer.NamingServerInterface;
+import be.ac.ua.dist.systemy.networking.Client;
+import be.ac.ua.dist.systemy.networking.NetworkManager;
+import be.ac.ua.dist.systemy.networking.packet.UpdateNeighboursPacket;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.InetAddress;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
-import java.rmi.registry.*;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 
 import static be.ac.ua.dist.systemy.Constants.RMI_PORT;
 
@@ -18,7 +23,7 @@ public class FailureHandler {
     private int[] neighboursHash;
     private InetAddress[] neighboursIP;
 
-    public FailureHandler(int hashFailedNode, Node node){
+    public FailureHandler(int hashFailedNode, Node node) {
         this.hashFailedNode = hashFailedNode;
         this.node = node;
     }
@@ -32,21 +37,17 @@ public class FailureHandler {
         neighboursIP[1] = stub.getIPNode(neighboursHash[1]);
 
         try {
-            Socket clientSocket = new Socket();
-            clientSocket.setSoLinger(true, 5);
-            clientSocket.connect(new InetSocketAddress(neighboursIP[0], Constants.TCP_PORT));
-            node.sendTcpCmd(clientSocket, "NEXT_NEIGHBOUR", neighboursHash[0]);
-            clientSocket.close();
+            Client prevClient = NetworkManager.getTCPClient(neighboursIP[0], Constants.TCP_PORT);
+            UpdateNeighboursPacket packet = new UpdateNeighboursPacket(-1, neighboursHash[0]);
+            prevClient.sendPacket(packet);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         try {
-            Socket clientSocket = new Socket();
-            clientSocket.setSoLinger(true, 5);
-            clientSocket.connect(new InetSocketAddress(neighboursIP[1], Constants.TCP_PORT));
-            node.sendTcpCmd(clientSocket, "PREV_NEIGHBOUR", neighboursHash[1]);
-            clientSocket.close();
+            Client prevClient = NetworkManager.getTCPClient(neighboursIP[1], Constants.TCP_PORT);
+            UpdateNeighboursPacket packet = new UpdateNeighboursPacket(neighboursHash[1], -1);
+            prevClient.sendPacket(packet);
         } catch (IOException e) {
             e.printStackTrace();
         }

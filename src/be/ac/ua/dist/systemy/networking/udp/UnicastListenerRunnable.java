@@ -13,9 +13,11 @@ import java.net.SocketException;
 
 public class UnicastListenerRunnable implements Runnable {
 
+    private final UnicastServer unicastServer;
     private final DatagramPacket datagramPacket;
 
-    public UnicastListenerRunnable(DatagramPacket datagramPacket) {
+    public UnicastListenerRunnable(UnicastServer unicastServer, DatagramPacket datagramPacket) {
+        this.unicastServer = unicastServer;
         this.datagramPacket = datagramPacket;
     }
 
@@ -43,7 +45,7 @@ public class UnicastListenerRunnable implements Runnable {
             packet.setSenderHash(senderHash);
             packet.receive(dis);
 
-            NetworkManager.getPacketListeners(packetClazz).forEach(packetListener -> {
+            unicastServer.getPacketListeners(packetClazz).forEach(packetListener -> {
                 try {
                     packetListener.receivePacket(packet, NetworkManager.getUDPClient(datagramPacket.getAddress(), Constants.UNICAST_PORT));
                 } catch (SocketException e) {
