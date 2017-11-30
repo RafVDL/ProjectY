@@ -30,14 +30,15 @@ public class MulticastListenerRunnable implements Runnable {
 
             Class<? extends Packet> packetClazz = NetworkManager.getPacketById(packetId);
 
-            if (NetworkManager.DEBUG())
-                System.out.println("[Multicast] Received packet " + packetId + " from " + datagramPacket.getAddress().getHostAddress());
-
             if (packetClazz == null) {
                 System.err.println("[Multicast] Received unknown packet id " + packetId + " from " + datagramPacket.getAddress().getHostAddress());
                 dis.close();
                 return;
             }
+
+            if (NetworkManager.DEBUG())
+                System.out.println("[Multicast] Received packet " + packetId + " from " + datagramPacket.getAddress().getHostAddress());
+
 
             int senderHash = dis.readInt();
 

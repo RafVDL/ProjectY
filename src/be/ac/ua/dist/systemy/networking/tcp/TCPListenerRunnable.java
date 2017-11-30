@@ -24,32 +24,34 @@ public class TCPListenerRunnable implements Runnable {
         try {
             InputStream is = socket.getInputStream();
             DataInputStream dis = new DataInputStream(is);
-            short packetId = dis.readShort();
+            while (!socket.isClosed()) {
+                short packetId = dis.readShort();
 
-            Class<? extends Packet> packetClazz = NetworkManager.getPacketById(packetId);
+                Class<? extends Packet> packetClazz = NetworkManager.getPacketById(packetId);
 
-            if (NetworkManager.DEBUG())
-                System.out.println("[TCP] Received packet " + packetId + " from " + socket.getInetAddress().getHostAddress());
-
-            if (packetClazz == null) {
-                System.err.println("[TCP] Received unknown packet id " + packetId + " from " + socket.getInetAddress().getHostAddress());
-                dis.close();
-                return;
-            }
-
-            int senderHash = dis.readInt();
-
-            Packet packet = packetClazz.getConstructor().newInstance();
-            packet.setSenderHash(senderHash);
-            packet.receive(dis);
-
-            tcpServer.getPacketListeners(packetClazz).forEach(packetListener -> {
-                try {
-                    packetListener.receivePacket(packet, NetworkManager.getTCPClient(socket.getInetAddress(), socket.getPort(), socket));
-                } catch (IOException e) {
-                    e.printStackTrace();
+                if (packetClazz == null) {
+                    System.err.println("[TCP] Received unknown packet id " + packetId + " from " + socket.getInetAddress().getHostAddress());
+                    dis.close();
+                    return;
                 }
-            });
+
+                if (NetworkManager.DEBUG())
+                    System.out.println("[TCP] Received packet " + packetId + " from " + socket.getInetAddress().getHostAddress());
+
+                int senderHash = dis.readInt();
+
+                Packet packet = packetClazz.getConstructor().newInstance();
+                packet.setSenderHash(senderHash);
+                packet.receive(dis);
+
+                tcpServer.getPacketListeners(packetClazz).forEach(packetListener -> {
+                    try {
+                        packetListener.receivePacket(packet, NetworkManager.getTCPClient(socket.getInetAddress(), socket.getPort(), socket));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+            }
         } catch (IOException | IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
             e.printStackTrace();
         }
