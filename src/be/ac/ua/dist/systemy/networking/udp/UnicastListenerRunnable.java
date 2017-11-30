@@ -22,6 +22,7 @@ public class UnicastListenerRunnable implements Runnable {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void run() {
         try {
             ByteArrayInputStream bais = new ByteArrayInputStream(datagramPacket.getData());
@@ -49,6 +50,9 @@ public class UnicastListenerRunnable implements Runnable {
                 try {
                     packetListener.receivePacket(packet, NetworkManager.getUDPClient(datagramPacket.getAddress(), Constants.UNICAST_PORT));
                 } catch (SocketException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    System.err.println("[Unicast] Error handling packet id " + packetId + ":");
                     e.printStackTrace();
                 }
             });

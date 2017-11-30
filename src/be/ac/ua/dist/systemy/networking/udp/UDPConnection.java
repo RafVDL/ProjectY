@@ -5,6 +5,7 @@ import be.ac.ua.dist.systemy.networking.NetworkManager;
 import be.ac.ua.dist.systemy.networking.packet.Packet;
 
 import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -55,8 +56,18 @@ public class UDPConnection implements Connection {
     }
 
     @Override
+    public DataInputStream getDataInputStream() {
+        throw new UnsupportedOperationException("DataInputStream not yet supported in UDP");
+    }
+
+    @Override
     public DataOutputStream getDataOutputStream() {
         return dos;
+    }
+
+    @Override
+    public <E extends Packet> E waitForPacket(Class<E> clazz) {
+        throw new UnsupportedOperationException("Waiting is not yet supported in UDP");
     }
 
     @Override

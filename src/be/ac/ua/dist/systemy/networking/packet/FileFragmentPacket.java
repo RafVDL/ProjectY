@@ -25,14 +25,14 @@ public class FileFragmentPacket extends Packet {
     public void receive(DataInputStream dis) throws IOException {
         fileHash = dis.readInt();
         remainingBytes = dis.readInt();
-        length = dis.read(data, 0, Math.max(remainingBytes, 1024));
+        length = dis.read(data, 0, Math.min(remainingBytes, 1024));
     }
 
     @Override
     public void send(DataOutputStream dos) throws IOException {
         dos.writeInt(fileHash);
         dos.writeInt(remainingBytes);
-        dos.write(data, 0, length);
+        dos.write(data, 0, Math.min(remainingBytes, length)); // either remainingBytes if it is < 1024, or length (probably 1024)
     }
 
     public int getFileHash() {

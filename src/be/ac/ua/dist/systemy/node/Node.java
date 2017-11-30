@@ -448,6 +448,70 @@ public class Node implements NodeInterface {
         }
     }
 
+    public void setupMulticastServer() {
+        Server multicastServer = new MulticastServer();
+
+        multicastServer.registerListener(HelloPacket.class, ((packet, client) -> {
+            if (packet.getSenderHash() != getOwnHash())
+                updateNeighbours(client.getAddress(), packet.getSenderHash());
+        }));
+
+        multicastServer.startServer(multicastGroup, Constants.MULTICAST_PORT);
+    }
+
+    public void setupTCPServer() {
+        Server tcpServer = new TCPServer();
+
+        tcpServer.registerListener(NodeCountPacket.class, ((packet, client) -> {
+            setNamingServerAddress(client.getAddress());
+            if (packet.getNodeCount() < 1) {
+                updatePrev(getOwnAddress(), getOwnHash());
+                updateNext(getOwnAddress(), getOwnHash());
+            }
+            client.close();
+        }));
+
+        tcpServer.registerListener(UpdateNeighboursPacket.class, (((packet, client) -> {
+            if (packet.getPreviousNeighbour() != -1) {
+                updatePrev(null, packet.getPreviousNeighbour());
+            }
+
+            if (packet.getNextNeighbour() != -1) {
+                updatePrev(null, packet.getNextNeighbour());
+            }
+            client.close();
+        })));
+
+        tcpServer.registerListener(FileRequestPacket.class, ((packet, client) -> sendFile(packet.getFileName(), client)));
+
+        tcpServer.startServer(ownAddress, Constants.TCP_PORT);
+    }
+
+    private void sendFile(String fileName, Client client) {
+        try {
+            int fileHash = calculateHash(Paths.get(fileName).getFileName().toString());
+            int fileSize = (int) new File(fileName).length();
+            FileInputStream fis = new FileInputStream(fileName);
+            byte[] buffer = new byte[4096];
+
+            int read, totalLeft = fileSize;
+
+            FileFragmentPacket packet = new FileFragmentPacket();
+
+            while ((read = fis.read(buffer)) > 0) {
+                packet.setFileHash(fileHash);
+                packet.setLength(totalLeft);
+                packet.setData(buffer);
+                client.sendPacket(packet);
+                totalLeft -= read;
+            }
+
+            fis.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String[] args) throws IOException, NotBoundException, ServerNotActiveException {
         // Get IP and hostname
         Scanner sc = new Scanner(System.in);
@@ -472,23 +536,8 @@ public class Node implements NodeInterface {
 
         NetworkManager.setSenderHash(node.getOwnHash());
 
-        // Start tcp and multiCast servers
-        Server multicastServer = new MulticastServer();
-
-        multicastServer.registerListener(HelloPacket.class, ((packet, client) -> {
-            if (packet.getSenderHash() != node.getOwnHash())
-                node.updateNeighbours(client.getAddress(), packet.getSenderHash());
-        }));
-
-        multicastServer.startServer(InetAddress.getByName(ip), Constants.MULTICAST_PORT);
-
-        Server tcpServer = new TCPServer();
-
-        tcpServer.registerListener(NodeCountPacket.class, ((packet, client) -> {
-            System.out.println("NodeCount: " + packet.getNodeCount());
-        }));
-
-        tcpServer.startServer(InetAddress.getByName(ip), Constants.TCP_PORT);
+        node.setupMulticastServer();
+        node.setupTCPServer();
 
         node.joinNetwork();
 

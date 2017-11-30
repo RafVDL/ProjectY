@@ -57,6 +57,16 @@ public class Client implements Closeable {
         connection.sendPacket(packet);
     }
 
+    /**
+     * Blocks until a packet of the given type is received, and if the backing connection supports it.
+     *
+     * @param clazz the packet class to wait for
+     * @return The packet once it is received
+     */
+    public <E extends Packet> E waitForPacket(Class<E> clazz) throws IOException {
+        return connection.waitForPacket(clazz);
+    }
+
     @Override
     public void close() throws IOException {
         connection.close();

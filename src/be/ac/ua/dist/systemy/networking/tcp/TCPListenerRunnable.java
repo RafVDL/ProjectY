@@ -4,6 +4,7 @@ import be.ac.ua.dist.systemy.networking.NetworkManager;
 import be.ac.ua.dist.systemy.networking.packet.Packet;
 
 import java.io.DataInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
@@ -20,37 +21,38 @@ public class TCPListenerRunnable implements Runnable {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public void run() {
         try {
             InputStream is = socket.getInputStream();
             DataInputStream dis = new DataInputStream(is);
             while (!socket.isClosed()) {
-                short packetId = dis.readShort();
+                Packet packet = TCPUtil.readPacket(socket, dis);
 
-                Class<? extends Packet> packetClazz = NetworkManager.getPacketById(packetId);
+                if (packet == null)
+                    continue;
 
-                if (packetClazz == null) {
-                    System.err.println("[TCP] Received unknown packet id " + packetId + " from " + socket.getInetAddress().getHostAddress());
-                    dis.close();
-                    return;
-                }
-
-                if (NetworkManager.DEBUG())
-                    System.out.println("[TCP] Received packet " + packetId + " from " + socket.getInetAddress().getHostAddress());
-
-                int senderHash = dis.readInt();
-
-                Packet packet = packetClazz.getConstructor().newInstance();
-                packet.setSenderHash(senderHash);
-                packet.receive(dis);
-
-                tcpServer.getPacketListeners(packetClazz).forEach(packetListener -> {
+                tcpServer.getPacketListeners(packet.getClass()).forEach(packetListener -> {
                     try {
                         packetListener.receivePacket(packet, NetworkManager.getTCPClient(socket.getInetAddress(), socket.getPort(), socket));
                     } catch (IOException e) {
+                        System.err.println("[Unicast] Error handling packet " + packet.getClass().getSimpleName() + ":");
                         e.printStackTrace();
+                        try {
+                            socket.close();
+                        } catch (IOException e1) {
+                            System.err.println("[Unicast] Error closing socket after error handling packet " + packet.getClass().getSimpleName() + ":"); // yes.
+                            e1.printStackTrace();
+                        }
                     }
                 });
+            }
+        } catch (EOFException e) {
+            System.out.println("[TCP] Peer closed connection");
+            try {
+                socket.close();
+            } catch (IOException e1) {
+                e1.printStackTrace();
             }
         } catch (IOException | IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
             e.printStackTrace();
