@@ -7,6 +7,8 @@ import java.util.Set;
 
 public interface NodeInterface extends Remote {
 
+    int getOwnHash() throws RemoteException;
+
     InetAddress getPrevAddress() throws RemoteException;
 
     InetAddress getNextAddress() throws RemoteException;

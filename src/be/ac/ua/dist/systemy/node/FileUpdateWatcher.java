@@ -38,7 +38,7 @@ public class FileUpdateWatcher extends Thread {
 
                     if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE && file.length() > 0) {
                         System.out.println("Watcher detected: [NEW] - " + event.context());
-                        node.addFileToNetwork(file.getParent() + "/", file.getName());
+                        node.addFileToNetwork(new FileHandle(file.getName(), true));
                     } else if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
                         System.out.println("Watcher detected: [DEL] - " + event.context());
                         // Do nothing apparently.

@@ -48,6 +48,7 @@ public class Node implements NodeInterface {
         return ownAddress;
     }
 
+    @Override
     public int getOwnHash() {
         return ownHash;
     }
@@ -449,8 +450,9 @@ public class Node implements NodeInterface {
             if (file.isFile()) {
                 System.out.println("Found file " + file.getName());
                 FileHandle fileHandle = new FileHandle(file.getName(), true);
+                fileHandle.getAvailableNodes().add(ownHash);
                 localFiles.add(fileHandle);
-                addFileToNetwork(file.getParent() + "/", file.getName());
+                addFileToNetwork(fileHandle);
             } else if (file.isDirectory()) {
                 System.out.println("Not checking files in nested folder " + file.getName());
             }
@@ -466,10 +468,10 @@ public class Node implements NodeInterface {
      * be the owner, the file gets duplicated to the previous neighbour via RMI. If this node should not be the owner, the
      * file gets duplicated to the owner.
      *
-     * @param fileName to introduce in the network
+     * @param fileHandle enclosing the file to introduce in the network
      */
-    public void addFileToNetwork(String path, String fileName) {
-        File file = new File(path + fileName);
+    public void addFileToNetwork(FileHandle fileHandle) {
+        File file = fileHandle.getFile();
         if (!file.isFile()) {
             System.out.println("Trying to add something that is not a file (skipping)");
             return;
@@ -479,24 +481,29 @@ public class Node implements NodeInterface {
             // Get ownerAddress from NamingServer via RMI.
             Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
             NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
-            InetAddress ownerAddress = namingServerStub.getOwner(fileName);
+            InetAddress ownerAddress = namingServerStub.getOwner(file.getName());
 
-            if (ownerAddress == null) {
+            if (ownerAddress == null || prevAddress.equals(nextAddress))
                 return;
-            }
 
             if (ownerAddress.equals(ownAddress)) {
                 // Replicate to previous neighbour -> initiate downloadFile via RMI and update its replicatedFiles List.
                 Registry nodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
                 NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
-                nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + fileName, Constants.REPLICATED_FILES_PATH + fileName, ownAddress);
-                nodeStub.addReplicatedFileList(new FileHandle(fileName, false));
+                nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + file.getName(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
+                FileHandle newFileHandle = new FileHandle(file.getName(), false);
+                fileHandle.getAvailableNodes().add(prevHash);
+                newFileHandle.getAvailableNodes().addAll(fileHandle.getAvailableNodes());
+                nodeStub.addReplicatedFileList(newFileHandle);
             } else {
                 // Else send copy to owner and update owner's localFiles list.
                 Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
                 NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
-                nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + fileName, Constants.LOCAL_FILES_PATH + fileName, ownAddress);
-                nodeStub.addLocalFileList(new FileHandle(fileName, true));
+                nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + file.getName(), Constants.LOCAL_FILES_PATH + file.getName(), ownAddress);
+                FileHandle newFileHandle = new FileHandle(file.getName(), true);
+                fileHandle.getAvailableNodes().add(nodeStub.getOwnHash());
+                newFileHandle.getAvailableNodes().addAll(fileHandle.getAvailableNodes());
+                nodeStub.addLocalFileList(newFileHandle);
             }
         } catch (IOException | NotBoundException e) {
             e.printStackTrace();
@@ -612,7 +619,7 @@ public class Node implements NodeInterface {
         // Discover local files
         while (node.namingServerAddress == null || node.prevHash == 0 || node.nextHash == 0) {
             try {
-                Thread.sleep(1);
+                Thread.sleep(500);
             } catch (Exception e) {
                 e.printStackTrace();
             }

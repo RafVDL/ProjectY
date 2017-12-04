@@ -8,7 +8,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class FileHandle {
+public class FileHandle implements Serializable {
 
     private String fileName;
     private boolean local;
@@ -82,6 +82,11 @@ public class FileHandle {
     @Override
     public boolean equals(Object o) {
         return o instanceof FileHandle && ((FileHandle) o).fileName.equals(this.fileName);
+    }
+
+    @Override
+    public String toString() {
+        return "{ fileName: " + fileName + "; downloads: " + downloads + "; nodes: " + availableNodes + " }";
     }
 
 }
