@@ -79,7 +79,15 @@ public class Node implements NodeInterface {
         return nextHash;
     }
 
-    public Set getDownloadingFiles(){
+    public Set getLocalFiles() {
+        return localFiles;
+    }
+
+    public Set getReplicatedFiles() {
+        return replicatedFiles;
+    }
+
+    public Set getDownloadingFiles() {
         return downloadingFiles;
     }
 
@@ -132,24 +140,24 @@ public class Node implements NodeInterface {
         System.out.println("Removing " + localFileName + " from downloading files");
     }
 
-    /**
-     * Removes a file from the network. This includes the actual file on disk as well as the lists.
-     *
-     * @param path     where the file is located
-     * @param fileName to remove
-     */
-    @Override
-    public void deleteFileFromNetwork(String path, String fileName) {
-        File file = new File(path + "/" + fileName);
-        if (!file.isFile()) {
-            System.out.println("Trying to delete something that is not a file (skipping)");
-            return;
-        }
-
-        localFiles.remove(fileName);
-        replicatedFiles.remove(fileName);
-        file.delete();
-    }
+//    /**
+//     * Removes a file from the network. This includes the actual file on disk as well as the lists.
+//     *
+//     * @param path     where the file is located
+//     * @param fileName to remove
+//     */
+//    @Override
+//    public void deleteFileFromNetwork(String path, String fileName) {
+//        File file = new File(path + "/" + fileName);
+//        if (!file.isFile()) {
+//            System.out.println("Trying to delete something that is not a file (skipping)");
+//            return;
+//        }
+//
+//        localFiles.remove(fileName);
+//        replicatedFiles.remove(fileName);
+//        file.delete();
+//    }
 
     /**
      * Updates the next neighbour of this node
@@ -557,6 +565,44 @@ public class Node implements NodeInterface {
         }
     }
 
+    public void shutdown() {
+        // Transfer all replicated files
+        for (String fileName : replicatedFiles) {
+            try {
+                Registry prevNodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
+                NodeInterface prevNodeStub = (NodeInterface) prevNodeRegistry.lookup("Node");
+
+                if (prevNodeStub.getLocalFiles().contains(fileName)) {
+                    // Previous Node is already owner -> replicate to previous' previous neighbour
+                    Registry prevPrevNodeRegistry = LocateRegistry.getRegistry(prevNodeStub.getPrevAddress().getHostAddress(), Constants.RMI_PORT);
+                    NodeInterface prevPrevNodeStub = (NodeInterface) prevPrevNodeRegistry.lookup("Node");
+
+                    prevPrevNodeStub.downloadFile(Constants.REPLICATED_FILES_PATH + fileName, Constants.REPLICATED_FILES_PATH + fileName, ownAddress);
+                    prevPrevNodeStub.addReplicatedFileList(fileName);
+                } else {
+                    // Replicate to previous neighbour
+                    prevNodeStub.downloadFile(Constants.REPLICATED_FILES_PATH + fileName, Constants.REPLICATED_FILES_PATH + fileName, ownAddress);
+                    prevNodeStub.addReplicatedFileList(fileName);
+                }
+            } catch (RemoteException | NotBoundException e) {
+                e.printStackTrace();
+            }
+        }
+
+        for (String fileName : localFiles) {
+            //TODO: contact original introducer? for log file -> if file is never downloaded, delete it from network
+            //TODO: if it IS downloaded, update downloadlocations in log file??
+        }
+
+        try {
+            setRunning(false);
+            leaveNetwork();
+            System.out.println("Left the network");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     /**
      * Should be run at Node startup.
      * <p>
@@ -641,7 +687,7 @@ public class Node implements NodeInterface {
         // Start file update watcher
         FileUpdateWatcher fileUpdateWatcherThread = new FileUpdateWatcher(node, Constants.LOCAL_FILES_PATH);
         fileUpdateWatcherThread.start();
-        //TODO: add watcher for REPLICATED_FILES_PATH.
+        //TODO: add watcher for REPLICATED_FILES_PATH?
 
 
         // Listen for commands
@@ -677,4 +723,3 @@ public class Node implements NodeInterface {
 }
 
 //TODO: Add file logs when replicating.
-//TODO: Check for files in /localFiles and /replicatedFiles at the same time.

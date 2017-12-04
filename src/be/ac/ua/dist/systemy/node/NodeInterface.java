@@ -7,13 +7,21 @@ import java.util.Set;
 
 public interface NodeInterface extends Remote {
 
+    InetAddress getPrevAddress() throws RemoteException;
+
+    InetAddress getNextAddress() throws RemoteException;
+
+    Set getLocalFiles() throws RemoteException;
+
+    Set getReplicatedFiles() throws RemoteException;
+
     void addLocalFileList(String fileName) throws RemoteException;
 
     void addReplicatedFileList(String fileName) throws RemoteException;
 
     void downloadFile(String sourceFileName, String targetFileName, InetAddress remoteAddress) throws RemoteException;
 
-    void deleteFileFromNetwork(String path, String fileName) throws RemoteException;
+//    void deleteFileFromNetwork(String path, String fileName) throws RemoteException;
 
     void updateNext(InetAddress newAddress, int newHash) throws RemoteException;
 
