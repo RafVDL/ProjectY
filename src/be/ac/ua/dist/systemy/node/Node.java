@@ -459,57 +459,6 @@ public class Node implements NodeInterface {
     }
 
     /**
-     * Method should be run at Node startup and when a new higher neighbour joins
-     * <p>
-     * For each file in the list of local files, the NamingServer gets asked who the owner should be. If this Node should
-     * be the owner, the file gets duplicated to the previous neighbour via RMI. If this node should not be the owner, the
-     * file gets duplicated to the new owner and this Node updates itself to hold the file as replicated.
-     */
-    public void replicateFiles() {
-        if (prevHash == ownHash && nextHash == ownHash) {
-            // This node is the only node in the network and will always be owner of all files.
-            return;
-        }
-
-        Iterator<String> iterator = localFiles.iterator();
-
-        while (iterator.hasNext()) {
-            String fileName = iterator.next();
-            InetAddress ownerAddress;
-
-            try {
-                // Get ownerAddress from NamingServer via RMI.
-                Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
-                NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
-                ownerAddress = namingServerStub.getOwner(fileName);
-
-                if (ownerAddress == null) {
-                    continue;
-                }
-
-                if (ownerAddress.equals(ownAddress)) {
-                    // Replicate to previous neighbour -> initiate downloadFile via RMI and update its replicatedFiles List.
-                    Registry nodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
-                    NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
-                    nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + fileName, Constants.REPLICATED_FILES_PATH + fileName, ownAddress);
-                    nodeStub.addReplicatedFileList(fileName);
-                } else {
-                    // Else send copy to new owner and update own replicatedFiles List as well as new owner's localFiles list.
-                    Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
-                    NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
-                    nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + fileName, Constants.LOCAL_FILES_PATH + fileName, ownAddress);
-                    nodeStub.addLocalFileList(fileName);
-                    iterator.remove();
-                    replicatedFiles.add(fileName);
-                    Files.move(Paths.get(Constants.LOCAL_FILES_PATH + fileName), Paths.get(Constants.REPLICATED_FILES_PATH + fileName));
-                }
-            } catch (IOException | NotBoundException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    /**
      * Introduces a file in the network.
      * <p>
      * The NamingServer gets asked who the owner of the file should be. If this Node should
@@ -545,8 +494,8 @@ public class Node implements NodeInterface {
                 // Else send copy to owner and update owner's localFiles list.
                 Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
                 NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
-                nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + fileName, Constants.LOCAL_FILES_PATH + fileName, ownAddress);
-                nodeStub.addLocalFileList(fileName);
+                nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + fileName, Constants.REPLICATED_FILES_PATH + fileName, ownAddress);
+                nodeStub.addReplicatedFileList(fileName);
             }
         } catch (IOException | NotBoundException e) {
             e.printStackTrace();
@@ -560,7 +509,7 @@ public class Node implements NodeInterface {
                 Registry prevNodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
                 NodeInterface prevNodeStub = (NodeInterface) prevNodeRegistry.lookup("Node");
 
-                if (prevNodeStub.getLocalFiles().contains(fileName)) {
+                if (prevNodeStub.getReplicatedFiles().contains(fileName)) {
                     // Previous Node is already owner -> replicate to previous' previous neighbour
                     Registry prevPrevNodeRegistry = LocateRegistry.getRegistry(prevNodeStub.getPrevAddress().getHostAddress(), Constants.RMI_PORT);
                     NodeInterface prevPrevNodeStub = (NodeInterface) prevPrevNodeRegistry.lookup("Node");
@@ -585,7 +534,7 @@ public class Node implements NodeInterface {
         try {
             setRunning(false);
             leaveNetwork();
-            System.out.println("Left the network");
+            System.out.println("Left the network+");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -681,13 +630,12 @@ public class Node implements NodeInterface {
         node.replicatedFiles = new HashSet<>();
         node.downloadingFiles = new HashSet<>();
         node.discoverFiles(Constants.LOCAL_FILES_PATH);
-//        node.replicateFiles();
+
 
         // Start file update watcher
         FileUpdateWatcher fileUpdateWatcherThread = new FileUpdateWatcher(node, Constants.LOCAL_FILES_PATH);
         Thread thread = new Thread(fileUpdateWatcherThread);
         thread.start();
-        //TODO: add watcher for REPLICATED_FILES_PATH?
 
 
         // Listen for commands
@@ -701,6 +649,13 @@ public class Node implements NodeInterface {
                     node.leaveNetwork();
                     System.out.println("Left the network");
                     break;
+
+                case "shutdown+":
+                case "shut+":
+                case "sh+":
+                    node.shutdown();
+                    break;
+
                 case "neighbours":
                 case "neighbors":
                 case "neigh":
