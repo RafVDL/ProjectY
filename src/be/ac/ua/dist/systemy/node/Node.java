@@ -448,7 +448,7 @@ public class Node implements NodeInterface {
         for (File file : listOfFiles) {
             if (file.isFile()) {
                 System.out.println("Found file " + file.getName());
-//                fileNames.add(file.getName());
+                localFiles.add(file.getName());
                 addFileToNetwork(file.getParent() + "/", file.getName());
             } else if (file.isDirectory()) {
                 System.out.println("Not checking files in nested folder " + file.getName());
@@ -514,7 +514,7 @@ public class Node implements NodeInterface {
      * <p>
      * The NamingServer gets asked who the owner of the file should be. If this Node should
      * be the owner, the file gets duplicated to the previous neighbour via RMI. If this node should not be the owner, the
-     * file gets duplicated to the new owner and this Node updates itself to hold the file as replicated.
+     * file gets duplicated to the owner.
      *
      * @param fileName to introduce in the network
      */
@@ -522,12 +522,6 @@ public class Node implements NodeInterface {
         File file = new File(path + fileName);
         if (!file.isFile()) {
             System.out.println("Trying to add something that is not a file (skipping)");
-            return;
-        }
-
-        if (prevHash == ownHash && nextHash == ownHash) {
-            // This node is the only node in the network and will always be owner of the file.
-            localFiles.add(fileName);
             return;
         }
 
@@ -547,19 +541,12 @@ public class Node implements NodeInterface {
                 NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
                 nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + fileName, Constants.REPLICATED_FILES_PATH + fileName, ownAddress);
                 nodeStub.addReplicatedFileList(fileName);
-
-                localFiles.add(fileName);
             } else {
-                replicatedFiles.add(fileName);
-                // Else send copy to new owner and update own replicatedFiles List as well as new owner's localFiles list.
+                // Else send copy to owner and update owner's localFiles list.
                 Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
                 NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
                 nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + fileName, Constants.LOCAL_FILES_PATH + fileName, ownAddress);
                 nodeStub.addLocalFileList(fileName);
-
-                localFiles.remove(fileName);
-                replicatedFiles.add(fileName);
-                Files.move(Paths.get(Constants.LOCAL_FILES_PATH + fileName), Paths.get(Constants.REPLICATED_FILES_PATH + fileName));
             }
         } catch (IOException | NotBoundException e) {
             e.printStackTrace();
