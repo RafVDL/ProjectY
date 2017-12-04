@@ -685,7 +685,8 @@ public class Node implements NodeInterface {
 
         // Start file update watcher
         FileUpdateWatcher fileUpdateWatcherThread = new FileUpdateWatcher(node, Constants.LOCAL_FILES_PATH);
-        fileUpdateWatcherThread.start();
+        Thread thread = new Thread(fileUpdateWatcherThread);
+        thread.start();
         //TODO: add watcher for REPLICATED_FILES_PATH?
 
 
