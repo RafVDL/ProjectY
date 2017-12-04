@@ -5,8 +5,6 @@ import be.ac.ua.dist.systemy.namingServer.NamingServerInterface;
 
 import java.io.*;
 import java.net.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -15,17 +13,15 @@ import java.rmi.registry.Registry;
 import java.rmi.server.ServerNotActiveException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class Node implements NodeInterface {
 
     private final InetAddress ownAddress;
     private final int ownHash;
-    private Set<String> localFiles;
-    private Set<String> replicatedFiles;
+    private Set<FileHandle> localFiles;
+    private Set<FileHandle> replicatedFiles;
     private Set<String> downloadingFiles;
 
     private volatile InetAddress namingServerAddress;
@@ -64,10 +60,12 @@ public class Node implements NodeInterface {
         return namingServerAddress;
     }
 
+    @Override
     public InetAddress getPrevAddress() {
         return prevAddress;
     }
 
+    @Override
     public InetAddress getNextAddress() {
         return nextAddress;
     }
@@ -80,11 +78,13 @@ public class Node implements NodeInterface {
         return nextHash;
     }
 
-    public Set getLocalFiles() {
+    @Override
+    public Set<FileHandle> getLocalFiles() {
         return localFiles;
     }
 
-    public Set getReplicatedFiles() {
+    @Override
+    public Set<FileHandle> getReplicatedFiles() {
         return replicatedFiles;
     }
 
@@ -93,13 +93,13 @@ public class Node implements NodeInterface {
     }
 
     @Override
-    public void addLocalFileList(String fileName) {
-        localFiles.add(fileName);
+    public void addLocalFileList(FileHandle fileHandle) {
+        localFiles.add(fileHandle);
     }
 
     @Override
-    public void addReplicatedFileList(String fileName) {
-        replicatedFiles.add(fileName);
+    public void addReplicatedFileList(FileHandle fileHandle) {
+        replicatedFiles.add(fileHandle);
     }
 
     @Override
@@ -448,7 +448,8 @@ public class Node implements NodeInterface {
         for (File file : listOfFiles) {
             if (file.isFile()) {
                 System.out.println("Found file " + file.getName());
-                localFiles.add(file.getName());
+                FileHandle fileHandle = new FileHandle(file.getName(), true);
+                localFiles.add(fileHandle);
                 addFileToNetwork(file.getParent() + "/", file.getName());
             } else if (file.isDirectory()) {
                 System.out.println("Not checking files in nested folder " + file.getName());
@@ -456,57 +457,6 @@ public class Node implements NodeInterface {
         }
 
         System.out.println("Finished discovery of " + folder.getName());
-    }
-
-    /**
-     * Method should be run at Node startup and when a new higher neighbour joins
-     * <p>
-     * For each file in the list of local files, the NamingServer gets asked who the owner should be. If this Node should
-     * be the owner, the file gets duplicated to the previous neighbour via RMI. If this node should not be the owner, the
-     * file gets duplicated to the new owner and this Node updates itself to hold the file as replicated.
-     */
-    public void replicateFiles() {
-        if (prevHash == ownHash && nextHash == ownHash) {
-            // This node is the only node in the network and will always be owner of all files.
-            return;
-        }
-
-        Iterator<String> iterator = localFiles.iterator();
-
-        while (iterator.hasNext()) {
-            String fileName = iterator.next();
-            InetAddress ownerAddress;
-
-            try {
-                // Get ownerAddress from NamingServer via RMI.
-                Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
-                NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
-                ownerAddress = namingServerStub.getOwner(fileName);
-
-                if (ownerAddress == null) {
-                    continue;
-                }
-
-                if (ownerAddress.equals(ownAddress)) {
-                    // Replicate to previous neighbour -> initiate downloadFile via RMI and update its replicatedFiles List.
-                    Registry nodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
-                    NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
-                    nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + fileName, Constants.REPLICATED_FILES_PATH + fileName, ownAddress);
-                    nodeStub.addReplicatedFileList(fileName);
-                } else {
-                    // Else send copy to new owner and update own replicatedFiles List as well as new owner's localFiles list.
-                    Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
-                    NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
-                    nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + fileName, Constants.LOCAL_FILES_PATH + fileName, ownAddress);
-                    nodeStub.addLocalFileList(fileName);
-                    iterator.remove();
-                    replicatedFiles.add(fileName);
-                    Files.move(Paths.get(Constants.LOCAL_FILES_PATH + fileName), Paths.get(Constants.REPLICATED_FILES_PATH + fileName));
-                }
-            } catch (IOException | NotBoundException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     /**
@@ -540,13 +490,13 @@ public class Node implements NodeInterface {
                 Registry nodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
                 NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
                 nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + fileName, Constants.REPLICATED_FILES_PATH + fileName, ownAddress);
-                nodeStub.addReplicatedFileList(fileName);
+                nodeStub.addReplicatedFileList(new FileHandle(fileName, false));
             } else {
                 // Else send copy to owner and update owner's localFiles list.
                 Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
                 NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
                 nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + fileName, Constants.LOCAL_FILES_PATH + fileName, ownAddress);
-                nodeStub.addLocalFileList(fileName);
+                nodeStub.addLocalFileList(new FileHandle(fileName, true));
             }
         } catch (IOException | NotBoundException e) {
             e.printStackTrace();
@@ -555,29 +505,31 @@ public class Node implements NodeInterface {
 
     public void shutdown() {
         // Transfer all replicated files
-        for (String fileName : replicatedFiles) {
+        for (FileHandle fileHandle : replicatedFiles) {
             try {
                 Registry prevNodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
                 NodeInterface prevNodeStub = (NodeInterface) prevNodeRegistry.lookup("Node");
 
-                if (prevNodeStub.getLocalFiles().contains(fileName)) {
+                FileHandle replicatedFileHandle = new FileHandle(fileHandle.getFile().getName(), false);
+
+                if (prevNodeStub.getLocalFiles().contains(fileHandle)) {
                     // Previous Node is already owner -> replicate to previous' previous neighbour
                     Registry prevPrevNodeRegistry = LocateRegistry.getRegistry(prevNodeStub.getPrevAddress().getHostAddress(), Constants.RMI_PORT);
                     NodeInterface prevPrevNodeStub = (NodeInterface) prevPrevNodeRegistry.lookup("Node");
 
-                    prevPrevNodeStub.downloadFile(Constants.REPLICATED_FILES_PATH + fileName, Constants.REPLICATED_FILES_PATH + fileName, ownAddress);
-                    prevPrevNodeStub.addReplicatedFileList(fileName);
+                    prevPrevNodeStub.downloadFile(Constants.REPLICATED_FILES_PATH + fileHandle.getFile().getName(), Constants.REPLICATED_FILES_PATH + fileHandle.getFile().getName(), ownAddress);
+                    prevPrevNodeStub.addReplicatedFileList(replicatedFileHandle);
                 } else {
                     // Replicate to previous neighbour
-                    prevNodeStub.downloadFile(Constants.REPLICATED_FILES_PATH + fileName, Constants.REPLICATED_FILES_PATH + fileName, ownAddress);
-                    prevNodeStub.addReplicatedFileList(fileName);
+                    prevNodeStub.downloadFile(Constants.REPLICATED_FILES_PATH + fileHandle.getFile().getName(), Constants.REPLICATED_FILES_PATH + fileHandle.getFile().getName(), ownAddress);
+                    prevNodeStub.addReplicatedFileList(replicatedFileHandle);
                 }
             } catch (RemoteException | NotBoundException e) {
                 e.printStackTrace();
             }
         }
 
-        for (String fileName : localFiles) {
+        for (FileHandle fileHandle : localFiles) {
             //TODO: contact original introducer? for log file -> if file is never downloaded, delete it from network
             //TODO: if it IS downloaded, update downloadlocations in log file??
         }
@@ -587,17 +539,6 @@ public class Node implements NodeInterface {
             leaveNetwork();
             System.out.println("Left the network");
         } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void updateLog(String fileName, Set<Integer> availableNodes, int downloads) {
-        File file = new File(Constants.LOGS_PATH + fileName);
-        try {
-            PrintWriter writer = new PrintWriter(file);
-            writer.println(availableNodes.stream().map(Object::toString).collect(Collectors.joining(",")));
-            writer.println(downloads);
-        } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
     }

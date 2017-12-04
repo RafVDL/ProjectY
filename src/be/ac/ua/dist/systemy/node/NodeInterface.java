@@ -11,13 +11,13 @@ public interface NodeInterface extends Remote {
 
     InetAddress getNextAddress() throws RemoteException;
 
-    Set getLocalFiles() throws RemoteException;
+    Set<FileHandle> getLocalFiles() throws RemoteException;
 
-    Set getReplicatedFiles() throws RemoteException;
+    Set<FileHandle> getReplicatedFiles() throws RemoteException;
 
-    void addLocalFileList(String fileName) throws RemoteException;
+    void addLocalFileList(FileHandle fileHandle) throws RemoteException;
 
-    void addReplicatedFileList(String fileName) throws RemoteException;
+    void addReplicatedFileList(FileHandle fileHandle) throws RemoteException;
 
     void downloadFile(String sourceFileName, String targetFileName, InetAddress remoteAddress) throws RemoteException;
 
