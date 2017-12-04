@@ -36,7 +36,7 @@ public class FileUpdateWatcher extends Thread {
                         continue;
                     }
 
-                    if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
+                    if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE && file.length() > 0) {
                         System.out.println("Watcher detected: [NEW] - " + event.context());
                         node.addFileToNetwork(file.getParent() + "/", file.getName());
                     } else if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
