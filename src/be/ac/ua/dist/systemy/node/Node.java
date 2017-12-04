@@ -24,9 +24,12 @@ public class Node implements NodeInterface {
 
     private final InetAddress ownAddress;
     private final int ownHash;
+    private String fileLockRequest;
     private Set<String> localFiles;
     private Set<String> replicatedFiles;
     private Set<String> downloadingFiles;
+    private Set<String> allFiles;
+
 
     private volatile InetAddress namingServerAddress;
     private InetAddress prevAddress;
@@ -92,6 +95,14 @@ public class Node implements NodeInterface {
         return downloadingFiles;
     }
 
+    public String getFileLockRequest(){
+        return fileLockRequest;
+    }
+
+    public void setFileLockRequest(String filename){
+        this.fileLockRequest = filename;
+    }
+
     @Override
     public void addLocalFileList(String fileName) {
         localFiles.add(fileName);
@@ -100,6 +111,14 @@ public class Node implements NodeInterface {
     @Override
     public void addReplicatedFileList(String fileName) {
         replicatedFiles.add(fileName);
+    }
+
+    public void addAllFileList(String file) {
+        this.allFiles.add(file);
+    }
+
+    public void emptyAllFileList() {
+        this.allFiles.clear();
     }
 
     @Override
