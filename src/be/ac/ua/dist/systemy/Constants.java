@@ -13,4 +13,6 @@ public class Constants {
 
     public static final String LOCAL_FILES_PATH = "localFiles/";
     public static final String REPLICATED_FILES_PATH = "replicatedFiles/";
+    public static final String LOGS_PATH = "logs/";
+
 }

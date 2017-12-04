@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class Node implements NodeInterface {
 
@@ -599,6 +600,17 @@ public class Node implements NodeInterface {
             leaveNetwork();
             System.out.println("Left the network");
         } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void updateLog(String fileName, Set<Integer> availableNodes, int downloads) {
+        File file = new File(Constants.LOGS_PATH + fileName);
+        try {
+            PrintWriter writer = new PrintWriter(file);
+            writer.println(availableNodes.stream().map(Object::toString).collect(Collectors.joining(",")));
+            writer.println(downloads);
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
     }
