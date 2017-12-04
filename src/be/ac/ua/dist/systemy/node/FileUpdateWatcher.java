@@ -31,6 +31,11 @@ public class FileUpdateWatcher extends Thread {
                 for (WatchEvent event : events) {
                     File file = new File(dirPath.getFileName() + "/" + event.context().toString());
 
+                    if (node.getDownloadingFiles().contains(file.getName())) {
+                        System.out.println(file.getName() + " is still downloading, skipping update checker");
+                        continue;
+                    }
+
                     if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
                         System.out.println("Watcher detected: [NEW] - " + event.context());
                         node.addFileToNetwork(file.getParent() + "/", file.getName());
@@ -47,8 +52,6 @@ public class FileUpdateWatcher extends Thread {
                     }
                 }
             }
-
-
         } catch (IOException | InterruptedException e) {
             e.printStackTrace();
         }

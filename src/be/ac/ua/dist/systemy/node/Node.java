@@ -25,6 +25,7 @@ public class Node implements NodeInterface {
     private final int ownHash;
     private Set<String> localFiles;
     private Set<String> replicatedFiles;
+    private Set<String> downloadingFiles;
 
     private volatile InetAddress namingServerAddress;
     private InetAddress prevAddress;
@@ -78,6 +79,10 @@ public class Node implements NodeInterface {
         return nextHash;
     }
 
+    public Set getDownloadingFiles(){
+        return downloadingFiles;
+    }
+
     @Override
     public void addLocalFileList(String fileName) {
         localFiles.add(fileName);
@@ -89,19 +94,21 @@ public class Node implements NodeInterface {
     }
 
     @Override
-    public void downloadFile(String sourceFileName, String targetFileName, InetAddress remoteAddress) {
+    public void downloadFile(String remoteFileName, String localFileName, InetAddress remoteAddress) {
         Socket clientSocket;
 
+        downloadingFiles.add(localFileName);
+        System.out.println("Adding " + localFileName + " to downloading files");
         try {
             //Open tcp socket to server @remoteAddress:port
             clientSocket = new Socket(remoteAddress, Constants.TCP_PORT);
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
             DataInputStream in = new DataInputStream(clientSocket.getInputStream());
-            FileOutputStream fos = new FileOutputStream(targetFileName);
+            FileOutputStream fos = new FileOutputStream(localFileName);
 
             //Request file at the server
             out.println("REQUESTFILE");
-            out.println(sourceFileName);
+            out.println(remoteFileName);
             //Initialize buffers
             int fileSize = in.readInt();
             byte[] buffer = new byte[1024 * 10]; // 10 kB
@@ -121,6 +128,8 @@ public class Node implements NodeInterface {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        downloadingFiles.remove(localFileName);
+        System.out.println("Removing " + localFileName + " from downloading files");
     }
 
     /**
@@ -625,6 +634,7 @@ public class Node implements NodeInterface {
         node.clearDir(Constants.REPLICATED_FILES_PATH);
         node.localFiles = new HashSet<>();
         node.replicatedFiles = new HashSet<>();
+        node.downloadingFiles = new HashSet<>();
         node.discoverFiles(Constants.LOCAL_FILES_PATH);
 //        node.replicateFiles();
 
