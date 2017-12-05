@@ -548,7 +548,7 @@ public class Node implements NodeInterface {
             }
 
             if (packet.getNextNeighbour() != -1) {
-                updatePrev(null, packet.getNextNeighbour());
+                updateNext(null, packet.getNextNeighbour());
             }
             client.close();
         })));
