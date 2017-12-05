@@ -14,10 +14,8 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.ServerNotActiveException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class Node implements NodeInterface {
@@ -29,6 +27,7 @@ public class Node implements NodeInterface {
     private Set<String> replicatedFiles;
     private Set<String> downloadingFiles;
     private Set<String> allFiles;
+    private TreeMap<String, Integer> files;
 
 
     private volatile InetAddress namingServerAddress;
@@ -119,6 +118,10 @@ public class Node implements NodeInterface {
 
     public void emptyAllFileList() {
         this.allFiles.clear();
+    }
+
+    public void setFiles(TreeMap<String, Integer> files){
+        this.files = files;
     }
 
     @Override
@@ -217,6 +220,16 @@ public class Node implements NodeInterface {
 
         prevAddress = newAddress;
         prevHash = newHash;
+    }
+
+    @Override
+    public void runFileAgent(TreeMap<String, Integer> files) throws InterruptedException {
+        Thread t = new Thread(new FileAgent(files, this));
+        t.start();
+        t.join(); //wait for thread to stop
+        
+
+
     }
 
     /**

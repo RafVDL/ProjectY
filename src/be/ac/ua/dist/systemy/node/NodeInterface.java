@@ -4,6 +4,7 @@ import java.net.InetAddress;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.Set;
+import java.util.TreeMap;
 
 public interface NodeInterface extends Remote {
 
@@ -26,5 +27,7 @@ public interface NodeInterface extends Remote {
     void updateNext(InetAddress newAddress, int newHash) throws RemoteException;
 
     void updatePrev(InetAddress newAddress, int newHash) throws RemoteException;
+
+    void runFileAgent(TreeMap<String, Integer> files) throws RemoteException, InterruptedException;
 
 }

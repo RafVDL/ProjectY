@@ -20,7 +20,9 @@ public class FileAgent implements Runnable, Serializable{
     private Set<String> localFiles;
     private String lockRequest;
 
-    public void FileAgent(TreeMap<String, Integer> files, Node node){ //integer is hash of node that is downloading file
+
+
+    public FileAgent(TreeMap<String, Integer> files, Node node){ //integer is hash of node that is downloading file
         this.files = files;
         this.node = node;
         }
@@ -62,6 +64,9 @@ public class FileAgent implements Runnable, Serializable{
                 files.put(lockRequest, 0);
             }
         }
+
+        node.setFiles(this.files);
+        return;
 
 
     }
