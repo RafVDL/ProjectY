@@ -1,6 +1,6 @@
 package be.ac.ua.dist.systemy.networking.tcp;
 
-import be.ac.ua.dist.systemy.networking.NetworkManager;
+import be.ac.ua.dist.systemy.networking.Communications;
 import be.ac.ua.dist.systemy.networking.packet.Packet;
 
 import java.io.DataInputStream;
@@ -34,7 +34,7 @@ public class TCPListenerRunnable implements Runnable {
 
                 tcpServer.getPacketListeners(packet.getClass()).forEach(packetListener -> {
                     try {
-                        packetListener.receivePacket(packet, NetworkManager.getTCPClient(socket.getInetAddress(), socket.getPort(), socket));
+                        packetListener.receivePacket(packet, Communications.getTCPClient(socket.getInetAddress(), socket.getPort(), socket));
                     } catch (IOException e) {
                         System.err.println("[Unicast] Error handling packet " + packet.getClass().getSimpleName() + ":");
                         e.printStackTrace();

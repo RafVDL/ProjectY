@@ -1,7 +1,7 @@
 package be.ac.ua.dist.systemy.networking.udp;
 
 import be.ac.ua.dist.systemy.Constants;
-import be.ac.ua.dist.systemy.networking.NetworkManager;
+import be.ac.ua.dist.systemy.networking.Communications;
 import be.ac.ua.dist.systemy.networking.packet.Packet;
 
 import java.io.ByteArrayInputStream;
@@ -29,7 +29,7 @@ public class UnicastListenerRunnable implements Runnable {
             DataInputStream dis = new DataInputStream(bais);
             short packetId = dis.readShort();
 
-            Class<? extends Packet> packetClazz = NetworkManager.getPacketById(packetId);
+            Class<? extends Packet> packetClazz = Communications.getPacketById(packetId);
 
             if (packetClazz == null) {
                 System.err.println("[Unicast] Received unknown packet id " + packetId + " from " + datagramPacket.getAddress().getHostAddress());
@@ -37,7 +37,7 @@ public class UnicastListenerRunnable implements Runnable {
                 return;
             }
 
-            if (NetworkManager.DEBUG())
+            if (Communications.DEBUG())
                 System.out.println("[Unicast] Received packet " + packetId + " from " + datagramPacket.getAddress().getHostAddress());
 
             int senderHash = dis.readInt();
@@ -48,7 +48,7 @@ public class UnicastListenerRunnable implements Runnable {
 
             unicastServer.getPacketListeners(packetClazz).forEach(packetListener -> {
                 try {
-                    packetListener.receivePacket(packet, NetworkManager.getUDPClient(datagramPacket.getAddress(), Constants.UNICAST_PORT));
+                    packetListener.receivePacket(packet, Communications.getUDPClient(datagramPacket.getAddress(), Constants.UNICAST_PORT));
                 } catch (SocketException e) {
                     e.printStackTrace();
                 } catch (IOException e) {

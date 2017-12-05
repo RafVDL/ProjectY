@@ -3,7 +3,7 @@ package be.ac.ua.dist.systemy.node;
 import be.ac.ua.dist.systemy.Constants;
 import be.ac.ua.dist.systemy.namingServer.NamingServerInterface;
 import be.ac.ua.dist.systemy.networking.Client;
-import be.ac.ua.dist.systemy.networking.NetworkManager;
+import be.ac.ua.dist.systemy.networking.Communications;
 import be.ac.ua.dist.systemy.networking.packet.UpdateNeighboursPacket;
 
 import java.io.IOException;
@@ -37,7 +37,7 @@ public class FailureHandler {
         neighboursIP[1] = stub.getIPNode(neighboursHash[1]);
 
         try {
-            Client prevClient = NetworkManager.getTCPClient(neighboursIP[0], Constants.TCP_PORT);
+            Client prevClient = Communications.getTCPClient(neighboursIP[0], Constants.TCP_PORT);
             UpdateNeighboursPacket packet = new UpdateNeighboursPacket(-1, neighboursHash[0]);
             prevClient.sendPacket(packet);
         } catch (IOException e) {
@@ -45,7 +45,7 @@ public class FailureHandler {
         }
 
         try {
-            Client prevClient = NetworkManager.getTCPClient(neighboursIP[1], Constants.TCP_PORT);
+            Client prevClient = Communications.getTCPClient(neighboursIP[1], Constants.TCP_PORT);
             UpdateNeighboursPacket packet = new UpdateNeighboursPacket(neighboursHash[1], -1);
             prevClient.sendPacket(packet);
         } catch (IOException e) {

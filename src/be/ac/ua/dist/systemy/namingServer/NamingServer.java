@@ -2,7 +2,7 @@ package be.ac.ua.dist.systemy.namingServer;
 
 import be.ac.ua.dist.systemy.Constants;
 import be.ac.ua.dist.systemy.networking.Client;
-import be.ac.ua.dist.systemy.networking.NetworkManager;
+import be.ac.ua.dist.systemy.networking.Communications;
 import be.ac.ua.dist.systemy.networking.Server;
 import be.ac.ua.dist.systemy.networking.packet.*;
 import be.ac.ua.dist.systemy.networking.udp.MulticastServer;
@@ -28,6 +28,7 @@ public class NamingServer implements NamingServerInterface {
     TreeMap<Integer, InetAddress> ipAddresses = new TreeMap<>();
 
     private boolean running = true;
+    private Server multicastServer;
 
     public NamingServer(InetAddress serverIP) throws UnknownHostException {
         this.serverIP = serverIP;
@@ -170,6 +171,43 @@ public class NamingServer implements NamingServerInterface {
         }
     }
 
+    public void setupMulticastServer() {
+        multicastServer = new MulticastServer();
+
+        multicastServer.registerListener(HelloPacket.class, ((packet, client) -> {
+            try {
+                client.close();
+
+                Client tcpClient = Communications.getTCPClient(client.getAddress(), Constants.TCP_PORT);
+                NodeCountPacket nodeCountPacket = new NodeCountPacket(ipAddresses.size());
+                tcpClient.sendPacket(nodeCountPacket);
+
+                addNodeToNetwork(packet.getSenderHash(), client.getAddress());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }));
+
+        multicastServer.registerListener(GetIPPacket.class, ((packet, client) -> {
+            try {
+                IPResponsePacket ipResponsePacket = new IPResponsePacket(ipAddresses.get(packet.getHash()));
+                client.sendPacket(ipResponsePacket);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }));
+
+        multicastServer.registerListener(QuitPacket.class, ((packet, client) -> {
+            try {
+                removeNodeFromNetwork(packet.getSenderHash());
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        }));
+
+        multicastServer.startServer(serverIP, Constants.MULTICAST_PORT);
+    }
+
     public static void main(String[] args) throws UnknownHostException {
         Scanner sc = new Scanner(System.in);
         InetAddress detectedHostAddress = InetAddress.getLocalHost();
@@ -183,42 +221,9 @@ public class NamingServer implements NamingServerInterface {
         NamingServer namingServer = new NamingServer(InetAddress.getByName(ip));
         namingServer.initializeRMI();
 
-        NetworkManager.setSenderHash(0); // NamingServer exclusive!
+        Communications.setSenderHash(0); // NamingServer exclusive!
 
-        Server multicastServer = new MulticastServer();
-
-        multicastServer.registerListener(HelloPacket.class, ((packet, client) -> {
-            try {
-                client.close();
-
-                Client tcpClient = NetworkManager.getTCPClient(client.getAddress(), Constants.TCP_PORT);
-                NodeCountPacket nodeCountPacket = new NodeCountPacket(namingServer.ipAddresses.size());
-                tcpClient.sendPacket(nodeCountPacket);
-
-                namingServer.addNodeToNetwork(packet.getSenderHash(), client.getAddress());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }));
-
-        multicastServer.registerListener(GetIPPacket.class, ((packet, client) -> {
-            try {
-                IPResponsePacket ipResponsePacket = new IPResponsePacket(namingServer.ipAddresses.get(packet.getHash()));
-                client.sendPacket(ipResponsePacket);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }));
-
-        multicastServer.registerListener(QuitNamingPacket.class, ((packet, client) -> {
-            try {
-                namingServer.removeNodeFromNetwork(packet.getSenderHash());
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        }));
-
-        multicastServer.startServer(InetAddress.getByName("225.0.113.0"), Constants.MULTICAST_PORT);
+        namingServer.setupMulticastServer();
 
         System.out.println("Namingserver started @" + ip);
 
@@ -230,7 +235,7 @@ public class NamingServer implements NamingServerInterface {
                 case "shut":
                 case "sh":
                     namingServer.setRunning(false);
-                    multicastServer.stop();
+                    namingServer.multicastServer.stop();
                     System.out.println("Shutdown the network");
                     break;
 

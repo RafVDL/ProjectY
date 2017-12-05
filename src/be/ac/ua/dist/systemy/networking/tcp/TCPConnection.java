@@ -1,7 +1,7 @@
 package be.ac.ua.dist.systemy.networking.tcp;
 
 import be.ac.ua.dist.systemy.networking.Connection;
-import be.ac.ua.dist.systemy.networking.NetworkManager;
+import be.ac.ua.dist.systemy.networking.Communications;
 import be.ac.ua.dist.systemy.networking.packet.Packet;
 
 import java.io.DataInputStream;
@@ -39,7 +39,7 @@ public class TCPConnection implements Connection {
 
     @Override
     public void close() throws IOException {
-        if (NetworkManager.DEBUG())
+        if (Communications.DEBUG())
             System.out.println("[TCP] Closing socket to " + socket.getInetAddress().getHostAddress());
 
         dos.close();
@@ -48,11 +48,11 @@ public class TCPConnection implements Connection {
 
     @Override
     public void sendPacket(Packet packet) throws IOException {
-        if (NetworkManager.DEBUG())
-            System.out.println("[TCP] Sending packet with id " + NetworkManager.getPacketIdByObject(packet) + " to " + socket.getInetAddress().getHostAddress());
+        if (Communications.DEBUG())
+            System.out.println("[TCP] Sending packet with id " + Communications.getPacketIdByObject(packet) + " to " + socket.getInetAddress().getHostAddress());
 
-        dos.writeShort(NetworkManager.getPacketIdByObject(packet));
-        dos.writeInt(NetworkManager.getSenderHash());
+        dos.writeShort(Communications.getPacketIdByObject(packet));
+        dos.writeInt(Communications.getSenderHash());
         packet.send(dos);
     }
 

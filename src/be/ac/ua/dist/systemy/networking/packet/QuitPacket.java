@@ -4,9 +4,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-public class QuitNamingPacket extends Packet {
+public class QuitPacket extends Packet {
 
-    public QuitNamingPacket() {
+    public QuitPacket() {
     }
 
     @Override

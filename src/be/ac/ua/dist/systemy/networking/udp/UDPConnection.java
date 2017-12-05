@@ -1,7 +1,7 @@
 package be.ac.ua.dist.systemy.networking.udp;
 
+import be.ac.ua.dist.systemy.networking.Communications;
 import be.ac.ua.dist.systemy.networking.Connection;
-import be.ac.ua.dist.systemy.networking.NetworkManager;
 import be.ac.ua.dist.systemy.networking.packet.Packet;
 
 import java.io.ByteArrayOutputStream;
@@ -35,7 +35,7 @@ public class UDPConnection implements Connection {
 
     @Override
     public void close() {
-        if (NetworkManager.DEBUG())
+        if (Communications.DEBUG())
             System.out.println("[UDP] Closing socket to " + address.getHostAddress());
 
         socket.close();
@@ -43,13 +43,13 @@ public class UDPConnection implements Connection {
 
     @Override
     public void sendPacket(Packet packet) throws IOException {
-        if (NetworkManager.DEBUG())
-            System.out.println("[UDP] Sending packet with id " + NetworkManager.getPacketIdByObject(packet) + " to " + address.getHostAddress());
+        if (Communications.DEBUG())
+            System.out.println("[UDP] Sending packet with id " + Communications.getPacketIdByObject(packet) + " to " + address.getHostAddress());
 
         flush();
 
-        dos.writeShort(NetworkManager.getPacketIdByObject(packet));
-        dos.writeInt(NetworkManager.getSenderHash());
+        dos.writeShort(Communications.getPacketIdByObject(packet));
+        dos.writeInt(Communications.getSenderHash());
         packet.send(dos);
 
         flush();

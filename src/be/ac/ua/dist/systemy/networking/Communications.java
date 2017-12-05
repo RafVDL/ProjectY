@@ -8,12 +8,10 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-public class NetworkManager {
+public class Communications {
 
     private static boolean debug = false;
 
@@ -26,13 +24,13 @@ public class NetworkManager {
         registerPacket(Packet.ID.HELLO, HelloPacket.class);
         registerPacket(Packet.ID.NODE_COUNT, NodeCountPacket.class);
         registerPacket(Packet.ID.GET_IP, GetIPPacket.class);
-        registerPacket(Packet.ID.QUIT_NAMING, QuitNamingPacket.class);
+        registerPacket(Packet.ID.QUIT_NAMING, QuitPacket.class);
         registerPacket(Packet.ID.IP_RESPONSE, IPResponsePacket.class);
         registerPacket(Packet.ID.UPDATE_NEIGHBOUR, UpdateNeighboursPacket.class);
         registerPacket(Packet.ID.FILE_REQUEST, FileRequestPacket.class);
     }
 
-    private NetworkManager() {
+    private Communications() {
 
     }
 
@@ -44,7 +42,7 @@ public class NetworkManager {
      */
     public static void registerPacket(short id, Class<? extends Packet> clazz) {
         if (debug)
-            System.out.println("[NetworkManager] Registered packet " + id + " to class " + clazz.getName());
+            System.out.println("[Communications] Registered packet " + id + " to class " + clazz.getName());
 
         packets.put(id, clazz);
         reversePacketLookup.put(clazz, id);
@@ -132,7 +130,7 @@ public class NetworkManager {
      * @param debug true if debugging should be enabled
      */
     public static void setDebugging(boolean debug) {
-        NetworkManager.debug = debug;
+        Communications.debug = debug;
     }
 
     /**
@@ -150,7 +148,7 @@ public class NetworkManager {
      * @param senderHash the hash of the current system
      */
     public static void setSenderHash(int senderHash) {
-        NetworkManager.senderHash = senderHash;
+        Communications.senderHash = senderHash;
     }
 
 }

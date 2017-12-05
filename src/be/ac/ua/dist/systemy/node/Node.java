@@ -3,7 +3,7 @@ package be.ac.ua.dist.systemy.node;
 import be.ac.ua.dist.systemy.Constants;
 import be.ac.ua.dist.systemy.namingServer.NamingServerInterface;
 import be.ac.ua.dist.systemy.networking.Client;
-import be.ac.ua.dist.systemy.networking.NetworkManager;
+import be.ac.ua.dist.systemy.networking.Communications;
 import be.ac.ua.dist.systemy.networking.Server;
 import be.ac.ua.dist.systemy.networking.packet.*;
 import be.ac.ua.dist.systemy.networking.tcp.TCPServer;
@@ -11,7 +11,8 @@ import be.ac.ua.dist.systemy.networking.udp.MulticastServer;
 import be.ac.ua.dist.systemy.networking.udp.UnicastServer;
 
 import java.io.*;
-import java.net.*;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -20,6 +21,8 @@ import java.rmi.registry.Registry;
 import java.rmi.server.ServerNotActiveException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class Node implements NodeInterface {
 
@@ -38,14 +41,14 @@ public class Node implements NodeInterface {
 
     private boolean running = true;
 
-    private MulticastSocket multicastSocket;
     private InetAddress multicastGroup;
+    private Server multicastServer;
+    private Server tcpServer;
 
     public Node(String nodeName, InetAddress address) throws IOException {
         this.ownAddress = address;
         this.ownHash = calculateHash(nodeName);
 
-        multicastSocket = new MulticastSocket(Constants.MULTICAST_PORT);
         multicastGroup = InetAddress.getByName(Constants.MULTICAST_ADDRESS);
     }
 
@@ -110,36 +113,31 @@ public class Node implements NodeInterface {
 
     @Override
     public void downloadFile(String remoteFileName, String localFileName, InetAddress remoteAddress) {
-        Socket clientSocket;
-
         downloadingFiles.add(localFileName.split("/")[1]);
         System.out.println("Adding " + localFileName + " to downloading files");
+        //Open tcp socket to server @remoteAddress:port
+
         try {
-            //Open tcp socket to server @remoteAddress:port
-            clientSocket = new Socket(remoteAddress, Constants.TCP_PORT);
-            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-            DataInputStream in = new DataInputStream(clientSocket.getInputStream());
+            Client client = Communications.getTCPClient(remoteAddress, Constants.TCP_PORT);
+            DataInputStream dis = client.getConnection().getDataInputStream();
             FileOutputStream fos = new FileOutputStream(localFileName);
 
-            //Request file at the server
-            out.println("REQUESTFILE");
-            out.println(remoteFileName);
-            //Initialize buffers
-            int fileSize = in.readInt();
-            byte[] buffer = new byte[1024 * 10]; // 10 kB
+            FileRequestPacket fileRequestPacket = new FileRequestPacket(remoteFileName);
+            client.sendPacket(fileRequestPacket);
+
+            int fileSize = dis.readInt();
+
+            byte[] buffer = new byte[4096];
             int read;
             int remaining = fileSize;
-            //Receive the file
-            while ((read = in.read(buffer, 0, Math.min(buffer.length, remaining))) > 0) {
+
+            while ((read = dis.read(buffer, 0, Math.min(buffer.length, remaining))) > 0) {
                 remaining -= read;
                 fos.write(buffer, 0, read);
             }
 
-            //Close everything
             fos.close();
-            in.close();
-            out.close();
-            clientSocket.close();
+            client.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -217,7 +215,7 @@ public class Node implements NodeInterface {
             // NodeCount is currently 0, always update self and the joining Node.
 
             try {
-                Client client = NetworkManager.getTCPClient(newAddress, Constants.TCP_PORT);
+                Client client = Communications.getTCPClient(newAddress, Constants.TCP_PORT);
                 UpdateNeighboursPacket packet = new UpdateNeighboursPacket(ownHash, ownHash);
                 client.sendPacket(packet);
             } catch (IOException e) {
@@ -247,7 +245,7 @@ public class Node implements NodeInterface {
             // Joining Node sits between this Node and next neighbour.
 
             try {
-                Client client = NetworkManager.getTCPClient(newAddress, Constants.TCP_PORT);
+                Client client = Communications.getTCPClient(newAddress, Constants.TCP_PORT);
                 UpdateNeighboursPacket packet = new UpdateNeighboursPacket(ownHash, nextHash);
                 client.sendPacket(packet);
             } catch (IOException e) {
@@ -260,7 +258,7 @@ public class Node implements NodeInterface {
     }
 
     private InetAddress getAddressByHash(int hash) throws IOException {
-        Client client = NetworkManager.getUDPClient(multicastGroup, Constants.MULTICAST_PORT);
+        Client client = Communications.getUDPClient(multicastGroup, Constants.MULTICAST_PORT);
 
         final InetAddress[] address = new InetAddress[1];
 
@@ -287,75 +285,29 @@ public class Node implements NodeInterface {
     }
 
     public void joinNetwork() throws IOException {
-        byte[] buf;
-        buf = ("HELLO|" + ownHash).getBytes();
-        DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Constants.MULTICAST_PORT);
-        multicastSocket.send(packet);
-
-        multicastSocket.joinGroup(multicastGroup);
+        HelloPacket helloPacket = new HelloPacket();
+        Client client = Communications.getUDPClient(multicastGroup, Constants.MULTICAST_PORT);
+        client.sendPacket(helloPacket);
     }
 
     public void leaveNetwork() throws IOException {
-        byte[] buf;
-        buf = ("QUITNAMING|" + ownHash).getBytes();
-        DatagramPacket packet = new DatagramPacket(buf, buf.length, multicastGroup, Constants.MULTICAST_PORT);
-        multicastSocket.send(packet);
-        multicastSocket.leaveGroup(multicastGroup);
-        multicastSocket.close();
+        QuitPacket quitPacket = new QuitPacket();
+        Client client = Communications.getUDPClient(multicastGroup, Constants.MULTICAST_PORT);
+        client.sendPacket(quitPacket);
+
+        multicastServer.stop();
 
         if (ownHash == nextHash && ownHash == prevHash)
             return;
 
-        Socket clientSocket;
-        DataOutputStream dos;
-        PrintWriter out;
-        try {
-            clientSocket = new Socket();
-            clientSocket.setSoLinger(true, 5);
-            clientSocket.connect(new InetSocketAddress(prevAddress, Constants.TCP_PORT), 1000);
-            dos = new DataOutputStream(clientSocket.getOutputStream());
-            out = new PrintWriter(dos, true);
+        Client clientPrev = Communications.getTCPClient(prevAddress, Constants.TCP_PORT);
+        clientPrev.sendPacket(new UpdateNeighboursPacket(-1, nextHash));
 
-            //Send neighbour update command.
-            out.println("QUIT");
-            //Send neighbours
-            dos.writeInt(ownHash);
-            dos.writeInt(nextHash);
-
-            //Close everything.
-            out.close();
-            clientSocket.close();
-        } catch (SocketTimeoutException e) {
-            // handle node disconnected
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        if (prevHash == nextHash) {
+        if (prevHash == nextHash)
             return;
-        }
 
-        try {
-            clientSocket = new Socket();
-            clientSocket.setSoLinger(true, 5);
-            clientSocket.connect(new InetSocketAddress(nextAddress, Constants.TCP_PORT), 1000);
-            dos = new DataOutputStream(clientSocket.getOutputStream());
-            out = new PrintWriter(dos, true);
-
-            //Send neighbour update command.
-            out.println("QUIT");
-            //Send neighbours
-            dos.writeInt(ownHash);
-            dos.writeInt(prevHash);
-
-            //Close everything.
-            dos.close();
-            clientSocket.close();
-        } catch (SocketTimeoutException e) {
-            // handle node disconnected
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        Client clientNext = Communications.getTCPClient(prevAddress, Constants.TCP_PORT);
+        clientNext.sendPacket(new UpdateNeighboursPacket(prevHash, -1));
     }
 
     public void handleFailure(int hashFailedNode) {
@@ -467,6 +419,9 @@ public class Node implements NodeInterface {
      * Transfer all replicated and process all local files. Then leave the network.
      */
     public void shutdown() {
+        tcpServer.stop();
+        multicastServer.stop();
+
         //TODO: Put a lock on the Node if it is in the process of leaving. This ensures no new files are replicated onto the Node.
         // Transfer all replicated files
         for (Map.Entry<String, FileHandle> entry : replicatedFiles.entrySet()) {
@@ -565,7 +520,7 @@ public class Node implements NodeInterface {
     }
 
     public void setupMulticastServer() {
-        Server multicastServer = new MulticastServer();
+        multicastServer = new MulticastServer();
 
         multicastServer.registerListener(HelloPacket.class, ((packet, client) -> {
             if (packet.getSenderHash() != getOwnHash())
@@ -576,7 +531,7 @@ public class Node implements NodeInterface {
     }
 
     public void setupTCPServer() {
-        Server tcpServer = new TCPServer();
+        tcpServer = new TCPServer();
 
         tcpServer.registerListener(NodeCountPacket.class, ((packet, client) -> {
             setNamingServerAddress(client.getAddress());
@@ -652,7 +607,7 @@ public class Node implements NodeInterface {
         node.initializeRMI();
         System.out.println("Hash: " + node.getOwnHash());
 
-        NetworkManager.setSenderHash(node.getOwnHash());
+        Communications.setSenderHash(node.getOwnHash());
 
         node.setupMulticastServer();
         node.setupTCPServer();
@@ -686,6 +641,8 @@ public class Node implements NodeInterface {
                 case "sh":
                     node.setRunning(false);
                     node.leaveNetwork();
+                    node.tcpServer.stop();
+                    node.multicastServer.stop();
                     System.out.println("Left the network");
                     break;
 
