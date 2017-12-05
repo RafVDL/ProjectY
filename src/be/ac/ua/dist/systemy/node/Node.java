@@ -499,11 +499,11 @@ public class Node implements NodeInterface {
                 // Else send copy to owner and update owner's localFiles list.
                 Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
                 NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
-                nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + file.getName(), Constants.LOCAL_FILES_PATH + file.getName(), ownAddress);
-                FileHandle newFileHandle = new FileHandle(file.getName(), true);
+                nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + file.getName(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
+                FileHandle newFileHandle = new FileHandle(file.getName(), false);
                 fileHandle.getAvailableNodes().add(nodeStub.getOwnHash());
                 newFileHandle.getAvailableNodes().addAll(fileHandle.getAvailableNodes());
-                nodeStub.addLocalFileList(newFileHandle);
+                nodeStub.addReplicatedFileList(newFileHandle);
             }
         } catch (IOException | NotBoundException e) {
             e.printStackTrace();
@@ -519,7 +519,7 @@ public class Node implements NodeInterface {
 
                 FileHandle replicatedFileHandle = new FileHandle(fileHandle.getFile().getName(), false);
 
-                if (prevNodeStub.getLocalFiles().contains(fileHandle)) {
+                if (prevNodeStub.getReplicatedFiles().contains(fileHandle)) {
                     // Previous Node is already owner -> replicate to previous' previous neighbour
                     Registry prevPrevNodeRegistry = LocateRegistry.getRegistry(prevNodeStub.getPrevAddress().getHostAddress(), Constants.RMI_PORT);
                     NodeInterface prevPrevNodeStub = (NodeInterface) prevPrevNodeRegistry.lookup("Node");
@@ -544,7 +544,7 @@ public class Node implements NodeInterface {
         try {
             setRunning(false);
             leaveNetwork();
-            System.out.println("Left the network");
+            System.out.println("Left the network+");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -629,12 +629,12 @@ public class Node implements NodeInterface {
         node.replicatedFiles = new HashSet<>();
         node.downloadingFiles = new HashSet<>();
         node.discoverFiles(Constants.LOCAL_FILES_PATH);
-//        node.replicateFiles();
+
 
         // Start file update watcher
         FileUpdateWatcher fileUpdateWatcherThread = new FileUpdateWatcher(node, Constants.LOCAL_FILES_PATH);
-        fileUpdateWatcherThread.start();
-        //TODO: add watcher for REPLICATED_FILES_PATH?
+        Thread thread = new Thread(fileUpdateWatcherThread);
+        thread.start();
 
 
         // Listen for commands
@@ -648,6 +648,13 @@ public class Node implements NodeInterface {
                     node.leaveNetwork();
                     System.out.println("Left the network");
                     break;
+
+                case "shutdown+":
+                case "shut+":
+                case "sh+":
+                    node.shutdown();
+                    break;
+
                 case "neighbours":
                 case "neighbors":
                 case "neigh":
