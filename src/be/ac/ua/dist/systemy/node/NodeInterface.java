@@ -3,17 +3,28 @@ package be.ac.ua.dist.systemy.node;
 import java.net.InetAddress;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
-import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public interface NodeInterface extends Remote {
 
-    List<String> getLocalFileList() throws RemoteException;
+    int getOwnHash() throws RemoteException;
 
-    List<String> getReplicatedFileList() throws RemoteException;
+    InetAddress getPrevAddress() throws RemoteException;
 
-    List<String> getDownloadedFileList() throws RemoteException;
+    InetAddress getNextAddress() throws RemoteException;
+
+    Map<String, FileHandle> getLocalFiles() throws RemoteException;
+
+    Map<String, FileHandle> getReplicatedFiles() throws RemoteException;
+
+    void addLocalFileList(FileHandle fileHandle) throws RemoteException;
+
+    void addReplicatedFileList(FileHandle fileHandle) throws RemoteException;
 
     void downloadFile(String sourceFileName, String targetFileName, InetAddress remoteAddress) throws RemoteException;
+
+    void deleteFileFromNode(FileHandle fileHandle) throws RemoteException;
 
     void updateNext(InetAddress newAddress, int newHash) throws RemoteException;
 
