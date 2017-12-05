@@ -38,4 +38,12 @@ public interface Connection extends Flushable, Closeable {
      */
     <E extends Packet> E waitForPacket(Class<E> clazz) throws IOException;
 
+    /**
+     * Blocks until a packet is received, and if the backing connection supports it.
+     *
+     * @return The packet once it is received
+     * @throws IOException if an I/O exception occurs.
+     */
+    Packet waitForPacket() throws IOException;
+
 }

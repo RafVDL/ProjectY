@@ -69,17 +69,27 @@ public class TCPConnection implements Connection {
     @Override
     @SuppressWarnings("unchecked")
     public <E extends Packet> E waitForPacket(Class<E> clazz) throws IOException {
+        Packet packet = waitForPacket();
+
+        if (packet == null)
+            return null;
+
+        if (clazz.isInstance(packet))
+            return (E) packet;
+
+        System.err.println("Received packet " + packet.getClass().getSimpleName() + "; expected " + clazz.getSimpleName() + ". State error of other peer?");
+        return null;
+    }
+
+    @Override
+    public Packet waitForPacket() throws IOException {
         try {
             Packet packet = TCPUtil.readPacket(socket, dis);
 
             if (packet == null)
                 return null;
 
-            if (clazz.isInstance(packet)) {
-                return (E) packet;
-            }
-
-            System.err.println("Received packet " + packet.getClass().getSimpleName() + "; expected " + clazz.getSimpleName() + ". State error of other peer?");
+            return packet;
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
             e.printStackTrace();
         }

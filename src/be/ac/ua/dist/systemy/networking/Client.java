@@ -62,9 +62,20 @@ public class Client implements Closeable {
      *
      * @param clazz the packet class to wait for
      * @return The packet once it is received
+     * @throws IOException if an I/O exception occurs.
      */
     public <E extends Packet> E waitForPacket(Class<E> clazz) throws IOException {
         return connection.waitForPacket(clazz);
+    }
+
+    /**
+     * Blocks until a packet is received, and if the backing connection supports it.
+     *
+     * @return The packet once it is received
+     * @throws IOException if an I/O exception occurs.
+     */
+    public Packet waitForPacket() throws IOException {
+        return connection.waitForPacket();
     }
 
     @Override

@@ -71,6 +71,11 @@ public class UDPConnection implements Connection {
     }
 
     @Override
+    public Packet waitForPacket() throws IOException {
+        throw new UnsupportedOperationException("Waiting is not yet supported in UDP");
+    }
+
+    @Override
     public void flush() throws IOException {
         if (baos.size() == 0)
             return;
