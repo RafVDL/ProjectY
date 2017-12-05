@@ -90,4 +90,10 @@ public class FileHandle implements Serializable {
         return "{ fileName: " + fileName + "; downloads: " + downloads + "; nodes: " + availableNodes + " }";
     }
 
+    @Override
+    public int hashCode() {
+        // A HashSet carries an internal HashMap with <Integer(HashCode), Object> entries and uses equals() as well as the equals method of the HashCode to determine equality.
+        return fileName.hashCode();
+    }
+
 }
