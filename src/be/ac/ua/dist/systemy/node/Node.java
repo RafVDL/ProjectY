@@ -107,7 +107,7 @@ public class Node implements NodeInterface {
     public void downloadFile(String remoteFileName, String localFileName, InetAddress remoteAddress) {
         Socket clientSocket;
 
-        downloadingFiles.add(localFileName);
+        downloadingFiles.add(localFileName.split("/")[1]);
         System.out.println("Adding " + localFileName + " to downloading files");
         try {
             //Open tcp socket to server @remoteAddress:port
@@ -138,7 +138,7 @@ public class Node implements NodeInterface {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        downloadingFiles.remove(localFileName);
+        downloadingFiles.remove(localFileName.split("/")[1]);
         System.out.println("Removing " + localFileName + " from downloading files");
     }
 

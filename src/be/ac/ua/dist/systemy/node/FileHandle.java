@@ -18,6 +18,7 @@ public class FileHandle implements Serializable {
 
     public FileHandle(String fileName, boolean local) {
         this.fileName = fileName;
+        this.local = local;
         logFile = new File(Constants.LOGS_PATH + fileName);
     }
 
