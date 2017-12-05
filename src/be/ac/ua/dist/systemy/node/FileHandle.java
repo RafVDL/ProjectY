@@ -14,7 +14,7 @@ public class FileHandle implements Serializable {
     private boolean local;
     private File logFile;
     private int downloads;
-    private final Set<Integer> availableNodes = new LinkedHashSet<>();
+    private final Set<Integer> availableNodes = new LinkedHashSet<>(); //TODO: When a Node downloads a file, add it here?
 
     public FileHandle(String fileName, boolean local) {
         this.fileName = fileName;

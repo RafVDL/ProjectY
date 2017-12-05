@@ -12,16 +12,14 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.ServerNotActiveException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.HashSet;
-import java.util.Scanner;
-import java.util.Set;
+import java.util.*;
 
 public class Node implements NodeInterface {
 
     private final InetAddress ownAddress;
     private final int ownHash;
-    private Set<FileHandle> localFiles;
-    private Set<FileHandle> replicatedFiles;
+    private Map<String, FileHandle> localFiles;
+    private Map<String, FileHandle> replicatedFiles;
     private Set<String> downloadingFiles;
 
     private volatile InetAddress namingServerAddress;
@@ -80,12 +78,12 @@ public class Node implements NodeInterface {
     }
 
     @Override
-    public Set<FileHandle> getLocalFiles() {
+    public Map<String, FileHandle> getLocalFiles() {
         return localFiles;
     }
 
     @Override
-    public Set<FileHandle> getReplicatedFiles() {
+    public Map<String, FileHandle> getReplicatedFiles() {
         return replicatedFiles;
     }
 
@@ -95,12 +93,12 @@ public class Node implements NodeInterface {
 
     @Override
     public void addLocalFileList(FileHandle fileHandle) {
-        localFiles.add(fileHandle);
+        localFiles.put(fileHandle.getFile().getName(), fileHandle);
     }
 
     @Override
     public void addReplicatedFileList(FileHandle fileHandle) {
-        replicatedFiles.add(fileHandle);
+        replicatedFiles.put(fileHandle.getFile().getName(), fileHandle);
     }
 
     @Override
@@ -142,24 +140,17 @@ public class Node implements NodeInterface {
         System.out.println("Removing " + localFileName + " from downloading files");
     }
 
-//    /**
-//     * Removes a file from the network. This includes the actual file on disk as well as the lists.
-//     *
-//     * @param path     where the file is located
-//     * @param fileName to remove
-//     */
-//    @Override
-//    public void deleteFileFromNetwork(String path, String fileName) {
-//        File file = new File(path + "/" + fileName);
-//        if (!file.isFile()) {
-//            System.out.println("Trying to delete something that is not a file (skipping)");
-//            return;
-//        }
-//
-//        localFiles.remove(fileName);
-//        replicatedFiles.remove(fileName);
-//        file.delete();
-//    }
+    /**
+     * Removes a file from the Node. This includes the actual file on disk as well as the lists.
+     *
+     * @param fileHandle the fileHandle of the file to remove
+     */
+    @Override
+    public void deleteFileFromNode(FileHandle fileHandle) {
+        localFiles.remove(fileHandle.getFile().getName());
+        replicatedFiles.remove(fileHandle.getFile().getName());
+        fileHandle.getFile().delete();
+    }
 
     /**
      * Updates the next neighbour of this node
@@ -482,7 +473,7 @@ public class Node implements NodeInterface {
             InetAddress ownerAddress = namingServerStub.getOwner(file.getName());
 
             // Put in local copy in localFiles and update the FileHandle
-            localFiles.add(fileHandle);
+            localFiles.put(fileHandle.getFile().getName(), fileHandle);
             fileHandle.setLocal(true);
             fileHandle.getAvailableNodes().add(ownHash);
 
@@ -513,25 +504,29 @@ public class Node implements NodeInterface {
         }
     }
 
+    /**
+     * Transfer all replicated and process all local files. Then leave the network.
+     */
     public void shutdown() {
+        //TODO: Put a lock on the Node if it is in the process of leaving. This ensures no new files are replicated onto the Node.
         // Transfer all replicated files
-        for (FileHandle fileHandle : replicatedFiles) {
+        for (Map.Entry<String, FileHandle> entry : replicatedFiles.entrySet()) {
             try {
                 Registry prevNodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
                 NodeInterface prevNodeStub = (NodeInterface) prevNodeRegistry.lookup("Node");
 
-                FileHandle replicatedFileHandle = new FileHandle(fileHandle.getFile().getName(), false);
+                FileHandle replicatedFileHandle = new FileHandle(entry.getKey(), false);
 
-                if (prevNodeStub.getReplicatedFiles().contains(fileHandle)) {
+                if (prevNodeStub.getReplicatedFiles().containsValue(entry.getValue())) {
                     // Previous Node is already owner -> replicate to previous' previous neighbour
                     Registry prevPrevNodeRegistry = LocateRegistry.getRegistry(prevNodeStub.getPrevAddress().getHostAddress(), Constants.RMI_PORT);
                     NodeInterface prevPrevNodeStub = (NodeInterface) prevPrevNodeRegistry.lookup("Node");
 
-                    prevPrevNodeStub.downloadFile(Constants.REPLICATED_FILES_PATH + fileHandle.getFile().getName(), Constants.REPLICATED_FILES_PATH + fileHandle.getFile().getName(), ownAddress);
+                    prevPrevNodeStub.downloadFile(Constants.REPLICATED_FILES_PATH + entry.getKey(), Constants.REPLICATED_FILES_PATH + entry.getKey(), ownAddress);
                     prevPrevNodeStub.addReplicatedFileList(replicatedFileHandle);
                 } else {
                     // Replicate to previous neighbour
-                    prevNodeStub.downloadFile(Constants.REPLICATED_FILES_PATH + fileHandle.getFile().getName(), Constants.REPLICATED_FILES_PATH + fileHandle.getFile().getName(), ownAddress);
+                    prevNodeStub.downloadFile(Constants.REPLICATED_FILES_PATH + entry.getKey(), Constants.REPLICATED_FILES_PATH + entry.getKey(), ownAddress);
                     prevNodeStub.addReplicatedFileList(replicatedFileHandle);
                 }
             } catch (RemoteException | NotBoundException e) {
@@ -539,11 +534,33 @@ public class Node implements NodeInterface {
             }
         }
 
-        for (FileHandle fileHandle : localFiles) {
-            //TODO: contact original introducer? for log file -> if file is never downloaded, delete it from network
-            //TODO: if it IS downloaded, update downloadlocations in log file??
+        // Process all local files
+        for (Map.Entry<String, FileHandle> localEntry : localFiles.entrySet()) {
+            try {
+                // Get ownerAddress from NamingServer via RMI.
+                Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
+                NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+                InetAddress ownerAddress = namingServerStub.getOwner(localEntry.getKey());
+
+                // Contact owner
+                Registry ownerNodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
+                NodeInterface ownerNodeStub = (NodeInterface) ownerNodeRegistry.lookup("Node");
+
+                // If download count = 0 -> delete local copy and copy of owner
+                if (ownerNodeStub.getReplicatedFiles().get(localEntry.getKey()).getDownloads() == 0) {
+                    ownerNodeStub.deleteFileFromNode(ownerNodeStub.getReplicatedFiles().get(localEntry.getKey()));
+                    deleteFileFromNode(localEntry.getValue());
+                } else {
+                    // Else update download locations in the FileHandle
+                    ownerNodeStub.getReplicatedFiles().get(localEntry.getKey()).getAvailableNodes().remove(ownHash);
+                }
+
+            } catch (RemoteException | UnknownHostException | NotBoundException e) {
+                e.printStackTrace();
+            }
         }
 
+        // Actually leave the network
         try {
             setRunning(false);
             leaveNetwork();
@@ -609,8 +626,8 @@ public class Node implements NodeInterface {
         Node node = new Node(hostname, InetAddress.getByName(ip));
 
         node.clearDir(Constants.REPLICATED_FILES_PATH);
-        node.localFiles = new HashSet<>();
-        node.replicatedFiles = new HashSet<>();
+        node.localFiles = new HashMap<>();
+        node.replicatedFiles = new HashMap<>();
         node.downloadingFiles = new HashSet<>();
 
         node.initializeRMI();
@@ -680,5 +697,3 @@ public class Node implements NodeInterface {
         }
     }
 }
-
-//TODO: Add file logs when replicating.
