@@ -481,6 +481,11 @@ public class Node implements NodeInterface {
             NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
             InetAddress ownerAddress = namingServerStub.getOwner(file.getName());
 
+            // Put in local copy in localFiles and update the FileHandle
+            localFiles.add(fileHandle);
+            fileHandle.setLocal(true);
+            fileHandle.getAvailableNodes().add(ownHash);
+
             if (ownerAddress == null || ownAddress.equals(nextAddress))
                 return;
 
@@ -493,11 +498,6 @@ public class Node implements NodeInterface {
                 fileHandle.getAvailableNodes().add(prevHash);
                 newFileHandle.getAvailableNodes().addAll(fileHandle.getAvailableNodes());
                 nodeStub.addReplicatedFileList(newFileHandle);
-
-                // Put in local copy in localFiles and update the FileHandle
-                localFiles.add(fileHandle);
-                fileHandle.setLocal(true);
-                fileHandle.getAvailableNodes().add(ownHash);
             } else {
                 // Replicate to owner -> initiate downloadFile via RMI and update its replicatedFiles.
                 Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
@@ -507,11 +507,6 @@ public class Node implements NodeInterface {
                 fileHandle.getAvailableNodes().add(nodeStub.getOwnHash());
                 newFileHandle.getAvailableNodes().addAll(fileHandle.getAvailableNodes());
                 nodeStub.addReplicatedFileList(newFileHandle);
-
-                // Put in local copy in localFiles and update the FileHandle
-                localFiles.add(fileHandle);
-                fileHandle.setLocal(true);
-                fileHandle.getAvailableNodes().add(ownHash);
             }
         } catch (IOException | NotBoundException e) {
             e.printStackTrace();
