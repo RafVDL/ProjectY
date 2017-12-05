@@ -481,7 +481,7 @@ public class Node implements NodeInterface {
             NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
             InetAddress ownerAddress = namingServerStub.getOwner(file.getName());
 
-            if (ownerAddress == null || prevAddress.equals(nextAddress))
+            if (ownerAddress == null || ownAddress.equals(nextAddress))
                 return;
 
             if (ownerAddress.equals(ownAddress)) {
@@ -612,6 +612,12 @@ public class Node implements NodeInterface {
 
         // Create Node object and initialize
         Node node = new Node(hostname, InetAddress.getByName(ip));
+
+        node.clearDir(Constants.REPLICATED_FILES_PATH);
+        node.localFiles = new HashSet<>();
+        node.replicatedFiles = new HashSet<>();
+        node.downloadingFiles = new HashSet<>();
+
         node.initializeRMI();
         System.out.println("Hash: " + node.getOwnHash());
 
@@ -632,10 +638,6 @@ public class Node implements NodeInterface {
                 e.printStackTrace();
             }
         }
-        node.clearDir(Constants.REPLICATED_FILES_PATH);
-        node.localFiles = new HashSet<>();
-        node.replicatedFiles = new HashSet<>();
-        node.downloadingFiles = new HashSet<>();
         node.discoverFiles(Constants.LOCAL_FILES_PATH);
 
 
