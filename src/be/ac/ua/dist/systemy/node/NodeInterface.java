@@ -1,6 +1,7 @@
 package be.ac.ua.dist.systemy.node;
 
 import java.net.InetAddress;
+import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.Set;
@@ -28,6 +29,6 @@ public interface NodeInterface extends Remote {
 
     void updatePrev(InetAddress newAddress, int newHash) throws RemoteException;
 
-    void runFileAgent(TreeMap<String, Integer> files) throws RemoteException, InterruptedException;
+    void runFileAgent(TreeMap<String, Integer> files) throws RemoteException, InterruptedException, NotBoundException;
 
 }

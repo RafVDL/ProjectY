@@ -18,6 +18,8 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import static be.ac.ua.dist.systemy.Constants.RMI_PORT;
+
 public class Node implements NodeInterface {
 
     private final InetAddress ownAddress;
@@ -223,13 +225,13 @@ public class Node implements NodeInterface {
     }
 
     @Override
-    public void runFileAgent(TreeMap<String, Integer> files) throws InterruptedException {
+    public void runFileAgent(TreeMap<String, Integer> files) throws InterruptedException, RemoteException, NotBoundException {
         Thread t = new Thread(new FileAgent(files, this));
         t.start();
         t.join(); //wait for thread to stop
-        
-
-
+        Registry registry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), RMI_PORT);
+        NodeInterface stub = (NodeInterface) registry.lookup(Integer.toString(nextHash));
+        stub.runFileAgent(files);
     }
 
     /**
@@ -657,7 +659,7 @@ public class Node implements NodeInterface {
             System.setProperty("java.rmi.server.hostname", ownAddress.getHostAddress());
             Registry registry = LocateRegistry.createRegistry(Constants.RMI_PORT);
             NodeInterface nodeStub = (NodeInterface) UnicastRemoteObject.exportObject(this, 0);
-            registry.bind("Node", nodeStub);
+            registry.bind(Integer.toString(this.ownHash), nodeStub);
         } catch (AlreadyBoundException | RemoteException e) {
             e.printStackTrace();
             //TODO: failure?
