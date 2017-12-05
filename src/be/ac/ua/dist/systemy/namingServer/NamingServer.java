@@ -171,7 +171,7 @@ public class NamingServer implements NamingServerInterface {
         }
     }
 
-    public void setupMulticastServer() {
+    public void setupMulticastServer() throws UnknownHostException {
         multicastServer = new MulticastServer();
 
         multicastServer.registerListener(HelloPacket.class, ((packet, client) -> {
@@ -205,7 +205,7 @@ public class NamingServer implements NamingServerInterface {
             }
         }));
 
-        multicastServer.startServer(serverIP, Constants.MULTICAST_PORT);
+        multicastServer.startServer(InetAddress.getByName(Constants.MULTICAST_ADDRESS), Constants.MULTICAST_PORT);
     }
 
     public static void main(String[] args) throws UnknownHostException {
