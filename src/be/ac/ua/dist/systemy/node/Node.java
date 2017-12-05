@@ -489,21 +489,17 @@ public class Node implements NodeInterface {
 
     private void sendFile(String fileName, Client client) {
         try {
-            int fileHash = calculateHash(Paths.get(fileName).getFileName().toString());
             int fileSize = (int) new File(fileName).length();
             FileInputStream fis = new FileInputStream(fileName);
             byte[] buffer = new byte[4096];
+            DataOutputStream dos = client.getConnection().getDataOutputStream();
 
-            int read, totalLeft = fileSize;
+            int read;
 
-            FileFragmentPacket packet = new FileFragmentPacket();
+            dos.writeInt(fileSize);
 
             while ((read = fis.read(buffer)) > 0) {
-                packet.setFileHash(fileHash);
-                packet.setLength(totalLeft);
-                packet.setData(buffer);
-                client.sendPacket(packet);
-                totalLeft -= read;
+                dos.write(buffer, 0, read);
             }
 
             fis.close();

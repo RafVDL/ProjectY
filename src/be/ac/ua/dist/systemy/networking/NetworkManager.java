@@ -30,7 +30,6 @@ public class NetworkManager {
         registerPacket(Packet.ID.IP_RESPONSE, IPResponsePacket.class);
         registerPacket(Packet.ID.UPDATE_NEIGHBOUR, UpdateNeighboursPacket.class);
         registerPacket(Packet.ID.FILE_REQUEST, FileRequestPacket.class);
-        registerPacket(Packet.ID.FILE_FRAGMENT, FileFragmentPacket.class);
     }
 
     private NetworkManager() {
