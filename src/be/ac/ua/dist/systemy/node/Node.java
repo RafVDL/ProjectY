@@ -238,9 +238,7 @@ public class Node implements NodeInterface {
             NodeInterface stub = (NodeInterface) registry.lookup(Integer.toString(nextHash));
             stub.runFileAgent(files);
         }
-        else{
-            runFileAgent(files);
-        }
+
     }
 
     /**

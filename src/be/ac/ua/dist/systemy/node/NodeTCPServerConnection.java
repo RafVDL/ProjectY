@@ -38,6 +38,8 @@ public class NodeTCPServerConnection extends Thread {
                     if (nodecount < 1) {
                         node.updatePrev(node.getOwnAddress(), node.getOwnHash());
                         node.updateNext(node.getOwnAddress(), node.getOwnHash());
+                    }
+                    if(nodecount == 1){
                         TreeMap<String, Integer> files = new TreeMap<>();
                         node.runFileAgent(files);
                     }
