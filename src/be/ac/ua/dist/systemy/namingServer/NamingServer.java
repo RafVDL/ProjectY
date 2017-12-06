@@ -24,8 +24,8 @@ import java.util.Scanner;
 import java.util.TreeMap;
 
 public class NamingServer implements NamingServerInterface {
-    public final InetAddress serverIP;
-    TreeMap<Integer, InetAddress> ipAddresses = new TreeMap<>();
+    private final InetAddress serverIP;
+    private TreeMap<Integer, InetAddress> ipAddresses = new TreeMap<>();
 
     private boolean running = true;
     private Server multicastServer;
@@ -190,7 +190,8 @@ public class NamingServer implements NamingServerInterface {
 
         multicastServer.registerListener(GetIPPacket.class, ((packet, client) -> {
             try {
-                IPResponsePacket ipResponsePacket = new IPResponsePacket(ipAddresses.get(packet.getHash()));
+                InetAddress address = packet.getHash() == 0 ? serverIP : ipAddresses.get(packet.getHash());
+                IPResponsePacket ipResponsePacket = new IPResponsePacket(address);
                 client.sendPacket(ipResponsePacket);
             } catch (IOException e) {
                 e.printStackTrace();
@@ -231,6 +232,10 @@ public class NamingServer implements NamingServerInterface {
             String cmd = sc.nextLine().toLowerCase();
 
             switch (cmd) {
+                case "clear":
+                    namingServer.ipAddresses.clear();
+                    break;
+
                 case "shutdown":
                 case "shut":
                 case "sh":
