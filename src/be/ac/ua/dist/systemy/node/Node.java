@@ -234,10 +234,32 @@ public class Node implements NodeInterface {
         t.start();
         t.join(); //wait for thread to stop
         if(ownHash != nextHash) {
-            Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
-            NodeInterface stub = (NodeInterface) registry.lookup("Node");
-            stub.runFileAgent(files);
+            Thread t2 = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
+                        NodeInterface stub = null;
+                        stub = (NodeInterface) registry.lookup("Node");
+                        stub.runFileAgent(files);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    } catch (NotBoundException e) {
+                        e.printStackTrace();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+
+                }
+
+            });
+            t2.start();
         }
+
+
+    }
+
+    public void runFileAgentNeighbour(TreeMap<String, Integer> files){
 
     }
 
