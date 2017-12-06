@@ -234,8 +234,8 @@ public class Node implements NodeInterface {
         t.start();
         t.join(); //wait for thread to stop
         if(ownHash != nextHash) {
-            Registry registry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), RMI_PORT);
-            NodeInterface stub = (NodeInterface) registry.lookup(Integer.toString(nextHash));
+            Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
+            NodeInterface stub = (NodeInterface) registry.lookup("Node");
             stub.runFileAgent(files);
         }
 
@@ -666,7 +666,7 @@ public class Node implements NodeInterface {
             System.setProperty("java.rmi.server.hostname", ownAddress.getHostAddress());
             Registry registry = LocateRegistry.createRegistry(Constants.RMI_PORT);
             NodeInterface nodeStub = (NodeInterface) UnicastRemoteObject.exportObject(this, 0);
-            registry.bind(Integer.toString(this.ownHash), nodeStub);
+            registry.bind("Node", nodeStub);
         } catch (AlreadyBoundException | RemoteException e) {
             e.printStackTrace();
             //TODO: failure?
