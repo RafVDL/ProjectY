@@ -46,26 +46,28 @@ public class FileAgent implements Runnable, Serializable{
 
             //Stap 3: checken naar lock request
             lockRequest = node.getFileLockRequest();
-            if (files.get(lockRequest) == 0) {
-                InetAddress ownerAddress = null;
-                try {
-                    // Get ownerAddress from NamingServer via RMI.
-                    Registry namingServerRegistry = LocateRegistry.getRegistry(node.getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
-                    NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
-                    ownerAddress = namingServerStub.getOwner(lockRequest);
-                } catch (IOException | NotBoundException e) {
-                    e.printStackTrace();
-                }
-                if (ownerAddress == null) {
-                    //Error
-                } else {
-                    node.downloadFile(lockRequest, lockRequest, ownerAddress);
-                    files.put(lockRequest, node.getOwnHash());
-                }
-            } else if (files.get(lockRequest) == node.getOwnHash()) {
-                if (!node.getDownloadingFiles().contains(lockRequest)) { //file downloaded
-                    node.setFileLockRequest(null);
-                    files.put(lockRequest, 0);
+            if(!lockRequest.equals("null")) {
+                if (files.get(lockRequest) == 0) {
+                    InetAddress ownerAddress = null;
+                    try {
+                        // Get ownerAddress from NamingServer via RMI.
+                        Registry namingServerRegistry = LocateRegistry.getRegistry(node.getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
+                        NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+                        ownerAddress = namingServerStub.getOwner(lockRequest);
+                    } catch (IOException | NotBoundException e) {
+                        e.printStackTrace();
+                    }
+                    if (ownerAddress == null) {
+                        //Error
+                    } else {
+                        node.downloadFile(lockRequest, lockRequest, ownerAddress);
+                        files.put(lockRequest, node.getOwnHash());
+                    }
+                } else if (files.get(lockRequest) == node.getOwnHash()) {
+                    if (!node.getDownloadingFiles().contains(lockRequest)) { //file downloaded
+                        node.setFileLockRequest("null");
+                        files.put(lockRequest, 0);
+                    }
                 }
             }
 

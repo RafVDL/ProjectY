@@ -48,7 +48,7 @@ public class Node implements NodeInterface {
         this.ownAddress = address;
         this.ownHash = calculateHash(nodeName);
         this.allFiles = new HashSet<String>();
-
+        this.fileLockRequest = "null";
 
         multicastSocket = new MulticastSocket(Constants.MULTICAST_PORT);
         multicastGroup = InetAddress.getByName(Constants.MULTICAST_ADDRESS);
