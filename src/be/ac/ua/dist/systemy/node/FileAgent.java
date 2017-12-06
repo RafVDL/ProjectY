@@ -30,9 +30,11 @@ public class FileAgent implements Runnable, Serializable{
     public void run(){
         localFiles = node.getLocalFiles();
         //Stap 1: voeg localFiles toe aan map met files
-        for (String s : localFiles) {
-            if(!files.containsKey(s)){
-                files.put(s, 0);
+        if(localFiles != null) {
+            for (String s : localFiles) {
+                if (!files.containsKey(s)) {
+                    files.put(s, 0);
+                }
             }
         }
         //Stap 2: update de lijst van bestanden

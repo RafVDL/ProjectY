@@ -229,9 +229,14 @@ public class Node implements NodeInterface {
         Thread t = new Thread(new FileAgent(files, this));
         t.start();
         t.join(); //wait for thread to stop
-        Registry registry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), RMI_PORT);
-        NodeInterface stub = (NodeInterface) registry.lookup(Integer.toString(nextHash));
-        stub.runFileAgent(files);
+        if(ownHash != nextHash) {
+            Registry registry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), RMI_PORT);
+            NodeInterface stub = (NodeInterface) registry.lookup(Integer.toString(nextHash));
+            stub.runFileAgent(files);
+        }
+        else{
+            runFileAgent(files);
+        }
     }
 
     /**
