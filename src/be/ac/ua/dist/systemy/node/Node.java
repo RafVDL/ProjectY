@@ -18,7 +18,6 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.rmi.server.ServerNotActiveException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
@@ -332,21 +331,13 @@ public class Node implements NodeInterface {
     }
 
     /**
-     * Iterates through a folder and returns a Set containing all filenames including extensions.
-     *
-     * @param folderPath to explore
-     * @return the List containing the filenames
+     * Iterates through all files in the LOCAL_FILES_PATH and introduces each one in the network.
      */
-    public void discoverFiles(String folderPath) {
-        File folder = new File(folderPath);
+    public void discoverLocalFiles() {
+        File folder = new File(Constants.LOCAL_FILES_PATH);
         if (!folder.exists())
             folder.mkdir();
         File[] listOfFiles = folder.listFiles();
-        if (listOfFiles == null) {
-            //TODO call failure?
-            System.out.println("Folder path does not point to a folder (" + folderPath + ")");
-            return;
-        }
 
         for (File file : listOfFiles) {
             if (file.isFile()) {
@@ -362,7 +353,7 @@ public class Node implements NodeInterface {
     }
 
     /**
-     * Introduces a file in the network.
+     * Introduces a new local file in the network.
      * <p>
      * The NamingServer gets asked who the owner of the file should be. If this Node should
      * be the owner, the file gets duplicated to the previous neighbour via RMI. If this node should not be the owner, the
@@ -579,7 +570,7 @@ public class Node implements NodeInterface {
         }
     }
 
-    public static void main(String[] args) throws IOException, NotBoundException, ServerNotActiveException {
+    public static void main(String[] args) throws IOException {
         // Get IP and hostname
         Scanner sc = new Scanner(System.in);
         System.out.println("(Detected localHostName is: " + InetAddress.getLocalHost() + ")");
@@ -623,7 +614,7 @@ public class Node implements NodeInterface {
                 e.printStackTrace();
             }
         }
-        node.discoverFiles(Constants.LOCAL_FILES_PATH);
+        node.discoverLocalFiles();
 
 
         // Start file update watcher
