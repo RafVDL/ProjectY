@@ -763,6 +763,9 @@ public class Node implements NodeInterface {
                 case "rf":
                     System.out.println("Replicated files: " + node.replicatedFiles);
                     break;
+
+                case "allfiles":
+                    System.out.println("All files: " + node.files);
             }
         }
     }

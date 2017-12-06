@@ -2,6 +2,8 @@ package be.ac.ua.dist.systemy.node;
 
 import java.io.*;
 import java.net.Socket;
+import java.rmi.NotBoundException;
+import java.util.TreeMap;
 
 public class NodeTCPServerConnection extends Thread {
 
@@ -36,6 +38,8 @@ public class NodeTCPServerConnection extends Thread {
                     if (nodecount < 1) {
                         node.updatePrev(node.getOwnAddress(), node.getOwnHash());
                         node.updateNext(node.getOwnAddress(), node.getOwnHash());
+                        TreeMap<String, Integer> files = new TreeMap<>();
+                        node.runFileAgent(files);
                     }
                     break;
 
@@ -81,6 +85,10 @@ public class NodeTCPServerConnection extends Thread {
             in.close();
             clientSocket.close();
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (NotBoundException e) {
             e.printStackTrace();
         }
     }
