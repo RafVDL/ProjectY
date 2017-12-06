@@ -630,6 +630,9 @@ public class Node implements NodeInterface {
         while (node.running) {
             String cmd = sc.nextLine().toLowerCase();
             switch (cmd) {
+                case "debug":
+                    Communications.setDebugging(true);
+
                 case "shutdown":
                 case "shut":
                 case "sh":

@@ -232,6 +232,9 @@ public class NamingServer implements NamingServerInterface {
             String cmd = sc.nextLine().toLowerCase();
 
             switch (cmd) {
+                case "debug":
+                    Communications.setDebugging(true);
+
                 case "clear":
                     namingServer.ipAddresses.clear();
                     break;
