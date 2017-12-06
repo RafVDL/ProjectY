@@ -632,6 +632,8 @@ public class Node implements NodeInterface {
             switch (cmd) {
                 case "debug":
                     Communications.setDebugging(true);
+                    System.out.println("Debugging enabled");
+                    break;
 
                 case "shutdown":
                 case "shut":

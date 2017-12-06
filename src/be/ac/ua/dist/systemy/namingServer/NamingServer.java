@@ -234,6 +234,8 @@ public class NamingServer implements NamingServerInterface {
             switch (cmd) {
                 case "debug":
                     Communications.setDebugging(true);
+                    System.out.println("Debugging enabled");
+                    break;
 
                 case "clear":
                     namingServer.ipAddresses.clear();
