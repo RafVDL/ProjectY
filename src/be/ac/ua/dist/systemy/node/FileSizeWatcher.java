@@ -3,6 +3,7 @@ package be.ac.ua.dist.systemy.node;
 import be.ac.ua.dist.systemy.Constants;
 
 import java.io.File;
+import java.nio.file.Files;
 
 /**
  * When a file is copied (on Windows 10), an empty file is first created. Then the actual data is copied into that file.
@@ -19,20 +20,14 @@ public class FileSizeWatcher implements Runnable {
 
     @Override
     public void run() {
-        long oldFileSize = file.length();
-        while (true) {
-            long newFileSize = file.length();
+        do {
             try {
-                Thread.sleep(200);
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-
-            if (newFileSize == oldFileSize) {
-                FileHandle fileHandle = new FileHandle(file.getName(), file.getParent().equals(Constants.LOCAL_FILES_PATH.substring(0, Constants.LOCAL_FILES_PATH.length() - 1)));
-                node.addFileToNetwork(fileHandle);
-                break;
-            }
-        }
+        } while (!Files.isReadable(file.toPath()));
+        FileHandle fileHandle = new FileHandle(file.getName(), file.getParent().equals(Constants.LOCAL_FILES_PATH.substring(0, Constants.LOCAL_FILES_PATH.length() - 1)));
+        node.addFileToNetwork(fileHandle);
     }
 }
