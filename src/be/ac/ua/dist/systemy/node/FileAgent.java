@@ -39,9 +39,11 @@ public class FileAgent implements Runnable, Serializable{
         }
         //Stap 2: update de lijst van bestanden
         node.emptyAllFileList();
-        files.forEach((key, value) -> {
-            node.addAllFileList(key);
-        });
+        if(files != null) {
+            files.forEach((key, value) -> {
+                node.addAllFileList(key);
+            });
+        }
         //Stap 3: checken naar lock request
         lockRequest = node.getFileLockRequest();
         if(files.get(lockRequest) == 0){
