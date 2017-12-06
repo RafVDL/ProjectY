@@ -41,6 +41,7 @@ public class NodeTCPServerConnection extends Thread {
                     }
                     if(nodecount == 1){
                         TreeMap<String, Integer> files = new TreeMap<>();
+                        Thread.sleep(5000);
                         node.runFileAgent(files);
                     }
                     break;
