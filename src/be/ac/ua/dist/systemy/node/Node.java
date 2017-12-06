@@ -47,6 +47,8 @@ public class Node implements NodeInterface {
     public Node(String nodeName, InetAddress address) throws IOException {
         this.ownAddress = address;
         this.ownHash = calculateHash(nodeName);
+        this.allFiles = new HashSet<String>();
+
 
         multicastSocket = new MulticastSocket(Constants.MULTICAST_PORT);
         multicastGroup = InetAddress.getByName(Constants.MULTICAST_ADDRESS);
@@ -119,7 +121,9 @@ public class Node implements NodeInterface {
     }
 
     public void emptyAllFileList() {
-        this.allFiles.clear();
+        if(allFiles != null){
+            this.allFiles.clear();
+        }
     }
 
     public void setFiles(TreeMap<String, Integer> files){
