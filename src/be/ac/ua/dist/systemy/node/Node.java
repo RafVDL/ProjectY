@@ -514,8 +514,11 @@ public class Node implements NodeInterface {
         multicastServer = new MulticastServer();
 
         multicastServer.registerListener(HelloPacket.class, ((packet, client) -> {
-            if (packet.getSenderHash() != getOwnHash())
+            if (packet.getSenderHash() != getOwnHash()) {
                 updateNeighbours(client.getAddress(), packet.getSenderHash());
+
+                discoverLocalFiles();
+            }
         }));
 
         multicastServer.startServer(multicastGroup, Constants.MULTICAST_PORT);
