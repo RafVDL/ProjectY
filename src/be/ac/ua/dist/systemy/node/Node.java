@@ -352,6 +352,16 @@ public class Node implements NodeInterface {
         System.out.println("Finished discovery of " + folder.getName());
     }
 
+    public void replicateLocalFiles() {
+        localFiles.forEach(((s, fileHandle) -> {
+            try {
+                replicateFile(fileHandle);
+            } catch (RemoteException | NotBoundException | UnknownHostException e) {
+                e.printStackTrace();
+            }
+        }));
+    }
+
     /**
      * Introduces a new local file in the network.
      * <p>
@@ -369,40 +379,45 @@ public class Node implements NodeInterface {
         }
 
         try {
-            // Get ownerAddress from NamingServer via RMI.
-            Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
-            NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
-            InetAddress ownerAddress = namingServerStub.getOwner(file.getName());
-
             // Put in local copy in localFiles and update the FileHandle
             localFiles.put(fileHandle.getFile().getName(), fileHandle);
             fileHandle.setLocal(true);
             fileHandle.getAvailableNodes().add(ownHash);
 
-            if (ownerAddress == null || ownAddress.equals(nextAddress))
-                return;
-
-            if (ownerAddress.equals(ownAddress)) {
-                // Replicate to previous neighbour -> initiate downloadFile via RMI and update its replicatedFiles.
-                Registry nodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
-                NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
-                nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + file.getName(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
-                FileHandle newFileHandle = new FileHandle(file.getName(), false);
-                fileHandle.getAvailableNodes().add(prevHash);
-                newFileHandle.getAvailableNodes().addAll(fileHandle.getAvailableNodes());
-                nodeStub.addReplicatedFileList(newFileHandle);
-            } else {
-                // Replicate to owner -> initiate downloadFile via RMI and update its replicatedFiles.
-                Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
-                NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
-                nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + file.getName(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
-                FileHandle newFileHandle = new FileHandle(file.getName(), false);
-                fileHandle.getAvailableNodes().add(nodeStub.getOwnHash());
-                newFileHandle.getAvailableNodes().addAll(fileHandle.getAvailableNodes());
-                nodeStub.addReplicatedFileList(newFileHandle);
-            }
+            replicateFile(fileHandle);
         } catch (IOException | NotBoundException e) {
             e.printStackTrace();
+        }
+    }
+
+    public void replicateFile(FileHandle fileHandle) throws RemoteException, NotBoundException, UnknownHostException {
+        File file = fileHandle.getFile();
+
+        Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
+        NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+        InetAddress ownerAddress = namingServerStub.getOwner(file.getName());
+
+        if (ownerAddress == null || ownAddress.equals(nextAddress))
+            return;
+
+        if (ownerAddress.equals(ownAddress)) {
+            // Replicate to previous neighbour -> initiate downloadFile via RMI and update its replicatedFiles.
+            Registry nodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
+            NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
+            nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + file.getName(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
+            FileHandle newFileHandle = new FileHandle(file.getName(), false);
+            fileHandle.getAvailableNodes().add(prevHash);
+            newFileHandle.getAvailableNodes().addAll(fileHandle.getAvailableNodes());
+            nodeStub.addReplicatedFileList(newFileHandle);
+        } else {
+            // Replicate to owner -> initiate downloadFile via RMI and update its replicatedFiles.
+            Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
+            NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
+            nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + file.getName(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
+            FileHandle newFileHandle = new FileHandle(file.getName(), false);
+            fileHandle.getAvailableNodes().add(nodeStub.getOwnHash());
+            newFileHandle.getAvailableNodes().addAll(fileHandle.getAvailableNodes());
+            nodeStub.addReplicatedFileList(newFileHandle);
         }
     }
 
@@ -517,7 +532,7 @@ public class Node implements NodeInterface {
             if (packet.getSenderHash() != getOwnHash()) {
                 updateNeighbours(client.getAddress(), packet.getSenderHash());
 
-                discoverLocalFiles();
+                replicateLocalFiles();
             }
         }));
 
