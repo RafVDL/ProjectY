@@ -437,6 +437,7 @@ public class Node implements NodeInterface {
 
                 FileHandle replicatedFileHandle = new FileHandle(entry.getKey(), false);
 
+                //TODO leaving Node needs to remove itself from the availableNodesList at the owner of the file.
                 if (prevNodeStub.getReplicatedFiles().containsValue(entry.getValue())) {
                     // Previous Node is already owner -> replicate to previous' previous neighbour
                     Registry prevPrevNodeRegistry = LocateRegistry.getRegistry(prevNodeStub.getPrevAddress().getHostAddress(), Constants.RMI_PORT);
