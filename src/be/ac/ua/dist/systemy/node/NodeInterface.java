@@ -10,6 +10,8 @@ public interface NodeInterface extends Remote {
 
     int getOwnHash() throws RemoteException;
 
+    int getPrevHash() throws RemoteException;
+
     InetAddress getPrevAddress() throws RemoteException;
 
     InetAddress getNextAddress() throws RemoteException;
@@ -26,7 +28,9 @@ public interface NodeInterface extends Remote {
 
     void deleteFileFromNode(FileHandle fileHandle) throws RemoteException;
 
-    void removeNodeFromAvailableNodes(String fileName, int hashToRemove) throws RemoteException;
+    void addAvailableNode(String fileName, int hashToAdd) throws RemoteException;
+
+    void popAvailableNode(String fileName, int hashToRemove) throws RemoteException;
 
     void updateNext(InetAddress newAddress, int newHash) throws RemoteException;
 

@@ -56,8 +56,23 @@ public class Node implements NodeInterface {
     }
 
     @Override
+    public InetAddress getPrevAddress() {
+        return prevAddress;
+    }
+
+    @Override
+    public InetAddress getNextAddress() {
+        return nextAddress;
+    }
+
+    @Override
     public int getOwnHash() {
         return ownHash;
+    }
+
+    @Override
+    public int getPrevHash() {
+        return prevHash;
     }
 
     public void setNamingServerAddress(InetAddress ipAddress) {
@@ -68,23 +83,6 @@ public class Node implements NodeInterface {
         return namingServerAddress;
     }
 
-    @Override
-    public InetAddress getPrevAddress() {
-        return prevAddress;
-    }
-
-    @Override
-    public InetAddress getNextAddress() {
-        return nextAddress;
-    }
-
-    public int getPrevHash() {
-        return prevHash;
-    }
-
-    public int getNextHash() {
-        return nextHash;
-    }
 
     @Override
     public Map<String, FileHandle> getLocalFiles() {
@@ -157,15 +155,31 @@ public class Node implements NodeInterface {
     }
 
     /**
+     * Add a Node's hash from the list of available hashes. Note that this method only work for updating the FileHandle
+     * of a local file (otherwise it is unnecessary anyways).
+     *
+     * @param fileName  the fileName of corresponding fileHandle to update
+     * @param hashToAdd the hash to add
+     */
+    @Override
+    public void addAvailableNode(String fileName, int hashToAdd) {
+        if (!localFiles.containsKey(fileName)) {
+            System.out.println("Error: trying to update a FileHandle of a non-local file.");
+            return;
+        }
+        localFiles.get(fileName).getAvailableNodes().add(hashToAdd);
+    }
+
+    /**
      * Remove a Node's hash from the list of available hashes. Note that this method only work for updating the FileHandle
      * of a local file (otherwise it is unnecessary anyways).
      *
-     * @param fileName the fileName of corresponding fileHandle to update
+     * @param fileName     the fileName of corresponding fileHandle to update
      * @param hashToRemove the hash to remove
      */
     @Override
-    public void removeNodeFromAvailableNodes(String fileName, int hashToRemove){
-        if (!localFiles.containsKey(fileName)){
+    public void popAvailableNode(String fileName, int hashToRemove) {
+        if (!localFiles.containsKey(fileName)) {
             System.out.println("Error: trying to update a FileHandle of a non-local file.");
             return;
         }
@@ -455,7 +469,8 @@ public class Node implements NodeInterface {
 
                 if (prevNodeStub.getLocalFiles().containsValue(entry.getValue())) {
                     // Previous Node has the file as local file -> replicate to previous' previous neighbour
-                    prevNodeStub.removeNodeFromAvailableNodes(entry.getKey(), ownHash);
+                    prevNodeStub.popAvailableNode(entry.getKey(), ownHash);
+                    prevNodeStub.addAvailableNode(entry.getKey(), prevNodeStub.getPrevHash());
 
                     Registry prevPrevNodeRegistry = LocateRegistry.getRegistry(prevNodeStub.getPrevAddress().getHostAddress(), Constants.RMI_PORT);
                     NodeInterface prevPrevNodeStub = (NodeInterface) prevPrevNodeRegistry.lookup("Node");
@@ -464,7 +479,8 @@ public class Node implements NodeInterface {
                     prevPrevNodeStub.addReplicatedFileList(replicatedFileHandle);
                 } else {
                     // Replicate to previous neighbour, it becomes the new owner of the file
-                    removeNodeFromAvailableNodes(entry.getKey(), ownHash);
+                    popAvailableNode(entry.getKey(), ownHash);
+                    addAvailableNode(entry.getKey(), prevHash);
                     prevNodeStub.downloadFile(Constants.REPLICATED_FILES_PATH + entry.getKey(), Constants.REPLICATED_FILES_PATH + entry.getKey(), ownAddress);
                     prevNodeStub.addReplicatedFileList(replicatedFileHandle);
                 }
@@ -491,7 +507,7 @@ public class Node implements NodeInterface {
                     deleteFileFromNode(localEntry.getValue());
                 } else {
                     // Else update download locations in the FileHandle
-                    ownerNodeStub.removeNodeFromAvailableNodes(localEntry.getKey(), ownHash);
+                    ownerNodeStub.popAvailableNode(localEntry.getKey(), ownHash);
                 }
 
             } catch (RemoteException | UnknownHostException | NotBoundException e) {
