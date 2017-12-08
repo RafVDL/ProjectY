@@ -157,6 +157,22 @@ public class Node implements NodeInterface {
     }
 
     /**
+     * Remove a Node's hash from the list of available hashes. Note that this method only work for updating the FileHandle
+     * of a local file (otherwise it is unnecessary anyways).
+     *
+     * @param fileName the fileName of corresponding fileHandle to update
+     * @param hashToRemove the hash to remove
+     */
+    @Override
+    public void removeNodeFromAvailableNodes(String fileName, int hashToRemove){
+        if (!localFiles.containsKey(fileName)){
+            System.out.println("Error: trying to update a FileHandle of a non-local file.");
+            return;
+        }
+        localFiles.get(fileName).getAvailableNodes().remove(hashToRemove);
+    }
+
+    /**
      * Updates the next neighbour of this node
      *
      * @param newAddress of the next neighbour
@@ -437,16 +453,18 @@ public class Node implements NodeInterface {
 
                 FileHandle replicatedFileHandle = new FileHandle(entry.getKey(), false);
 
-                //TODO leaving Node needs to remove itself from the availableNodesList at the owner of the file.
-                if (prevNodeStub.getReplicatedFiles().containsValue(entry.getValue())) {
-                    // Previous Node is already owner -> replicate to previous' previous neighbour
+                if (prevNodeStub.getLocalFiles().containsValue(entry.getValue())) {
+                    // Previous Node has the file as local file -> replicate to previous' previous neighbour
+                    prevNodeStub.removeNodeFromAvailableNodes(entry.getKey(), ownHash);
+
                     Registry prevPrevNodeRegistry = LocateRegistry.getRegistry(prevNodeStub.getPrevAddress().getHostAddress(), Constants.RMI_PORT);
                     NodeInterface prevPrevNodeStub = (NodeInterface) prevPrevNodeRegistry.lookup("Node");
 
-                    prevPrevNodeStub.downloadFile(Constants.REPLICATED_FILES_PATH + entry.getKey(), Constants.REPLICATED_FILES_PATH + entry.getKey(), ownAddress);
+                    prevPrevNodeStub.downloadFile(Constants.LOCAL_FILES_PATH + entry.getKey(), Constants.REPLICATED_FILES_PATH + entry.getKey(), ownAddress);
                     prevPrevNodeStub.addReplicatedFileList(replicatedFileHandle);
                 } else {
-                    // Replicate to previous neighbour
+                    // Replicate to previous neighbour, it becomes the new owner of the file
+                    removeNodeFromAvailableNodes(entry.getKey(), ownHash);
                     prevNodeStub.downloadFile(Constants.REPLICATED_FILES_PATH + entry.getKey(), Constants.REPLICATED_FILES_PATH + entry.getKey(), ownAddress);
                     prevNodeStub.addReplicatedFileList(replicatedFileHandle);
                 }
@@ -473,7 +491,7 @@ public class Node implements NodeInterface {
                     deleteFileFromNode(localEntry.getValue());
                 } else {
                     // Else update download locations in the FileHandle
-                    ownerNodeStub.getReplicatedFiles().get(localEntry.getKey()).getAvailableNodes().remove(ownHash);
+                    ownerNodeStub.removeNodeFromAvailableNodes(localEntry.getKey(), ownHash);
                 }
 
             } catch (RemoteException | UnknownHostException | NotBoundException e) {
