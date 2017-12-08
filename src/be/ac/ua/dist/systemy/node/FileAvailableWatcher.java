@@ -6,14 +6,14 @@ import java.io.File;
 import java.nio.file.Files;
 
 /**
- * When a file is copied (on Windows 10), an empty file is first created. Then the actual data is copied into that file.
+ * When a file is copied (on Windows 10), an empty file is first created. Then the file size is set and allocated on disk. The last step is to write the actual data into that file.
  * This class waits for the copying to finnish before trying to introduce it into the network.
  */
-public class FileSizeWatcher implements Runnable {
+public class FileAvailableWatcher implements Runnable {
     private final Node node;
     private final File file;
 
-    public FileSizeWatcher(Node node, File file) {
+    public FileAvailableWatcher(Node node, File file) {
         this.node = node;
         this.file = file;
     }
