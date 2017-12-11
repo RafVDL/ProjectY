@@ -34,7 +34,7 @@ public class NamingServer implements NamingServerInterface {
         this.serverIP = serverIP;
     }
 
-    public int getHash(String nodeName) {
+    public int calculateHash(String nodeName) {
         return Math.abs(nodeName.hashCode() % 32768);
     }
 
@@ -58,7 +58,7 @@ public class NamingServer implements NamingServerInterface {
     }
 
     public InetAddress getOwner(String fileName) {
-        int hashFileName = getHash(fileName);
+        int hashFileName = calculateHash(fileName);
         Integer currentHash = ipAddresses.floorKey(hashFileName);
 
         if (currentHash == null)
@@ -73,11 +73,8 @@ public class NamingServer implements NamingServerInterface {
     public void printIPadresses() {
         System.out.println("Printing IP-addresses to Console:");
         ipAddresses.forEach((key, value) -> {
-            System.out.println("Hash: " + key);
-            System.out.println("IP: " + value + "\n");
+            System.out.println("Hash: " + key + " - IP: " + value + "\n");
         });
-        System.out.println("Print completed \n");
-
     }
 
     public void exportIPadresses() {
