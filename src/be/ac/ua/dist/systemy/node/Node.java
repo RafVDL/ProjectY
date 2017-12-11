@@ -241,7 +241,7 @@ public class Node implements NodeInterface {
 
     @Override
     public void runFileAgent(TreeMap<String, Integer> files) throws InterruptedException, RemoteException, NotBoundException {
-        Thread t = new Thread(new FileAgent(files, this));
+        Thread t = new Thread(new FileAgent(files, ownAddress));
         t.start();
         t.join(); //wait for thread to stop
         if(ownHash != nextHash) {

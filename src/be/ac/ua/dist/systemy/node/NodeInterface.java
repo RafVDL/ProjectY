@@ -11,11 +11,11 @@ public interface NodeInterface extends Remote {
 
     InetAddress getPrevAddress() throws RemoteException;
 
-    InetAddress getNextAddress() throws RemoteException;
+//    InetAddress getNextAddress() throws RemoteException;
 
     Set getLocalFiles() throws RemoteException;
 
-    Set getReplicatedFiles() throws RemoteException;
+//    Set getReplicatedFiles() throws RemoteException;
 
     void addLocalFileList(String fileName) throws RemoteException;
 
@@ -30,5 +30,23 @@ public interface NodeInterface extends Remote {
     void updatePrev(InetAddress newAddress, int newHash) throws RemoteException;
 
     void runFileAgent(TreeMap<String, Integer> files) throws RemoteException, InterruptedException, NotBoundException;
+
+    void emptyAllFileList();
+
+    void addAllFileList(String file);
+
+    String getFileLockRequest();
+
+    void setDownloadFileGranted(String download);
+
+    int getOwnHash();
+
+    void setFileLockRequest(String filename);
+
+    String getDownloadFileGranted();
+
+    Set getDownloadingFiles();
+
+    void setFiles(TreeMap<String, Integer> files);
 
 }
