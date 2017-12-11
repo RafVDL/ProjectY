@@ -15,7 +15,7 @@ public interface NodeInterface extends Remote {
 
     Set getLocalFiles() throws RemoteException;
 
-//    Set getReplicatedFiles() throws RemoteException;
+    Set getReplicatedFiles() throws RemoteException;
 
     void addLocalFileList(String fileName) throws RemoteException;
 

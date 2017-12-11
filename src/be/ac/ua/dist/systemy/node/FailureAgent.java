@@ -16,6 +16,8 @@ public class FailureAgent implements Runnable, Serializable {
     private int hashStart;
     private InetAddress currNode;
     private Set<String> localFiles;
+    private Set<String> replicatedFiles;
+    private String currFile;
 
     public FailureAgent(int hashFailed, int hashStart, InetAddress currNode){ //integer is hash of node that is downloading file
         this.hashFailed = hashFailed;
@@ -29,14 +31,18 @@ public class FailureAgent implements Runnable, Serializable {
             Registry currNodeRegistry = LocateRegistry.getRegistry(currNode.getHostAddress(), Constants.RMI_PORT);
             NodeInterface currNodeStub = (NodeInterface) currNodeRegistry.lookup("Node");
             localFiles = currNodeStub.getLocalFiles();
-            //Stap 1: voeg localFiles toe aan map met files
+            replicatedFiles = currNodeStub.getReplicatedFiles();
+            //Stap 1: vraag replicated node op voor file uit localfiles
             if (localFiles != null) {
                 for (String s : localFiles) {
-                    if (!files.containsKey(s)) {
-                        files.put(s, 0);
-                    }
+                    currFile = s;
                 }
             }
+            //TODO:
+            //Krijg adres waar file replicated is en stuur file naar nieuwe eigenaar indien nodig
+
+
+            /*
             //Stap 2: update de lijst van bestanden
             currNodeStub.emptyAllFileList();
             if (files != null) {
@@ -67,6 +73,7 @@ public class FailureAgent implements Runnable, Serializable {
 
                 currNodeStub.setFiles(this.files);
             }
+            */
         } catch (IOException | NotBoundException e ) {
             e.printStackTrace();
 
