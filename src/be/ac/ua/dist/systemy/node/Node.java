@@ -406,12 +406,12 @@ public class Node implements NodeInterface {
         System.out.println("Finished discovery of " + folder.getName());
     }
 
-    public void replicateNewOwnerFiles(InetAddress newPrevAddress, int newPrevHash) throws RemoteException, NotBoundException {
+    public void replicateNewOwnerFiles() throws RemoteException, NotBoundException {
         Map<String, FileHandle> originalOwnerFiles = new HashMap<>(ownerFiles);
 
         originalOwnerFiles.forEach(((s, fileHandle) -> {
             try {
-                replicateToNewNode(fileHandle, newPrevAddress, newPrevHash);
+                replicateToNewNode(fileHandle);
             } catch (RemoteException | NotBoundException | UnknownHostException e) {
                 e.printStackTrace();
             }
@@ -485,7 +485,7 @@ public class Node implements NodeInterface {
         }
     }
 
-    public void replicateToNewNode(FileHandle fileHandle, InetAddress oldPrevAddress, int oldPrevHash) throws RemoteException, NotBoundException, UnknownHostException {
+    public void replicateToNewNode(FileHandle fileHandle) throws RemoteException, NotBoundException, UnknownHostException {
         File file = fileHandle.getFile();
 
         Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
@@ -501,21 +501,22 @@ public class Node implements NodeInterface {
         }
 
         if (!ownerAddress.equals(ownAddress)) {
-            Registry nodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
-            NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
+            Registry nextNodeRegistry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), Constants.RMI_PORT);
+            NodeInterface nextNodeStub = (NodeInterface) nextNodeRegistry.lookup("Node");
 
-            nodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
+            nextNodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
 
-            if (prevHash != ownHash)
+            if (prevHash != nextHash)
                 fileHandle.getAvailableNodes().remove(ownHash);
 
-            fileHandle.getAvailableNodes().add(prevHash);
+            fileHandle.getAvailableNodes().add(nextHash);
 
             FileHandle newFileHandle = fileHandle.getAsReplicated();
-            nodeStub.addReplicatedFileList(newFileHandle);
+            nextNodeStub.addReplicatedFileList(newFileHandle);
+            nextNodeStub.addOwnerFileList(newFileHandle);
 
+            replicatedFiles.remove(fileHandle.getFile().getName());
             ownerFiles.remove(fileHandle.getFile().getName());
-            nodeStub.addOwnerFileList(newFileHandle);
         }
     }
 
@@ -691,13 +692,10 @@ public class Node implements NodeInterface {
 
         multicastServer.registerListener(HelloPacket.class, ((packet, client) -> {
             if (packet.getSenderHash() != getOwnHash()) {
-                InetAddress originalPrevAddress = prevAddress;
-                int originalPrevHash = prevHash;
-
                 updateNeighbours(client.getAddress(), packet.getSenderHash());
 
                 try {
-                    replicateNewOwnerFiles(originalPrevAddress, originalPrevHash);
+                    replicateNewOwnerFiles();
                 } catch (NotBoundException e) {
                     e.printStackTrace();
                 }
