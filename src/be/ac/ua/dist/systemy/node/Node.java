@@ -473,7 +473,7 @@ public class Node implements NodeInterface {
         NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
         nodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
 
-        fileHandle.getAvailableNodes().add(ownerAddress.equals(ownAddress) ? prevHash : ownHash);
+        fileHandle.getAvailableNodes().add(ownerAddress.equals(ownAddress) ? prevHash : nodeStub.getOwnHash());
 
         FileHandle newFileHandle = fileHandle.getAsReplicated();
         nodeStub.addReplicatedFileList(newFileHandle);
