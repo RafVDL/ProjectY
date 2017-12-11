@@ -657,13 +657,13 @@ public class Node implements NodeInterface {
 
         multicastServer.registerListener(HelloPacket.class, ((packet, client) -> {
             if (packet.getSenderHash() != getOwnHash()) {
-                updateNeighbours(client.getAddress(), packet.getSenderHash());
-
                 try {
                     replicateNewOwnerFiles();
                 } catch (NotBoundException e) {
                     e.printStackTrace();
                 }
+
+                updateNeighbours(client.getAddress(), packet.getSenderHash());
             }
         }));
 
