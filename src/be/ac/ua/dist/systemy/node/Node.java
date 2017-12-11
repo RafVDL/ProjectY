@@ -450,8 +450,13 @@ public class Node implements NodeInterface {
         NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
         InetAddress ownerAddress = namingServerStub.getOwner(file.getName());
 
-        if (ownerAddress == null || ownAddress.equals(nextAddress))
+        if (ownerAddress == null)
             return;
+
+        if (ownAddress.equals(ownerAddress)) {
+            ownerFiles.put(fileHandle.getFile().getName(), fileHandle);
+            return;
+        }
 
         if (ownerAddress.equals(ownAddress)) {
             // Replicate to previous neighbour -> initiate downloadFile via RMI and update its replicatedFiles.
