@@ -602,11 +602,11 @@ public class Node implements NodeInterface {
                             prevPrevNodeStub.addReplicatedFileList(replicatedFileHandle);
                         } else {
                             // Replicate to previous neighbour, it becomes the new owner of the file
-                            removeFromAvailableNodes(entry.getKey(), ownHash);
-                            addToAvailableNodes(entry.getKey(), prevHash);
                             prevNodeStub.downloadFile(Constants.REPLICATED_FILES_PATH + entry.getKey(), Constants.REPLICATED_FILES_PATH + entry.getKey(), ownAddress);
                             prevNodeStub.addReplicatedFileList(replicatedFileHandle);
                             prevNodeStub.addOwnerFileList(replicatedFileHandle);
+                            prevNodeStub.removeFromAvailableNodes(entry.getKey(), ownHash);
+                            prevNodeStub.addToAvailableNodes(entry.getKey(), prevHash);
                         }
                     } catch (RemoteException | NotBoundException e) {
                         e.printStackTrace();
