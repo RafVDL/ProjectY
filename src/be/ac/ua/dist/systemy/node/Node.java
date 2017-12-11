@@ -506,7 +506,9 @@ public class Node implements NodeInterface {
 
             nodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
 
-            fileHandle.getAvailableNodes().remove(ownHash);
+            if (prevHash != ownHash)
+                fileHandle.getAvailableNodes().remove(ownHash);
+
             fileHandle.getAvailableNodes().add(prevHash);
 
             FileHandle newFileHandle = fileHandle.getAsReplicated();
