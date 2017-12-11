@@ -467,7 +467,7 @@ public class Node implements NodeInterface {
             fileHandle.getAvailableNodes().add(prevHash);
             newFileHandle.getAvailableNodes().addAll(fileHandle.getAvailableNodes());
             nodeStub.addReplicatedFileList(newFileHandle);
-            ownerFiles.put(newFileHandle.getFile().getName(), newFileHandle);
+            ownerFiles.put(newFileHandle.getFile().getName(), fileHandle);
         } else {
             // Replicate to owner -> initiate downloadFile via RMI and update its replicatedFiles.
             Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
