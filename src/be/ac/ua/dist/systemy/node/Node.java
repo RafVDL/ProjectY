@@ -18,6 +18,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import static be.ac.ua.dist.systemy.Constants.DOWNLOADED_FILES_PATH;
 import static be.ac.ua.dist.systemy.Constants.RMI_PORT;
 
 public class Node implements NodeInterface {
@@ -25,6 +26,7 @@ public class Node implements NodeInterface {
     private final InetAddress ownAddress;
     private final int ownHash;
     private String fileLockRequest;
+    private String downloadFileGranted;
     private Set<String> localFiles;
     private Set<String> replicatedFiles;
     private Set<String> downloadingFiles;
@@ -49,6 +51,7 @@ public class Node implements NodeInterface {
         this.ownHash = calculateHash(nodeName);
         this.allFiles = new HashSet<String>();
         this.fileLockRequest = "null";
+        this.downloadFileGranted = "null";
 
         multicastSocket = new MulticastSocket(Constants.MULTICAST_PORT);
         multicastGroup = InetAddress.getByName(Constants.MULTICAST_ADDRESS);
@@ -104,7 +107,7 @@ public class Node implements NodeInterface {
 
     public void setFileLockRequest(String filename){
         this.fileLockRequest = filename;
-    }
+    } //setting a file lock request will start the download of a file
 
     @Override
     public void addLocalFileList(String fileName) {
@@ -128,6 +131,13 @@ public class Node implements NodeInterface {
 
     public void setFiles(TreeMap<String, Integer> files){
         this.files = files;
+    }
+
+    public void setDownloadFileGranted(String download){
+        this.downloadFileGranted = download;
+    }
+    public String getDownloadFileGranted(){
+        return this.downloadFileGranted;
     }
 
     @Override
@@ -168,6 +178,7 @@ public class Node implements NodeInterface {
         downloadingFiles.remove(localFileName);
         System.out.println("Removing " + localFileName + " from downloading files");
     }
+
 
 //    /**
 //     * Removes a file from the network. This includes the actual file on disk as well as the lists.
@@ -253,15 +264,34 @@ public class Node implements NodeInterface {
                 }
 
             });
+            if(downloadFileGranted != "null"){ //download file
+                Thread t3 = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        InetAddress ownerAddress = null;
+                        try {
+                            // Get ownerAddress from NamingServer via RMI.
+                            Registry namingServerRegistry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
+                            NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+                            ownerAddress = namingServerStub.getOwner(downloadFileGranted);
+                        } catch (IOException | NotBoundException e) {
+                            e.printStackTrace();
+                        }
+                        if (ownerAddress == null) {
+                            //Error
+                        } else {
+                            downloadFile(downloadFileGranted,DOWNLOADED_FILES_PATH + downloadFileGranted, ownerAddress);
+                        }
+                    }
+                });
+                t3.start();
+            }
             t2.start();
         }
 
 
     }
 
-    public void runFileAgentNeighbour(TreeMap<String, Integer> files){
-
-    }
 
     /**
      * Gets invoked when a new Node is joining the network. (via NodeMultiCastServer)
