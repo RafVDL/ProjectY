@@ -473,11 +473,11 @@ public class Node implements NodeInterface {
             prevNodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
 
             if (oldPrevHash != prevHash) {
-                fileHandle.getAvailableNodes().remove(prevHash);
+                fileHandle.getAvailableNodes().remove(oldPrevHash);
                 oldPrevNodeStub.removeReplicatedFile(fileHandle);
             }
 
-            fileHandle.getAvailableNodes().add(oldPrevHash);
+            fileHandle.getAvailableNodes().add(prevHash);
 
             FileHandle newFileHandle = fileHandle.getAsReplicated();
             prevNodeStub.addReplicatedFileList(newFileHandle);
@@ -506,6 +506,7 @@ public class Node implements NodeInterface {
             ownerStub.addReplicatedFileList(newFileHandle);
             ownerStub.addOwnerFileList(newFileHandle);
 
+            replicatedFiles.remove(fileHandle.getFile().getName());
             ownerFiles.remove(fileHandle.getFile().getName());
         }
     }
