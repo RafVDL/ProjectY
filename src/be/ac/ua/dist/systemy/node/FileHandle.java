@@ -54,6 +54,20 @@ public class FileHandle implements Serializable {
         return availableNodes;
     }
 
+    public FileHandle getAsLocal() {
+        FileHandle fileHandle = new FileHandle(fileName, true);
+        fileHandle.downloads = downloads;
+        fileHandle.availableNodes.addAll(availableNodes);
+        return fileHandle;
+    }
+
+    public FileHandle getAsReplicated() {
+        FileHandle fileHandle = new FileHandle(fileName, false);
+        fileHandle.downloads = downloads;
+        fileHandle.availableNodes.addAll(availableNodes);
+        return fileHandle;
+    }
+
     public void readLog() {
         try {
             BufferedReader in = new BufferedReader(new FileReader(logFile));
