@@ -216,11 +216,14 @@ public class NamingServer implements NamingServerInterface {
                     System.out.println("Debugging enabled");
                     break;
 
+                case "undebug":
+                    Communications.setDebugging(false);
+                    System.out.println("Debugging disabled");
+                    break;
+
                 case "clear":
                     namingServer.ipAddresses.clear();
-                    System.out.print("\033[H\033[2J");
-                    System.out.flush();
-                    System.out.println("Cleared network table");
+                    System.out.println("----------Cleared network table----------\n");
                     break;
 
                 case "shutdown":
