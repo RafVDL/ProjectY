@@ -350,13 +350,16 @@ public class Node implements NodeInterface {
         if (ownHash == nextHash && ownHash == prevHash)
             return;
 
+        if (prevHash == nextHash) {
+            Client clientPrev = Communications.getTCPClient(prevAddress, Constants.TCP_PORT);
+            clientPrev.sendPacket(new UpdateNeighboursPacket(nextHash, nextHash));
+            return;
+        }
+
         Client clientPrev = Communications.getTCPClient(prevAddress, Constants.TCP_PORT);
         clientPrev.sendPacket(new UpdateNeighboursPacket(-1, nextHash));
 
-        if (prevHash == nextHash)
-            return;
-
-        Client clientNext = Communications.getTCPClient(prevAddress, Constants.TCP_PORT);
+        Client clientNext = Communications.getTCPClient(nextAddress, Constants.TCP_PORT);
         clientNext.sendPacket(new UpdateNeighboursPacket(prevHash, -1));
     }
 
