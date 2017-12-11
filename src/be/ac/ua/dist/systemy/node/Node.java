@@ -326,7 +326,7 @@ public class Node implements NodeInterface {
         client.sendPacket(packet);
 
         try {
-            latch.await(1, TimeUnit.SECONDS);
+            latch.await(10, TimeUnit.SECONDS);
             return address[0];
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -792,7 +792,7 @@ public class Node implements NodeInterface {
 
 
         // Discover local files
-        while (node.namingServerAddress == null || node.prevHash == 0 || node.nextHash == 0) {
+        while (node.namingServerAddress == null || node.prevHash == 0 || node.nextHash == 0 || node.prevAddress == null || node.nextAddress == null) {
             try {
                 Thread.sleep(500);
             } catch (Exception e) {
