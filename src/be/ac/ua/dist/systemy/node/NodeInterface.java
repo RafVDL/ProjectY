@@ -35,9 +35,9 @@ public interface NodeInterface extends Remote {
 
     void deleteFileFromNode(FileHandle fileHandle) throws RemoteException;
 
-    void addAvailableNode(String fileName, int hashToAdd) throws RemoteException;
+    void addToAvailableNodes(String fileName, int hashToAdd) throws RemoteException;
 
-    void popAvailableNode(String fileName, int hashToRemove) throws RemoteException;
+    void removeFromAvailableNodes(String fileName, int hashToRemove) throws RemoteException;
 
     void updateNext(InetAddress newAddress, int newHash) throws RemoteException;
 
