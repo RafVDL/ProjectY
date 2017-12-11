@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.rmi.NotBoundException;
+import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -45,7 +46,11 @@ public class FileAgent implements Runnable, Serializable{
             currNodeStub.emptyAllFileList();
             if (files != null) {
                 files.forEach((key, value) -> {
-                    currNodeStub.addAllFileList(key);
+                    try {
+                        currNodeStub.addAllFileList(key);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
                 });
 
                 //Stap 3: checken naar lock request
@@ -67,7 +72,7 @@ public class FileAgent implements Runnable, Serializable{
 
                 currNodeStub.setFiles(this.files);
             }
-        } catch (IOException | NotBoundException e) {
+        } catch (IOException | NotBoundException e ) {
             e.printStackTrace();
 
         }

@@ -31,22 +31,22 @@ public interface NodeInterface extends Remote {
 
     void runFileAgent(TreeMap<String, Integer> files) throws RemoteException, InterruptedException, NotBoundException;
 
-    void emptyAllFileList();
+    void emptyAllFileList() throws RemoteException;
 
-    void addAllFileList(String file);
+    void addAllFileList(String file) throws RemoteException;
 
-    String getFileLockRequest();
+    String getFileLockRequest() throws RemoteException;
 
-    void setDownloadFileGranted(String download);
+    void setDownloadFileGranted(String download) throws RemoteException;
 
-    int getOwnHash();
+    int getOwnHash() throws RemoteException;
 
-    void setFileLockRequest(String filename);
+    void setFileLockRequest(String filename) throws RemoteException;
 
-    String getDownloadFileGranted();
+    String getDownloadFileGranted() throws RemoteException;
 
-    Set getDownloadingFiles();
+    Set getDownloadingFiles() throws RemoteException;
 
-    void setFiles(TreeMap<String, Integer> files);
+    void setFiles(TreeMap<String, Integer> files) throws RemoteException;
 
 }
