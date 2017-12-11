@@ -183,7 +183,7 @@ public class Node implements NodeInterface {
      * @param hashToAdd the hash to add
      */
     @Override
-    public void addAvailableNode(String fileName, int hashToAdd) {
+    public void addToAvailableNodes(String fileName, int hashToAdd) {
         if (!localFiles.containsKey(fileName)) {
             System.out.println("Error: trying to update a FileHandle of a non-local file.");
             return;
@@ -199,7 +199,7 @@ public class Node implements NodeInterface {
      * @param hashToRemove the hash to remove
      */
     @Override
-    public void popAvailableNode(String fileName, int hashToRemove) {
+    public void removeFromAvailableNodes(String fileName, int hashToRemove) {
         if (!localFiles.containsKey(fileName)) {
             System.out.println("Error: trying to update a FileHandle of a non-local file.");
             return;
@@ -487,71 +487,124 @@ public class Node implements NodeInterface {
      * Transfer all replicated and process all local files. Then leave the network.
      */
     public void shutdown() {
-        tcpServer.stop();
         multicastServer.stop();
 
-        //TODO: Put a lock on the Node if it is in the process of leaving. This ensures no new files are replicated onto the Node.
-        // Transfer all replicated files
-        for (Map.Entry<String, FileHandle> entry : replicatedFiles.entrySet()) {
+        if (!(prevHash == ownHash)) {
+            // If alone in the network, just leave
+
+            NodeInterface prevNodeStub = null;
             try {
                 Registry prevNodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
-                NodeInterface prevNodeStub = (NodeInterface) prevNodeRegistry.lookup("Node");
-
-                FileHandle replicatedFileHandle = new FileHandle(entry.getKey(), false);
-
-                if (prevNodeStub.getLocalFiles().containsValue(entry.getValue())) {
-                    // Previous Node has the file as local file -> replicate to previous' previous neighbour
-                    prevNodeStub.popAvailableNode(entry.getKey(), ownHash);
-                    prevNodeStub.addAvailableNode(entry.getKey(), prevNodeStub.getPrevHash());
-
-                    Registry prevPrevNodeRegistry = LocateRegistry.getRegistry(prevNodeStub.getPrevAddress().getHostAddress(), Constants.RMI_PORT);
-                    NodeInterface prevPrevNodeStub = (NodeInterface) prevPrevNodeRegistry.lookup("Node");
-
-                    prevPrevNodeStub.downloadFile(Constants.LOCAL_FILES_PATH + entry.getKey(), Constants.REPLICATED_FILES_PATH + entry.getKey(), ownAddress);
-                    prevPrevNodeStub.addReplicatedFileList(replicatedFileHandle);
-                } else {
-                    // Replicate to previous neighbour, it becomes the new owner of the file
-                    popAvailableNode(entry.getKey(), ownHash);
-                    addAvailableNode(entry.getKey(), prevHash);
-                    prevNodeStub.downloadFile(Constants.REPLICATED_FILES_PATH + entry.getKey(), Constants.REPLICATED_FILES_PATH + entry.getKey(), ownAddress);
-                    prevNodeStub.addReplicatedFileList(replicatedFileHandle);
-                }
+                prevNodeStub = (NodeInterface) prevNodeRegistry.lookup("Node");
             } catch (RemoteException | NotBoundException e) {
                 e.printStackTrace();
             }
-        }
 
-        // Process all local files
-        for (Map.Entry<String, FileHandle> localEntry : localFiles.entrySet()) {
-            try {
-                // Get ownerAddress from NamingServer via RMI.
-                Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
-                NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
-                InetAddress ownerAddress = namingServerStub.getOwner(localEntry.getKey());
-
-                // Contact owner
-                Registry ownerNodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
-                NodeInterface ownerNodeStub = (NodeInterface) ownerNodeRegistry.lookup("Node");
-
-                // If download count = 0 -> delete local copy and copy of owner
-                FileHandle fileHandle = ownerNodeStub.getReplicatedFiles().get(localEntry.getKey());
-                if (fileHandle != null) {
-                    if (ownerNodeStub.getReplicatedFiles().get(localEntry.getKey()).getDownloads() == 0) {
-                        ownerNodeStub.deleteFileFromNode(ownerNodeStub.getReplicatedFiles().get(localEntry.getKey()));
-                        deleteFileFromNode(localEntry.getValue());
-                    } else {
-                        // Else update download locations in the FileHandle
-                        ownerNodeStub.popAvailableNode(localEntry.getKey(), ownHash);
+            // Only one other Node in the network -> always update the other Node
+            if (prevHash == nextHash) {
+                // Remove ownHash from availableNodes for all replicatedFiles
+                for (Map.Entry<String, FileHandle> entry : replicatedFiles.entrySet()) {
+                    try {
+                        if (prevNodeStub == null) {
+                            continue;
+                        }
+                        prevNodeStub.removeFromAvailableNodes(entry.getKey(), ownHash);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
                     }
                 }
 
-            } catch (RemoteException | UnknownHostException | NotBoundException e) {
-                e.printStackTrace();
+                // Process all local files
+                for (Map.Entry<String, FileHandle> localEntry : localFiles.entrySet()) {
+                    try {
+                        int downloads;
+                        if (prevNodeStub == null) {
+                            continue;
+                        }
+
+                        // If this Node is the owner of the file -> check downloads and proceed
+                        if (ownerFiles.containsKey(localEntry.getKey())) {
+                            downloads = localEntry.getValue().getDownloads();
+                        } else {
+                            // The other Node is the owner -> check downloads there and proceed
+                            downloads = prevNodeStub.getReplicatedFiles().get(localEntry.getKey()).getDownloads();
+                        }
+
+                        // If downloads = 0 -> delete local copy and copy of owner
+                        if (downloads == 0) {
+                            prevNodeStub.deleteFileFromNode(localEntry.getValue());
+                            deleteFileFromNode(localEntry.getValue());
+                        } else {
+                            // Else update download locations in the FileHandle
+                            prevNodeStub.removeFromAvailableNodes(localEntry.getKey(), ownHash);
+                        }
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+                }
+            } else {
+
+                // Transfer all replicated files
+                for (Map.Entry<String, FileHandle> entry : replicatedFiles.entrySet()) {
+                    try {
+                        FileHandle replicatedFileHandle = new FileHandle(entry.getKey(), false);
+
+                        if (prevNodeStub.getLocalFiles().containsValue(entry.getValue())) {
+                            // Previous Node has the file as local file -> replicate to previous' previous neighbour
+                            prevNodeStub.removeFromAvailableNodes(entry.getKey(), ownHash);
+                            prevNodeStub.addToAvailableNodes(entry.getKey(), prevNodeStub.getPrevHash());
+
+                            Registry prevPrevNodeRegistry = LocateRegistry.getRegistry(prevNodeStub.getPrevAddress().getHostAddress(), Constants.RMI_PORT);
+                            NodeInterface prevPrevNodeStub = (NodeInterface) prevPrevNodeRegistry.lookup("Node");
+
+                            prevPrevNodeStub.downloadFile(Constants.LOCAL_FILES_PATH + entry.getKey(), Constants.REPLICATED_FILES_PATH + entry.getKey(), ownAddress);
+                            prevPrevNodeStub.addReplicatedFileList(replicatedFileHandle);
+                        } else {
+                            // Replicate to previous neighbour, it becomes the new owner of the file
+                            removeFromAvailableNodes(entry.getKey(), ownHash);
+                            addToAvailableNodes(entry.getKey(), prevHash);
+                            prevNodeStub.downloadFile(Constants.REPLICATED_FILES_PATH + entry.getKey(), Constants.REPLICATED_FILES_PATH + entry.getKey(), ownAddress);
+                            prevNodeStub.addReplicatedFileList(replicatedFileHandle);
+                        }
+                    } catch (RemoteException | NotBoundException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                // Process all local files
+                for (Map.Entry<String, FileHandle> localEntry : localFiles.entrySet()) {
+                    try {
+                        // Get ownerAddress from NamingServer via RMI.
+                        Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
+                        NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+                        InetAddress ownerAddress = namingServerStub.getOwner(localEntry.getKey());
+
+                        // Contact owner
+                        Registry ownerNodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
+                        NodeInterface ownerNodeStub = (NodeInterface) ownerNodeRegistry.lookup("Node");
+
+                        // If download count = 0 -> delete local copy and copy of owner
+                        FileHandle fileHandle = ownerNodeStub.getReplicatedFiles().get(localEntry.getKey());
+                        if (fileHandle != null) {
+                            if (ownerNodeStub.getReplicatedFiles().get(localEntry.getKey()).getDownloads() == 0) {
+                                ownerNodeStub.deleteFileFromNode(localEntry.getValue());
+                                deleteFileFromNode(localEntry.getValue());
+                            } else {
+                                // Else update download locations in the FileHandle
+                                ownerNodeStub.removeFromAvailableNodes(localEntry.getKey(), ownHash);
+                            }
+                        }
+
+                    } catch (RemoteException | UnknownHostException | NotBoundException e) {
+                        e.printStackTrace();
+                    }
+                }
             }
         }
 
         // Actually leave the network
         try {
+            tcpServer.stop();
             setRunning(false);
             leaveNetwork();
             UnicastRemoteObject.unexportObject(this, true);
