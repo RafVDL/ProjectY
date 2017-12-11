@@ -529,12 +529,15 @@ public class Node implements NodeInterface {
                 NodeInterface ownerNodeStub = (NodeInterface) ownerNodeRegistry.lookup("Node");
 
                 // If download count = 0 -> delete local copy and copy of owner
-                if (ownerNodeStub.getReplicatedFiles().get(localEntry.getKey()).getDownloads() == 0) {
-                    ownerNodeStub.deleteFileFromNode(ownerNodeStub.getReplicatedFiles().get(localEntry.getKey()));
-                    deleteFileFromNode(localEntry.getValue());
-                } else {
-                    // Else update download locations in the FileHandle
-                    ownerNodeStub.popAvailableNode(localEntry.getKey(), ownHash);
+                FileHandle fileHandle = ownerNodeStub.getReplicatedFiles().get(localEntry.getKey());
+                if (fileHandle != null) {
+                    if (ownerNodeStub.getReplicatedFiles().get(localEntry.getKey()).getDownloads() == 0) {
+                        ownerNodeStub.deleteFileFromNode(ownerNodeStub.getReplicatedFiles().get(localEntry.getKey()));
+                        deleteFileFromNode(localEntry.getValue());
+                    } else {
+                        // Else update download locations in the FileHandle
+                        ownerNodeStub.popAvailableNode(localEntry.getKey(), ownHash);
+                    }
                 }
 
             } catch (RemoteException | UnknownHostException | NotBoundException e) {
@@ -748,6 +751,11 @@ public class Node implements NodeInterface {
                 case "replicatedFiles":
                 case "rf":
                     System.out.println("Replicated files: " + node.replicatedFiles);
+                    break;
+
+                case "ownerFiles":
+                case "of":
+                    System.out.println("Owner files: " + node.ownerFiles);
                     break;
             }
         }
