@@ -39,7 +39,7 @@ public class NamingServer implements NamingServerInterface {
     }
 
     public void addNodeToNetwork(int hash, InetAddress ip) {
-        System.out.println("Adding " + " (hash: " + hash + ")" + " to table");
+        System.out.println("Adding " + hash + " to IP-table");
 
         if (!ipAddresses.containsKey(hash)) {
             ipAddresses.put(hash, ip);
@@ -71,10 +71,11 @@ public class NamingServer implements NamingServerInterface {
     }
 
     public void printIPadresses() {
-        System.out.println("Printing IP-addresses to Console:");
+        System.out.println("\nPrinting IP-addresses to Console:");
         ipAddresses.forEach((key, value) -> {
-            System.out.println("Hash: " + key + " - IP: " + value + "\n");
+            System.out.println("Hash: " + key + " - IP: " + value);
         });
+        System.out.println("");
     }
 
     public void exportIPadresses() {
