@@ -471,12 +471,13 @@ public class Node implements NodeInterface {
             NodeInterface oldPrevNodeStub = (NodeInterface) oldPrevNodeRegistry.lookup("Node");
 
             prevNodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
-            fileHandle.getAvailableNodes().add(oldPrevHash);
 
             if (oldPrevHash != prevHash) {
                 fileHandle.getAvailableNodes().remove(prevHash);
                 oldPrevNodeStub.removeReplicatedFile(fileHandle);
             }
+
+            fileHandle.getAvailableNodes().add(oldPrevHash);
 
             FileHandle newFileHandle = fileHandle.getAsReplicated();
             prevNodeStub.addReplicatedFileList(newFileHandle);
