@@ -598,7 +598,7 @@ public class Node implements NodeInterface {
                             Registry prevPrevNodeRegistry = LocateRegistry.getRegistry(prevNodeStub.getPrevAddress().getHostAddress(), Constants.RMI_PORT);
                             NodeInterface prevPrevNodeStub = (NodeInterface) prevPrevNodeRegistry.lookup("Node");
 
-                            prevPrevNodeStub.downloadFile(Constants.LOCAL_FILES_PATH + entry.getKey(), Constants.REPLICATED_FILES_PATH + entry.getKey(), ownAddress);
+                            prevPrevNodeStub.downloadFile(Constants.REPLICATED_FILES_PATH + entry.getKey(), Constants.REPLICATED_FILES_PATH + entry.getKey(), ownAddress);
                             prevPrevNodeStub.addReplicatedFileList(replicatedFileHandle);
                         } else {
                             // Replicate to previous neighbour, it becomes the new owner of the file
