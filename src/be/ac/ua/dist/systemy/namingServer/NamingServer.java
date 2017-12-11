@@ -67,7 +67,7 @@ public class NamingServer implements NamingServerInterface {
 
         InetAddress currentIP = ipAddresses.get(currentHash);
 
-        System.out.println("Owner of " + fileName + " (hash=" + hashFileName + ") is " + currentHash);
+        System.out.println("Owner of '" + fileName + "' (hash=" + hashFileName + ") is " + currentHash);
         return currentIP;
     }
 
@@ -218,6 +218,8 @@ public class NamingServer implements NamingServerInterface {
 
                 case "clear":
                     namingServer.ipAddresses.clear();
+                    System.out.print("\033[H\033[2J");
+                    System.out.flush();
                     System.out.println("Cleared network table");
                     break;
 

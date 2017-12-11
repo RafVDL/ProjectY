@@ -453,7 +453,7 @@ public class Node implements NodeInterface {
         if (ownerAddress == null)
             return;
 
-        if (ownAddress.equals(ownerAddress)) {
+        if (ownAddress.equals(nextAddress)) {
             ownerFiles.put(fileHandle.getFile().getName(), fileHandle);
             return;
         }
