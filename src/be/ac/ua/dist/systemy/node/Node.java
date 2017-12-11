@@ -29,6 +29,7 @@ public class Node implements NodeInterface {
     private final int ownHash;
     private Map<String, FileHandle> localFiles;
     private Map<String, FileHandle> replicatedFiles;
+    private Map<String, FileHandle> ownerFiles;
     private Set<String> downloadingFiles;
 
     private volatile InetAddress namingServerAddress;
@@ -106,6 +107,26 @@ public class Node implements NodeInterface {
     @Override
     public void addReplicatedFileList(FileHandle fileHandle) {
         replicatedFiles.put(fileHandle.getFile().getName(), fileHandle);
+    }
+
+    @Override
+    public void addOwnerFileList(FileHandle fileHandle) {
+        ownerFiles.put(fileHandle.getFile().getName(), fileHandle);
+    }
+
+    @Override
+    public void removeLocalFile(FileHandle fileHandle) {
+        localFiles.remove(fileHandle.getFile().getName());
+    }
+
+    @Override
+    public void removeReplicatedFile(FileHandle fileHandle) {
+        replicatedFiles.remove(fileHandle.getFile().getName());
+    }
+
+    @Override
+    public void removeOwnerFile(FileHandle fileHandle) {
+        ownerFiles.remove(fileHandle.getFile().getName());
     }
 
     @Override
@@ -382,8 +403,10 @@ public class Node implements NodeInterface {
         System.out.println("Finished discovery of " + folder.getName());
     }
 
-    public void replicateLocalFiles() {
-        localFiles.forEach(((s, fileHandle) -> {
+    public void replicateNewOwnerFiles() throws RemoteException, NotBoundException {
+        Map<String, FileHandle> originalOwnerFiles = new HashMap<>(ownerFiles);
+
+        originalOwnerFiles.forEach(((s, fileHandle) -> {
             try {
                 replicateFile(fileHandle);
             } catch (RemoteException | NotBoundException | UnknownHostException e) {
@@ -439,15 +462,19 @@ public class Node implements NodeInterface {
             fileHandle.getAvailableNodes().add(prevHash);
             newFileHandle.getAvailableNodes().addAll(fileHandle.getAvailableNodes());
             nodeStub.addReplicatedFileList(newFileHandle);
+            ownerFiles.put(newFileHandle.getFile().getName(), newFileHandle);
         } else {
             // Replicate to owner -> initiate downloadFile via RMI and update its replicatedFiles.
             Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
             NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
             nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + file.getName(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
             FileHandle newFileHandle = new FileHandle(file.getName(), false);
+            fileHandle.getAvailableNodes().remove(ownHash);
             fileHandle.getAvailableNodes().add(nodeStub.getOwnHash());
             newFileHandle.getAvailableNodes().addAll(fileHandle.getAvailableNodes());
             nodeStub.addReplicatedFileList(newFileHandle);
+            nodeStub.addOwnerFileList(newFileHandle);
+            ownerFiles.remove(fileHandle.getFile().getName());
         }
     }
 
@@ -567,7 +594,11 @@ public class Node implements NodeInterface {
             if (packet.getSenderHash() != getOwnHash()) {
                 updateNeighbours(client.getAddress(), packet.getSenderHash());
 
-                replicateLocalFiles();
+                try {
+                    replicateNewOwnerFiles();
+                } catch (NotBoundException e) {
+                    e.printStackTrace();
+                }
             }
         }));
 
@@ -646,6 +677,7 @@ public class Node implements NodeInterface {
         node.clearDir(Constants.REPLICATED_FILES_PATH);
         node.localFiles = new HashMap<>();
         node.replicatedFiles = new HashMap<>();
+        node.ownerFiles = new HashMap<>();
         node.downloadingFiles = new HashSet<>();
 
         node.initializeRMI();

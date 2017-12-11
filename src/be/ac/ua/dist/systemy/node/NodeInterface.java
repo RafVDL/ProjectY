@@ -4,7 +4,6 @@ import java.net.InetAddress;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.Map;
-import java.util.Set;
 
 public interface NodeInterface extends Remote {
 
@@ -23,6 +22,14 @@ public interface NodeInterface extends Remote {
     void addLocalFileList(FileHandle fileHandle) throws RemoteException;
 
     void addReplicatedFileList(FileHandle fileHandle) throws RemoteException;
+
+    void addOwnerFileList(FileHandle fileHandle) throws RemoteException;
+
+    void removeLocalFile(FileHandle fileHandle) throws RemoteException;
+
+    void removeReplicatedFile(FileHandle fileHandle) throws RemoteException;
+
+    void removeOwnerFile(FileHandle fileHandle) throws RemoteException;
 
     void downloadFile(String sourceFileName, String targetFileName, InetAddress remoteAddress) throws RemoteException;
 
