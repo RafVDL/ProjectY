@@ -30,7 +30,7 @@ public class NamingServer implements NamingServerInterface {
     private boolean running = true;
     private Server multicastServer;
 
-    public NamingServer(InetAddress serverIP) throws UnknownHostException {
+    public NamingServer(InetAddress serverIP) {
         this.serverIP = serverIP;
     }
 
@@ -48,7 +48,7 @@ public class NamingServer implements NamingServerInterface {
         }
     }
 
-    public void removeNodeFromNetwork(int hash) throws RemoteException {
+    public void removeNodeFromNetwork(int hash) {
         System.out.println("Removing " + hash + " from IP-table");
         if (ipAddresses.containsKey(hash)) {
             ipAddresses.remove(hash);
@@ -57,22 +57,8 @@ public class NamingServer implements NamingServerInterface {
         }
     }
 
-//    public void addMeToNetwork(String nodeName) throws ServerNotActiveException, UnknownHostException {
-//        InetAddress IP = InetAddress.getByName(RemoteServer.getClientHost());
-//        System.out.println("Adding " + nodeName + " from IP-table");
-//        int hash = getHash(nodeName);
-//        if (ipAddresses.containsKey(hash)) {
-//            ipAddresses.put(hash, IP);
-//        } else {
-//            System.out.println(hash + " already exists in ipAddresses");
-//        }
-//    }
-
-
-    public InetAddress getOwner(String fileName) throws UnknownHostException {
-        System.out.println("Getting owner of file: " + fileName);
+    public InetAddress getOwner(String fileName) {
         int hashFileName = getHash(fileName);
-        System.out.println("Hash of file = " + hashFileName);
         Integer currentHash = ipAddresses.floorKey(hashFileName);
 
         if (currentHash == null)
@@ -80,7 +66,7 @@ public class NamingServer implements NamingServerInterface {
 
         InetAddress currentIP = ipAddresses.get(currentHash);
 
-        System.out.println("Owner is " + currentHash);
+        System.out.println("Owner of " + fileName + " (hash=" + hashFileName + ") is " + currentHash);
         return currentIP;
     }
 
@@ -121,11 +107,11 @@ public class NamingServer implements NamingServerInterface {
         System.out.println("Export completed \n");
     }
 
-    public InetAddress getIPNode(int hashNode) throws RemoteException {
+    public InetAddress getIPNode(int hashNode) {
         return ipAddresses.getOrDefault(hashNode, null);
     }
 
-    public int[] getNeighbours(int hashNode) throws RemoteException {
+    public int[] getNeighbours(int hashNode) {
         Iterator<HashMap.Entry<Integer, InetAddress>> it = ipAddresses.entrySet().iterator();
         int[] neighbours = new int[2];
         int prevHash = 0;
@@ -198,13 +184,7 @@ public class NamingServer implements NamingServerInterface {
             }
         }));
 
-        multicastServer.registerListener(QuitPacket.class, ((packet, client) -> {
-            try {
-                removeNodeFromNetwork(packet.getSenderHash());
-            } catch (RemoteException e) {
-                e.printStackTrace();
-            }
-        }));
+        multicastServer.registerListener(QuitPacket.class, ((packet, client) -> removeNodeFromNetwork(packet.getSenderHash())));
 
         multicastServer.startServer(InetAddress.getByName(Constants.MULTICAST_ADDRESS), Constants.MULTICAST_PORT);
     }
@@ -239,6 +219,7 @@ public class NamingServer implements NamingServerInterface {
 
                 case "clear":
                     namingServer.ipAddresses.clear();
+                    System.out.println("Cleared network table");
                     break;
 
                 case "shutdown":
