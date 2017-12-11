@@ -537,7 +537,7 @@ public class Node implements NodeInterface {
                 e.printStackTrace();
             }
 
-            // Only one other Node in the network -> always update the other Node
+            // Only one other Node in the network -> always update the other Node and make it owner of the file
             if (prevHash == nextHash) {
                 // Remove ownHash from availableNodes for all replicatedFiles
                 for (Map.Entry<String, FileHandle> entry : replicatedFiles.entrySet()) {
@@ -546,6 +546,7 @@ public class Node implements NodeInterface {
                             continue;
                         }
                         prevNodeStub.removeFromAvailableNodes(entry.getKey(), ownHash);
+                        prevNodeStub.addOwnerFileList(entry.getValue());
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     }
@@ -574,12 +575,14 @@ public class Node implements NodeInterface {
                         } else {
                             // Else update download locations in the FileHandle
                             prevNodeStub.removeFromAvailableNodes(localEntry.getKey(), ownHash);
+                            prevNodeStub.addOwnerFileList(localEntry.getValue());
                         }
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     }
                 }
             } else {
+                // Not alone in the network
 
                 // Transfer all replicated files
                 for (Map.Entry<String, FileHandle> entry : replicatedFiles.entrySet()) {
@@ -587,9 +590,10 @@ public class Node implements NodeInterface {
                         FileHandle replicatedFileHandle = entry.getValue().getAsReplicated();
 
                         if (prevNodeStub.getLocalFiles().containsValue(entry.getValue())) {
-                            // Previous Node has the file as local file -> replicate to previous' previous neighbour
+                            // Previous Node has the file as local file -> replicate to previous' previous neighbour and make it owner of the file
                             prevNodeStub.removeFromAvailableNodes(entry.getKey(), ownHash);
                             prevNodeStub.addToAvailableNodes(entry.getKey(), prevNodeStub.getPrevHash());
+                            prevNodeStub.addOwnerFileList(replicatedFileHandle);
 
                             Registry prevPrevNodeRegistry = LocateRegistry.getRegistry(prevNodeStub.getPrevAddress().getHostAddress(), Constants.RMI_PORT);
                             NodeInterface prevPrevNodeStub = (NodeInterface) prevPrevNodeRegistry.lookup("Node");
@@ -602,6 +606,7 @@ public class Node implements NodeInterface {
                             addToAvailableNodes(entry.getKey(), prevHash);
                             prevNodeStub.downloadFile(Constants.REPLICATED_FILES_PATH + entry.getKey(), Constants.REPLICATED_FILES_PATH + entry.getKey(), ownAddress);
                             prevNodeStub.addReplicatedFileList(replicatedFileHandle);
+                            prevNodeStub.addOwnerFileList(replicatedFileHandle);
                         }
                     } catch (RemoteException | NotBoundException e) {
                         e.printStackTrace();
@@ -619,6 +624,7 @@ public class Node implements NodeInterface {
                         // Contact owner
                         Registry ownerNodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
                         NodeInterface ownerNodeStub = (NodeInterface) ownerNodeRegistry.lookup("Node");
+//                        TODO: What to do is leaving Node is the owner -> where to update the handle to?
 
                         // If download count = 0 -> delete local copy and copy of owner
                         FileHandle fileHandle = ownerNodeStub.getReplicatedFiles().get(localEntry.getKey());
@@ -815,6 +821,11 @@ public class Node implements NodeInterface {
                 case "debug":
                     Communications.setDebugging(true);
                     System.out.println("Debugging enabled");
+                    break;
+
+                case "undebug":
+                    Communications.setDebugging(false);
+                    System.out.println("Debugging disabled");
                     break;
 
                 case "shutdown":

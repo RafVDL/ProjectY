@@ -37,7 +37,7 @@ public class FileUpdateWatcher implements Runnable {
                         continue;
                     }
 
-                    System.out.println("Watcher detected: [NEW] - " + event.context() + " ... waiting for file finnish copying");
+                    System.out.println("Watcher detected: [NEW] - " + event.context() + " ... waiting for file finish copying");
                     // Create watcher object that waits for the file to be done copying
                     FileAvailableWatcher fileAvailableWatcher = new FileAvailableWatcher(node, file);
                     Thread thread = new Thread(fileAvailableWatcher);
