@@ -475,7 +475,8 @@ public class Node implements NodeInterface {
             Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
             NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
             nodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
-            fileHandle.getAvailableNodes().remove(ownHash);
+            if (prevHash != nextHash)
+                fileHandle.getAvailableNodes().remove(ownHash);
             fileHandle.getAvailableNodes().add(nodeStub.getOwnHash());
             FileHandle newFileHandle = fileHandle.getAsReplicated();
             nodeStub.addReplicatedFileList(newFileHandle);
