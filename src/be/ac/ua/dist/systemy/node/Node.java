@@ -350,13 +350,16 @@ public class Node implements NodeInterface {
         if (ownHash == nextHash && ownHash == prevHash)
             return;
 
+        if (prevHash == nextHash) {
+            Client clientPrev = Communications.getTCPClient(prevAddress, Constants.TCP_PORT);
+            clientPrev.sendPacket(new UpdateNeighboursPacket(nextHash, nextHash));
+            return;
+        }
+
         Client clientPrev = Communications.getTCPClient(prevAddress, Constants.TCP_PORT);
         clientPrev.sendPacket(new UpdateNeighboursPacket(-1, nextHash));
 
-        if (prevHash == nextHash)
-            return;
-
-        Client clientNext = Communications.getTCPClient(prevAddress, Constants.TCP_PORT);
+        Client clientNext = Communications.getTCPClient(nextAddress, Constants.TCP_PORT);
         clientNext.sendPacket(new UpdateNeighboursPacket(prevHash, -1));
     }
 
@@ -472,7 +475,8 @@ public class Node implements NodeInterface {
             Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
             NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
             nodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
-            fileHandle.getAvailableNodes().remove(ownHash);
+            if (prevHash != nextHash)
+                fileHandle.getAvailableNodes().remove(ownHash);
             fileHandle.getAvailableNodes().add(nodeStub.getOwnHash());
             FileHandle newFileHandle = fileHandle.getAsReplicated();
             nodeStub.addReplicatedFileList(newFileHandle);
