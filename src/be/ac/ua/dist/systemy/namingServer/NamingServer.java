@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.AlreadyBoundException;
+import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -186,7 +187,7 @@ public class NamingServer implements NamingServerInterface {
         multicastServer.startServer(InetAddress.getByName(Constants.MULTICAST_ADDRESS), Constants.MULTICAST_PORT);
     }
 
-    public static void main(String[] args) throws UnknownHostException {
+    public static void main(String[] args) throws UnknownHostException, NoSuchObjectException {
         Scanner sc = new Scanner(System.in);
         InetAddress detectedHostAddress = InetAddress.getLocalHost();
         System.out.println("(Detected localHost is: " + detectedHostAddress + ")");
@@ -224,7 +225,9 @@ public class NamingServer implements NamingServerInterface {
                 case "sh":
                     namingServer.setRunning(false);
                     namingServer.multicastServer.stop();
-                    System.out.println("Shutdown the network");
+                    UnicastRemoteObject.unexportObject(namingServer, true);
+                    System.out.println("Left the network+");
+                    System.exit(0);
                     break;
 
                 case "table":
