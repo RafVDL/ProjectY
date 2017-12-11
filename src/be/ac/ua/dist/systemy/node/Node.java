@@ -554,7 +554,9 @@ public class Node implements NodeInterface {
         try {
             setRunning(false);
             leaveNetwork();
+            UnicastRemoteObject.unexportObject(this, true);
             System.out.println("Left the network+");
+            System.exit(0);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -732,7 +734,9 @@ public class Node implements NodeInterface {
                     node.leaveNetwork();
                     node.tcpServer.stop();
                     node.multicastServer.stop();
+                    UnicastRemoteObject.unexportObject(node, true);
                     System.out.println("Left the network");
+                    System.exit(0);
                     break;
 
                 case "shutdown+":
