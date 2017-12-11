@@ -463,9 +463,8 @@ public class Node implements NodeInterface {
             Registry nodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
             NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
             nodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
-            FileHandle newFileHandle = new FileHandle(file.getName(), false);
             fileHandle.getAvailableNodes().add(prevHash);
-            newFileHandle.getAvailableNodes().addAll(fileHandle.getAvailableNodes());
+            FileHandle newFileHandle = fileHandle.getAsReplicated();
             nodeStub.addReplicatedFileList(newFileHandle);
             ownerFiles.put(newFileHandle.getFile().getName(), fileHandle);
         } else {
@@ -473,10 +472,9 @@ public class Node implements NodeInterface {
             Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
             NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
             nodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
-            FileHandle newFileHandle = new FileHandle(file.getName(), false);
             fileHandle.getAvailableNodes().remove(ownHash);
             fileHandle.getAvailableNodes().add(nodeStub.getOwnHash());
-            newFileHandle.getAvailableNodes().addAll(fileHandle.getAvailableNodes());
+            FileHandle newFileHandle = fileHandle.getAsReplicated();
             nodeStub.addReplicatedFileList(newFileHandle);
             nodeStub.addOwnerFileList(newFileHandle);
             ownerFiles.remove(fileHandle.getFile().getName());
@@ -515,7 +513,7 @@ public class Node implements NodeInterface {
                 }
 
                 // Process all local files
-                for (Map.Entry<String, FileHandle> localEntry : localFiles.entrySet()) {
+                for (Map.Entry<String, FileHandle> localEntry : (new HashMap<>(localFiles)).entrySet()) {
                     try {
                         int downloads;
                         if (prevNodeStub == null) {
@@ -547,7 +545,7 @@ public class Node implements NodeInterface {
                 // Transfer all replicated files
                 for (Map.Entry<String, FileHandle> entry : replicatedFiles.entrySet()) {
                     try {
-                        FileHandle replicatedFileHandle = new FileHandle(entry.getKey(), false);
+                        FileHandle replicatedFileHandle = entry.getValue().getAsReplicated();
 
                         if (prevNodeStub.getLocalFiles().containsValue(entry.getValue())) {
                             // Previous Node has the file as local file -> replicate to previous' previous neighbour
@@ -572,7 +570,7 @@ public class Node implements NodeInterface {
                 }
 
                 // Process all local files
-                for (Map.Entry<String, FileHandle> localEntry : localFiles.entrySet()) {
+                for (Map.Entry<String, FileHandle> localEntry : (new HashMap<>(localFiles)).entrySet()) {
                     try {
                         // Get ownerAddress from NamingServer via RMI.
                         Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
