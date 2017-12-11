@@ -462,7 +462,7 @@ public class Node implements NodeInterface {
             // Replicate to previous neighbour -> initiate downloadFile via RMI and update its replicatedFiles.
             Registry nodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
             NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
-            nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + file.getName(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
+            nodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
             FileHandle newFileHandle = new FileHandle(file.getName(), false);
             fileHandle.getAvailableNodes().add(prevHash);
             newFileHandle.getAvailableNodes().addAll(fileHandle.getAvailableNodes());
@@ -472,7 +472,7 @@ public class Node implements NodeInterface {
             // Replicate to owner -> initiate downloadFile via RMI and update its replicatedFiles.
             Registry nodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
             NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
-            nodeStub.downloadFile(Constants.LOCAL_FILES_PATH + file.getName(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
+            nodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
             FileHandle newFileHandle = new FileHandle(file.getName(), false);
             fileHandle.getAvailableNodes().remove(ownHash);
             fileHandle.getAvailableNodes().add(nodeStub.getOwnHash());
