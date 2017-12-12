@@ -184,11 +184,11 @@ public class Node implements NodeInterface {
      */
     @Override
     public void addToAvailableNodes(String fileName, int hashToAdd) {
-        if (!localFiles.containsKey(fileName)) {
-            System.out.println("Error: trying to update a FileHandle of a non-local file.");
+        if (!ownerFiles.containsKey(fileName)) {
+            System.err.println("Error: trying to update a FileHandle of a file that this Node does not own.");
             return;
         }
-        localFiles.get(fileName).getAvailableNodes().add(hashToAdd);
+        ownerFiles.get(fileName).getAvailableNodes().add(hashToAdd);
     }
 
     /**
@@ -591,8 +591,8 @@ public class Node implements NodeInterface {
 
                         if (prevNodeStub.getLocalFiles().containsValue(entry.getValue())) {
                             // Previous Node has the file as local file -> replicate to previous' previous neighbour and make it owner of the file
-                            prevNodeStub.removeFromAvailableNodes(entry.getKey(), ownHash);
-                            prevNodeStub.addToAvailableNodes(entry.getKey(), prevNodeStub.getPrevHash());
+                            replicatedFileHandle.getAvailableNodes().remove(ownHash);
+                            replicatedFileHandle.getAvailableNodes().add(prevNodeStub.getPrevHash());
                             prevNodeStub.addOwnerFileList(replicatedFileHandle);
 
                             Registry prevPrevNodeRegistry = LocateRegistry.getRegistry(prevNodeStub.getPrevAddress().getHostAddress(), Constants.RMI_PORT);
