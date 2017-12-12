@@ -3,41 +3,39 @@ package be.ac.ua.dist.systemy.node;
 import be.ac.ua.dist.systemy.Constants;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.InetAddress;
 import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.util.Set;
+import java.util.Collection;
 
 public class FailureAgent implements Runnable, Serializable {
 
     private int hashFailed;
     private int hashStart;
     private InetAddress currNode;
-    private Set<String> localFiles;
-    private Set<String> replicatedFiles;
+    private Collection<FileHandle> localFiles;
+    private Collection<FileHandle> replicatedFiles;
     private String currFile;
 
-    public FailureAgent(int hashFailed, int hashStart, InetAddress currNode){ //integer is hash of node that is downloading file
+    public FailureAgent(int hashFailed, int hashStart, InetAddress currNode) { //integer is hash of node that is downloading file
         this.hashFailed = hashFailed;
         this.hashStart = hashStart;
         this.currNode = currNode;
     }
 
-    public void run(){
+    public void run() {
         //initialize rmi connection
         try {
             Registry currNodeRegistry = LocateRegistry.getRegistry(currNode.getHostAddress(), Constants.RMI_PORT);
             NodeInterface currNodeStub = (NodeInterface) currNodeRegistry.lookup("Node");
-            localFiles = currNodeStub.getLocalFiles();
-            replicatedFiles = currNodeStub.getReplicatedFiles();
+            localFiles = currNodeStub.getLocalFiles().values();
+            replicatedFiles = currNodeStub.getReplicatedFiles().values();
             //Stap 1: vraag replicated node op voor file uit localfiles
-            if (localFiles != null) {
-                for (String s : localFiles) {
-                    currFile = s;
-                }
-            }
+//            for (String s : localFiles) {
+//                currFile = s;
+//            }
             //TODO:
             //Krijg adres waar file replicated is en stuur file naar nieuwe eigenaar indien nodig
 
@@ -74,12 +72,9 @@ public class FailureAgent implements Runnable, Serializable {
                 currNodeStub.setFiles(this.files);
             }
             */
-        } catch (IOException | NotBoundException e ) {
+        } catch (IOException | NotBoundException e) {
             e.printStackTrace();
 
         }
-        return;
-
-
     }
 }

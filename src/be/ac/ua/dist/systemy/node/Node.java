@@ -22,9 +22,6 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 
 import static be.ac.ua.dist.systemy.Constants.DOWNLOADED_FILES_PATH;
 import static be.ac.ua.dist.systemy.Constants.RMI_PORT;
@@ -59,7 +56,7 @@ public class Node implements NodeInterface {
     public Node(String nodeName, InetAddress address) throws IOException {
         this.ownAddress = address;
         this.ownHash = calculateHash(nodeName);
-        this.allFiles = new HashSet<String>();
+        this.allFiles = new HashSet<>();
         this.fileLockRequest = "null";
         this.downloadFileGranted = "null";
 
@@ -113,11 +110,11 @@ public class Node implements NodeInterface {
         return downloadingFiles;
     }
 
-    public String getFileLockRequest(){
+    public String getFileLockRequest() {
         return fileLockRequest;
     }
 
-    public void setFileLockRequest(String filename){
+    public void setFileLockRequest(String filename) {
         this.fileLockRequest = filename;
     } //setting a file lock request will start the download of a file
 
@@ -156,19 +153,20 @@ public class Node implements NodeInterface {
     }
 
     public void emptyAllFileList() {
-        if(allFiles != null){
+        if (allFiles != null) {
             this.allFiles.clear();
         }
     }
 
-    public void setFiles(TreeMap<String, Integer> files){
+    public void setFiles(TreeMap<String, Integer> files) {
         this.files = files;
     }
 
-    public void setDownloadFileGranted(String download){
+    public void setDownloadFileGranted(String download) {
         this.downloadFileGranted = download;
     }
-    public String getDownloadFileGranted(){
+
+    public String getDownloadFileGranted() {
         return this.downloadFileGranted;
     }
 
@@ -296,44 +294,33 @@ public class Node implements NodeInterface {
         Thread t = new Thread(new FileAgent(files, ownAddress));
         t.start();
         t.join(); //wait for thread to stop
-        if(ownHash != nextHash) {
-            Thread t2 = new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
-                        NodeInterface stub = null;
-                        stub = (NodeInterface) registry.lookup("Node");
-                        stub.runFileAgent(files);
-                    } catch (RemoteException e) {
-                        e.printStackTrace();
-                    } catch (NotBoundException e) {
-                        e.printStackTrace();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
+        if (ownHash != nextHash) {
+            Thread t2 = new Thread(() -> {
+                try {
+                    Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
+                    NodeInterface stub = (NodeInterface) registry.lookup("Node");
+                    stub.runFileAgent(files);
+                } catch (RemoteException | NotBoundException | InterruptedException e) {
+                    e.printStackTrace();
                 }
 
             });
-            if(downloadFileGranted != "null"){ //download file
-                Thread t3 = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        InetAddress ownerAddress = null;
-                        try {
-                            // Get ownerAddress from NamingServer via RMI.
-                            Registry namingServerRegistry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
-                            NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
-                            ownerAddress = namingServerStub.getOwner(downloadFileGranted);
-                        } catch (IOException | NotBoundException e) {
-                            e.printStackTrace();
-                        }
-                        if (ownerAddress == null) {
-                            //Error
-                        } else {
-                            downloadFile(downloadFileGranted,DOWNLOADED_FILES_PATH + downloadFileGranted, ownerAddress);
-                        }
+            if (!downloadFileGranted.equals("null")) { //download file
+                Thread t3 = new Thread(() -> {
+                    InetAddress ownerAddress = null;
+                    try {
+                        // Get ownerAddress from NamingServer via RMI.
+                        Registry namingServerRegistry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
+                        NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+                        ownerAddress = namingServerStub.getOwner(downloadFileGranted);
+                    } catch (IOException | NotBoundException e) {
+                        e.printStackTrace();
+                    }
+
+                    if (ownerAddress == null) {
+                        //Error
+                    } else {
+                        downloadFile(downloadFileGranted, DOWNLOADED_FILES_PATH + downloadFileGranted, ownerAddress);
                     }
                 });
                 t3.start();
@@ -817,6 +804,14 @@ public class Node implements NodeInterface {
             if (packet.getNodeCount() < 1) {
                 updatePrev(getOwnAddress(), getOwnHash());
                 updateNext(getOwnAddress(), getOwnHash());
+            } else if (packet.getNodeCount() == 1) {
+                TreeMap<String, Integer> files = new TreeMap<>();
+                try {
+                    Thread.sleep(5000);
+                    runFileAgent(files);
+                } catch (InterruptedException | NotBoundException e) {
+                    e.printStackTrace();
+                }
             }
             client.close();
         }));
