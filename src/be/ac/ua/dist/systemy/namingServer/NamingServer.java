@@ -1,34 +1,46 @@
 package be.ac.ua.dist.systemy.namingServer;
 
+import be.ac.ua.dist.systemy.Constants;
+import be.ac.ua.dist.systemy.networking.Client;
+import be.ac.ua.dist.systemy.networking.Communications;
+import be.ac.ua.dist.systemy.networking.Server;
+import be.ac.ua.dist.systemy.networking.packet.*;
+import be.ac.ua.dist.systemy.networking.udp.MulticastServer;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.rmi.AlreadyBoundException;
+import java.rmi.NoSuchObjectException;
 import java.rmi.RemoteException;
-import java.rmi.server.RemoteServer;
-import java.rmi.server.ServerNotActiveException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import java.util.Scanner;
+import java.util.TreeMap;
 
-public class NamingServer implements NameserverInterface {
-    public final InetAddress serverIP; //commentaar
-    HashMap<Integer, InetAddress> ipAddresses = new HashMap<>();
+public class NamingServer implements NamingServerInterface {
+    private final InetAddress serverIP;
+    private TreeMap<Integer, InetAddress> ipAddresses = new TreeMap<>();
 
     private boolean running = true;
+    private Server multicastServer;
 
-    public NamingServer(InetAddress serverIP) throws UnknownHostException {
+    public NamingServer(InetAddress serverIP) {
         this.serverIP = serverIP;
     }
 
-    public int getHash(String nodeName) {
+    public int calculateHash(String nodeName) {
         return Math.abs(nodeName.hashCode() % 32768);
     }
 
     public void addNodeToNetwork(int hash, InetAddress ip) {
-        System.out.println("Adding " + " (hash: " + hash + ")" + " to table");
+        System.out.println("Adding " + hash + " to IP-table");
 
         if (!ipAddresses.containsKey(hash)) {
             ipAddresses.put(hash, ip);
@@ -46,75 +58,25 @@ public class NamingServer implements NameserverInterface {
         }
     }
 
-//    public void addMeToNetwork(String nodeName) throws ServerNotActiveException, UnknownHostException {
-//        InetAddress IP = InetAddress.getByName(RemoteServer.getClientHost());
-//        System.out.println("Adding " + nodeName + " from IP-table");
-//        int hash = getHash(nodeName);
-//        if (ipAddresses.containsKey(hash)) {
-//            ipAddresses.put(hash, IP);
-//        } else {
-//            System.out.println(hash + " already exists in ipAddresses");
-//        }
-//    }
-//
-//    public void removeMeFromNetwork(String nodeName) throws ServerNotActiveException, UnknownHostException {
-//        InetAddress IP = InetAddress.getByName(RemoteServer.getClientHost());
-//        System.out.println("Removing " + nodeName + " from IP-table");
-//        int hash = getHash(nodeName);
-//        if (ipAddresses.containsKey(hash)) {
-//            ipAddresses.remove(hash, IP);
-//        } else {
-//            System.out.println(hash + " does not exist in ipAddresses");
-//        }
-//    }
+    public InetAddress getOwner(String fileName) {
+        int hashFileName = calculateHash(fileName);
+        Integer currentHash = ipAddresses.floorKey(hashFileName);
 
-    public InetAddress getOwner(String fileName) throws UnknownHostException {
-        System.out.println("Getting owner of file: " + fileName);
-        int hashFileName = getHash(fileName);
-        System.out.println("Hash of file = " + hashFileName);
-        InetAddress currentIP;
-        currentIP = InetAddress.getByAddress(new byte[]{0, 0, 0, 0});
-        int currentHash = 0;
-        InetAddress highestIP;
-        highestIP = InetAddress.getByAddress(new byte[]{0, 0, 0, 0});
-        int highestHash = 0;
+        if (currentHash == null)
+            currentHash = ipAddresses.lastKey();
 
+        InetAddress currentIP = ipAddresses.get(currentHash);
 
-        for (Map.Entry<Integer, InetAddress> pair : ipAddresses.entrySet()) {
-            if (pair.getKey() < hashFileName) {
-                if (currentHash == 0) {
-                    currentHash = pair.getKey();
-                    currentIP = pair.getValue();
-                } else if (pair.getKey() > currentHash) {
-                    currentHash = pair.getKey();
-                    currentIP = pair.getValue();
-                }
-            } else if (pair.getKey() > highestHash) {
-                highestHash = pair.getKey();
-                highestIP = pair.getValue();
-            }
-
-
-        }
-
-        if (currentIP.equals(InetAddress.getByAddress(new byte[]{0, 0, 0, 0}))) {
-            System.out.println("No smaller hash found, owner is: " + highestHash + "\n");
-            return highestIP;
-        } else {
-            System.out.println("Owner is " + currentHash + "\n");
-            return currentIP;
-        }
-
+        System.out.println("Owner of '" + fileName + "' (hash=" + hashFileName + ") is " + currentHash);
+        return currentIP;
     }
 
     public void printIPadresses() {
-        System.out.println("Printing IP-addresses to Console:");
+        System.out.println("\nPrinting IP-addresses to Console:");
         ipAddresses.forEach((key, value) -> {
-            System.out.println("Hash: " + key);
-            System.out.println("IP: " + value + "\n");
+            System.out.println("Hash: " + key + " - IP: " + value);
         });
-        System.out.println("Print completed \n");
-
+        System.out.println("");
     }
 
     public void exportIPadresses() {
@@ -144,20 +106,24 @@ public class NamingServer implements NameserverInterface {
         System.out.println("Export completed \n");
     }
 
-    public int[] getNeighbours(int hashNode) throws RemoteException{
+    public InetAddress getIPNode(int hashNode) {
+        return ipAddresses.getOrDefault(hashNode, null);
+    }
+
+    public int[] getNeighbours(int hashNode) {
         Iterator<HashMap.Entry<Integer, InetAddress>> it = ipAddresses.entrySet().iterator();
         int[] neighbours = new int[2];
         int prevHash = 0;
         int nextHash = 0;
         boolean found = false;
-        while (it.hasNext()&&!found) {
+        while (it.hasNext() && !found) {
             HashMap.Entry<Integer, InetAddress> pair = it.next();
-            if(pair.getKey() == hashNode){
+            if (pair.getKey() == hashNode) {
                 prevHash = pair.getKey();
-                if(it.hasNext()){
+                if (it.hasNext()) {
                     pair = it.next();
                     nextHash = pair.getKey();
-                }else {
+                } else {
                     it = ipAddresses.entrySet().iterator();
                     pair = it.next();
                     nextHash = pair.getKey();
@@ -178,46 +144,96 @@ public class NamingServer implements NameserverInterface {
         this.running = running;
     }
 
-    public static void main(String[] args) throws UnknownHostException {
+    public void initializeRMI() {
+        try {
+            System.setProperty("java.rmi.server.hostname", serverIP.getHostAddress());
+            Registry registry = LocateRegistry.createRegistry(Constants.RMI_PORT);
+            NamingServerInterface stub = (NamingServerInterface) UnicastRemoteObject.exportObject(this, 0);
+            registry.bind("NamingServer", stub);
+        } catch (AlreadyBoundException | RemoteException e) {
+            System.err.println("NamingServer exception: " + e.toString());
+            e.printStackTrace();
+        }
+    }
 
-//        try {
-//            System.setProperty("java.rmi.server.hostname", serverIP);
-//            NamingServer obj = new NamingServer();
-//            NameserverInterface stub = (NameserverInterface) UnicastRemoteObject.exportObject(obj, 0);
-//
-//            Registry registry = LocateRegistry.createRegistry(Ports.RMI_PORT);
-//            registry.bind("NamingServer", stub);
-//
-//            System.err.println("NamingServer Ready");
-//            stub.addMeToNetwork("Thomas-NameserverInterface");
-//
-//        }catch (Exception e) {
-//            System.err.println("NamingServer exception: " + e.toString());
-//            e.printStackTrace();
-//        }
+    public void setupMulticastServer() throws UnknownHostException {
+        multicastServer = new MulticastServer();
+
+        multicastServer.registerListener(HelloPacket.class, ((packet, client) -> {
+            try {
+                client.close();
+
+                Client tcpClient = Communications.getTCPClient(client.getAddress(), Constants.TCP_PORT);
+                NodeCountPacket nodeCountPacket = new NodeCountPacket(ipAddresses.size());
+                tcpClient.sendPacket(nodeCountPacket);
+
+                addNodeToNetwork(packet.getSenderHash(), client.getAddress());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }));
+
+        multicastServer.registerListener(GetIPPacket.class, ((packet, client) -> {
+            try {
+                InetAddress address = packet.getHash() == 0 ? serverIP : ipAddresses.get(packet.getHash());
+                IPResponsePacket ipResponsePacket = new IPResponsePacket(address);
+                client.sendPacket(ipResponsePacket);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }));
+
+        multicastServer.registerListener(QuitPacket.class, ((packet, client) -> removeNodeFromNetwork(packet.getSenderHash())));
+
+        multicastServer.startServer(InetAddress.getByName(Constants.MULTICAST_ADDRESS), Constants.MULTICAST_PORT);
+    }
+
+    public static void main(String[] args) throws UnknownHostException, NoSuchObjectException {
         Scanner sc = new Scanner(System.in);
         InetAddress detectedHostAddress = InetAddress.getLocalHost();
         System.out.println("(Detected localHost is: " + detectedHostAddress + ")");
         System.out.print("Enter IP: ");
         String ip = sc.nextLine();
-        if (ip.isEmpty()){
+        if (ip.isEmpty()) {
             ip = detectedHostAddress.getHostAddress();
         }
 
         NamingServer namingServer = new NamingServer(InetAddress.getByName(ip));
-        NamingServerHelloThread helloThread = new NamingServerHelloThread(namingServer);
-        helloThread.start();
+        namingServer.initializeRMI();
+
+        Communications.setSenderHash(0); // NamingServer exclusive!
+
+        namingServer.setupMulticastServer();
+
         System.out.println("Namingserver started @" + ip);
 
         while (namingServer.running) {
             String cmd = sc.nextLine().toLowerCase();
 
             switch (cmd) {
+                case "debug":
+                    Communications.setDebugging(true);
+                    System.out.println("Debugging enabled");
+                    break;
+
+                case "undebug":
+                    Communications.setDebugging(false);
+                    System.out.println("Debugging disabled");
+                    break;
+
+                case "clear":
+                    namingServer.ipAddresses.clear();
+                    System.out.println("----------Cleared network table----------\n");
+                    break;
+
                 case "shutdown":
                 case "shut":
                 case "sh":
                     namingServer.setRunning(false);
-                    System.out.println("Shutdown the network");
+                    namingServer.multicastServer.stop();
+                    UnicastRemoteObject.unexportObject(namingServer, true);
+                    System.out.println("Left the network+");
+                    System.exit(0);
                     break;
 
                 case "table":
