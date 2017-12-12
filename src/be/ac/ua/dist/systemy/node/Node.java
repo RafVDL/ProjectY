@@ -170,6 +170,7 @@ public class Node implements NodeInterface {
      */
     @Override
     public void deleteFileFromNode(FileHandle fileHandle) {
+        ownerFiles.remove(fileHandle.getFile().getName());
         localFiles.remove(fileHandle.getFile().getName());
         replicatedFiles.remove(fileHandle.getFile().getName());
         fileHandle.getFile().delete();
