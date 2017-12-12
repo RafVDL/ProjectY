@@ -1,7 +1,5 @@
 package be.ac.ua.dist.systemy;
 
-import java.net.InetAddress;
-
 public class Constants {
 
     public static final String MULTICAST_ADDRESS = "225.0.113.0";

@@ -4,26 +4,43 @@ import java.net.InetAddress;
 import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
 public interface NodeInterface extends Remote {
 
+    int getOwnHash() throws RemoteException;
+
+    int getPrevHash() throws RemoteException;
+
     InetAddress getPrevAddress() throws RemoteException;
 
-//    InetAddress getNextAddress() throws RemoteException;
+    InetAddress getNextAddress() throws RemoteException;
 
-    Set getLocalFiles() throws RemoteException;
+    Map<String, FileHandle> getLocalFiles() throws RemoteException;
 
-    Set getReplicatedFiles() throws RemoteException;
+    Map<String, FileHandle> getReplicatedFiles() throws RemoteException;
 
-    void addLocalFileList(String fileName) throws RemoteException;
+    void addLocalFileList(FileHandle fileHandle) throws RemoteException;
 
-    void addReplicatedFileList(String fileName) throws RemoteException;
+    void addReplicatedFileList(FileHandle fileHandle) throws RemoteException;
+
+    void addOwnerFileList(FileHandle fileHandle) throws RemoteException;
+
+    void removeLocalFile(FileHandle fileHandle) throws RemoteException;
+
+    void removeReplicatedFile(FileHandle fileHandle) throws RemoteException;
+
+    void removeOwnerFile(FileHandle fileHandle) throws RemoteException;
 
     void downloadFile(String sourceFileName, String targetFileName, InetAddress remoteAddress) throws RemoteException;
 
-//    void deleteFileFromNetwork(String path, String fileName) throws RemoteException;
+    void deleteFileFromNode(FileHandle fileHandle) throws RemoteException;
+
+    void addToAvailableNodes(String fileName, int hashToAdd) throws RemoteException;
+
+    void removeFromAvailableNodes(String fileName, int hashToRemove) throws RemoteException;
 
     void updateNext(InetAddress newAddress, int newHash) throws RemoteException;
 
@@ -38,8 +55,6 @@ public interface NodeInterface extends Remote {
     String getFileLockRequest() throws RemoteException;
 
     void setDownloadFileGranted(String download) throws RemoteException;
-
-    int getOwnHash() throws RemoteException;
 
     void setFileLockRequest(String filename) throws RemoteException;
 

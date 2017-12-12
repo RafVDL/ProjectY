@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.List;
 
-public class FileUpdateWatcher extends Thread {
+public class FileUpdateWatcher implements Runnable {
     private final Path dirPath;
     private final Node node;
 
@@ -19,10 +19,10 @@ public class FileUpdateWatcher extends Thread {
         System.out.println("Started FileUpdateWatcher in dir: " + dirPath.getFileName());
 
         try {
-            // Create watcher object for the directory
+            // Create Watcher object for the directory
             WatchService watcher = dirPath.getFileSystem().newWatchService();
-            // Register the watcher for all possible events
-            dirPath.register(watcher, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_MODIFY);
+            // Register the watcher for ENTRY_CREATE events
+            dirPath.register(watcher, StandardWatchEventKinds.ENTRY_CREATE);
             WatchKey watchKey = watcher.take();
 
             // Put all events in a list and process them
@@ -31,25 +31,17 @@ public class FileUpdateWatcher extends Thread {
                 for (WatchEvent event : events) {
                     File file = new File(dirPath.getFileName() + "/" + event.context().toString());
 
+                    // If a file is replicated onto this Node, the UpdateWatcher should not process it again
                     if (node.getDownloadingFiles().contains(file.getName())) {
                         System.out.println(file.getName() + " is still downloading, skipping update checker");
                         continue;
                     }
 
-                    if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
-                        System.out.println("Watcher detected: [NEW] - " + event.context());
-                        node.addFileToNetwork(file.getParent() + "/", file.getName());
-                    } else if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
-                        System.out.println("Watcher detected: [DEL] - " + event.context());
-                        // Do nothing apparently.
-
-                    /* When file is modified, file system first creates it with 0 bytes and fires a modify event
-                    and then writes data on it. Then it fires the modify event again.
-                    => check for fileSize > 0 */
-                    } else if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY && file.length() > 0) {
-                        System.out.println("Watcher detected: [MOD] - " + event.context());
-                        // Do nothing apparently.
-                    }
+                    System.out.println("Watcher detected: [NEW] - " + event.context() + " ... waiting for file finish copying");
+                    // Create watcher object that waits for the file to be done copying
+                    FileAvailableWatcher fileAvailableWatcher = new FileAvailableWatcher(node, file);
+                    Thread thread = new Thread(fileAvailableWatcher);
+                    thread.start();
                 }
             }
         } catch (IOException | InterruptedException e) {
