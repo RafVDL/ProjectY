@@ -200,11 +200,11 @@ public class Node implements NodeInterface {
      */
     @Override
     public void removeFromAvailableNodes(String fileName, int hashToRemove) {
-        if (!localFiles.containsKey(fileName)) {
-            System.out.println("Error: trying to update a FileHandle of a non-local file.");
+        if (!ownerFiles.containsKey(fileName)) {
+            System.out.println("Error: trying to update a FileHandle of a file that this Node does not own.");
             return;
         }
-        localFiles.get(fileName).getAvailableNodes().remove(hashToRemove);
+        ownerFiles.get(fileName).getAvailableNodes().remove(hashToRemove);
     }
 
     /**
