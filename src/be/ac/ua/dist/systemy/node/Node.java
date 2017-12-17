@@ -22,6 +22,7 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static be.ac.ua.dist.systemy.Constants.DOWNLOADED_FILES_PATH;
 import static be.ac.ua.dist.systemy.Constants.RMI_PORT;
@@ -30,13 +31,12 @@ public class Node implements NodeInterface {
 
     private final InetAddress ownAddress;
     private final int ownHash;
-    private String fileLockRequest;
-    private String downloadFileGranted;
+    private String grantedDownloadFile;
     private Map<String, FileHandle> localFiles;
     private Map<String, FileHandle> replicatedFiles;
     private Map<String, FileHandle> ownerFiles;
     private Set<String> downloadingFiles;
-    private Set<String> allFiles;
+    private Map<String, Integer> allFiles;
     private TreeMap<String, Integer> files;
 
 
@@ -56,9 +56,8 @@ public class Node implements NodeInterface {
     public Node(String nodeName, InetAddress address) throws IOException {
         this.ownAddress = address;
         this.ownHash = calculateHash(nodeName);
-        this.allFiles = new HashSet<>();
-        this.fileLockRequest = "null";
-        this.downloadFileGranted = "null";
+        this.allFiles = new TreeMap<>();
+        this.grantedDownloadFile = "null";
 
         multicastGroup = InetAddress.getByName(Constants.MULTICAST_ADDRESS);
     }
@@ -111,12 +110,12 @@ public class Node implements NodeInterface {
     }
 
     public String getFileLockRequest() {
-        return fileLockRequest;
+        AtomicReference<String> fileLockRequest = new AtomicReference<>("null");
+        allFiles.forEach((String key, Integer value) -> {
+            if(ownHash == value) fileLockRequest.set(key);
+        });
+        return fileLockRequest.get();
     }
-
-    public void setFileLockRequest(String filename) {
-        this.fileLockRequest = filename;
-    } //setting a file lock request will start the download of a file
 
     @Override
     public void addLocalFileList(FileHandle fileHandle) {
@@ -148,8 +147,8 @@ public class Node implements NodeInterface {
         ownerFiles.remove(fileHandle.getFile().getName());
     }
 
-    public void addAllFileList(String file) {
-        this.allFiles.add(file);
+    public void addAllFileList(String file, int value) {
+        this.allFiles.put(file, value);
     }
 
     public void emptyAllFileList() {
@@ -163,11 +162,11 @@ public class Node implements NodeInterface {
     }
 
     public void setDownloadFileGranted(String download) {
-        this.downloadFileGranted = download;
+        this.grantedDownloadFile = download;
     }
 
     public String getDownloadFileGranted() {
-        return this.downloadFileGranted;
+        return this.grantedDownloadFile;
     }
 
     @Override
@@ -305,14 +304,14 @@ public class Node implements NodeInterface {
                 }
 
             });
-            if (!downloadFileGranted.equals("null")) { //download file
+            if (!grantedDownloadFile.equals("null")) { //download file
                 Thread t3 = new Thread(() -> {
                     InetAddress ownerAddress = null;
                     try {
                         // Get ownerAddress from NamingServer via RMI.
                         Registry namingServerRegistry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
                         NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
-                        ownerAddress = namingServerStub.getOwner(downloadFileGranted);
+                        ownerAddress = namingServerStub.getOwner(grantedDownloadFile);
                     } catch (IOException | NotBoundException e) {
                         e.printStackTrace();
                     }
@@ -320,7 +319,8 @@ public class Node implements NodeInterface {
                     if (ownerAddress == null) {
                         //Error
                     } else {
-                        downloadFile(downloadFileGranted, DOWNLOADED_FILES_PATH + downloadFileGranted, ownerAddress);
+                        downloadFile(grantedDownloadFile, DOWNLOADED_FILES_PATH + grantedDownloadFile, ownerAddress);
+                        grantedDownloadFile = "downloading";
                     }
                 });
                 t3.start();

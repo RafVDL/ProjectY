@@ -50,13 +50,11 @@ public interface NodeInterface extends Remote {
 
     void emptyAllFileList() throws RemoteException;
 
-    void addAllFileList(String file) throws RemoteException;
+    void addAllFileList(String file, int value) throws RemoteException;
 
     String getFileLockRequest() throws RemoteException;
 
     void setDownloadFileGranted(String download) throws RemoteException;
-
-    void setFileLockRequest(String filename) throws RemoteException;
 
     String getDownloadFileGranted() throws RemoteException;
 

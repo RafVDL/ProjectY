@@ -41,7 +41,7 @@ public class FileAgent implements Runnable, Serializable {
             if (files != null) {
                 files.forEach((key, value) -> {
                     try {
-                        currNodeStub.addAllFileList(key);
+                        currNodeStub.addAllFileList(key, 0);
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     }
@@ -49,17 +49,17 @@ public class FileAgent implements Runnable, Serializable {
 
                 //Stap 3: checken naar lock request
                 lockRequest = currNodeStub.getFileLockRequest();
-                if (!lockRequest.equals("null")) {
+                if (!lockRequest.equals("null") && !currNodeStub.getDownloadFileGranted().equals("downloading")) { //if pending lockrequest, and node not downloading
                     if (files.get(lockRequest) == 0) {
-                        currNodeStub.setDownloadFileGranted(lockRequest);
-                        files.put(lockRequest, currNodeStub.getOwnHash());
-                        currNodeStub.setFileLockRequest("null");
+                        currNodeStub.setDownloadFileGranted(lockRequest);  //set lockrequest to downloadfilegranted
+                        files.put(lockRequest, currNodeStub.getOwnHash()); //add lock request to file agent
+                        currNodeStub.addAllFileList(lockRequest, 0); //delete lockrequest on node
                     }
                 }
-                if (!currNodeStub.getDownloadFileGranted().equals("null")) {
-                    if (!currNodeStub.getDownloadingFiles().contains(currNodeStub.getDownloadFileGranted())) { //file downloaded
-                        currNodeStub.setDownloadFileGranted("null");
-                        files.put(lockRequest, 0);
+                if (currNodeStub.getDownloadFileGranted().equals("downloading")) { //if node downloading
+                    if (!currNodeStub.getDownloadingFiles().contains(currNodeStub.getFileLockRequest())) { //file downloaded
+                        currNodeStub.setDownloadFileGranted("null"); //reset nodes downloadfilegranted
+                        files.put(lockRequest, 0);  //lift up lock request in file agent
                     }
                 }
 
