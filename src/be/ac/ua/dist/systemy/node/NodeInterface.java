@@ -62,4 +62,9 @@ public interface NodeInterface extends Remote {
 
     void setFiles(TreeMap<String, Integer> files) throws RemoteException;
 
+    int calculateHash(String name) throws RemoteException;
+
+    InetAddress getNamingServerAddress() throws RemoteException;
+
+
 }

@@ -19,10 +19,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Scanner;
-import java.util.TreeMap;
+import java.util.*;
 
 public class NamingServer implements NamingServerInterface {
     private final InetAddress serverIP;
@@ -186,6 +183,18 @@ public class NamingServer implements NamingServerInterface {
         multicastServer.registerListener(QuitPacket.class, ((packet, client) -> removeNodeFromNetwork(packet.getSenderHash())));
 
         multicastServer.startServer(InetAddress.getByName(Constants.MULTICAST_ADDRESS), Constants.MULTICAST_PORT);
+    }
+
+    public int getHashOfAddress(InetAddress thisAddress) {
+        int returnHash = 0;
+        for (Map.Entry<Integer,InetAddress> entry : ipAddresses.entrySet()) {
+            int key = entry.getKey();
+            InetAddress value = entry.getValue();
+            if (value == thisAddress) {
+                returnHash = key;
+            }
+        }
+        return returnHash;
     }
 
     public static void main(String[] args) throws UnknownHostException, NoSuchObjectException {

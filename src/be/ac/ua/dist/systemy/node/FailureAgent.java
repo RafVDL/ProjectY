@@ -1,23 +1,31 @@
 package be.ac.ua.dist.systemy.node;
 
 import be.ac.ua.dist.systemy.Constants;
+import be.ac.ua.dist.systemy.namingServer.NamingServerInterface;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Collection;
+import java.util.*;
 
 public class FailureAgent implements Runnable, Serializable {
 
     private int hashFailed;
     private int hashStart;
     private InetAddress currNode;
+    private InetAddress nsAddress;
+    private InetAddress ownerAddressForThisFile;
+    private int ownerHashForThisFile;
     private Collection<FileHandle> localFiles;
     private Collection<FileHandle> replicatedFiles;
     private String currFile;
+
+
 
     public FailureAgent(int hashFailed, int hashStart, InetAddress currNode) { //integer is hash of node that is downloading file
         this.hashFailed = hashFailed;
@@ -32,46 +40,29 @@ public class FailureAgent implements Runnable, Serializable {
             NodeInterface currNodeStub = (NodeInterface) currNodeRegistry.lookup("Node");
             localFiles = currNodeStub.getLocalFiles().values();
             replicatedFiles = currNodeStub.getReplicatedFiles().values();
-            //Stap 1: vraag replicated node op voor file uit localfiles
-//            for (String s : localFiles) {
-//                currFile = s;
-//            }
-            //TODO:
-            //Krijg adres waar file replicated is en stuur file naar nieuwe eigenaar indien nodig
 
+            nsAddress= currNodeStub.getNamingServerAddress();
+            Registry namingServerRegistry = LocateRegistry.getRegistry(nsAddress.getHostAddress(), Constants.RMI_PORT);
+            NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
 
-            /*
-            //Stap 2: update de lijst van bestanden
-            currNodeStub.emptyAllFileList();
-            if (files != null) {
-                files.forEach((key, value) -> {
-                    try {
-                        currNodeStub.addAllFileList(key);
-                    } catch (RemoteException e) {
-                        e.printStackTrace();
-                    }
-                });
+            //Bestanden die op de gefaalde node gerepliceerd zijn, moeten verplaatst worden naar zijn vorige node en de eigenaar moet verwittigd zodat deze downloadlocaties kan updaten
+            //Bestanden die op de gefaalde node lokaal zijn, de node die deze heeft gerepliceerd wordt de nieuwe eigenaar
 
-                //Stap 3: checken naar lock request
-                lockRequest = currNodeStub.getFileLockRequest();
-                if (!lockRequest.equals("null")) {
-                    if (files.get(lockRequest) == 0) {
-                        currNodeStub.setDownloadFileGranted(lockRequest);
-                        files.put(lockRequest, currNodeStub.getOwnHash());
-                        currNodeStub.setFileLockRequest("null");
-                    }
-                }
-                if (!currNodeStub.getDownloadFileGranted().equals("null")) {
-                    if (!currNodeStub.getDownloadingFiles().contains(currNodeStub.getDownloadFileGranted())) { //file downloaded
-                        currNodeStub.setDownloadFileGranted("null");
-                        files.put(lockRequest, 0);
-                    }
+            //Stap 1: We bekijken of een of meerdere lokale bestanden van deze node gerepliceerd zijn op de gefaalde node.
+            for (FileHandle fileHandle : localFiles) {
+                currFile = fileHandle.getFile().getName();
+                //Kijken of file naar failed node verwijst
+                ownerAddressForThisFile = namingServerStub.getOwner(currFile);
+                ownerHashForThisFile = namingServerStub.getHashOfAddress(ownerAddressForThisFile);
+                //Bestand gerepliceerd op failed node dus naar nieuwe eigenaar sturen
+                if (ownerHashForThisFile == hashFailed) {
+
                 }
 
 
-                currNodeStub.setFiles(this.files);
+
             }
-            */
+
         } catch (IOException | NotBoundException e) {
             e.printStackTrace();
 

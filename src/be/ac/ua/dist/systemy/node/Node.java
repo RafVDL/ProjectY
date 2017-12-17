@@ -457,7 +457,7 @@ public class Node implements NodeInterface {
         }
     }
 
-    private int calculateHash(String name) {
+    public int calculateHash(String name) {
         return Math.abs(name.hashCode() % 32768);
     }
 
