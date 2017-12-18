@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.net.InetAddress;
 
 public class FileHandle implements Serializable {
 
@@ -15,6 +16,7 @@ public class FileHandle implements Serializable {
     private File logFile;
     private int downloads;
     private final Set<Integer> availableNodes = new LinkedHashSet<>(); //TODO: When a Node downloads a file, add it here?
+    private InetAddress localAddress;
 
     public FileHandle(String fileName, boolean local) {
         this.fileName = fileName;
@@ -108,6 +110,14 @@ public class FileHandle implements Serializable {
     public int hashCode() {
         // A HashSet carries an internal HashMap with <Integer(HashCode), Object> entries and uses equals() as well as the equals method of the HashCode to determine equality.
         return fileName.hashCode();
+    }
+
+    public void setLocalAddress(InetAddress localAddress) {
+        this.localAddress = localAddress;
+    }
+
+    public InetAddress getLocalAddress() {
+        return localAddress;
     }
 
 }

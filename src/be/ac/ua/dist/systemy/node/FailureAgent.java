@@ -21,8 +21,10 @@ public class FailureAgent implements Runnable, Serializable {
     private InetAddress nsAddress;
     private InetAddress ownerAddressForThisFile;
     private InetAddress addressOfPrevNeighbour;
+    private InetAddress localAddress;
     private int ownerHashForThisFile;
     private int hashOfPrevNeighbour;
+    private int localHash;
     private Collection<FileHandle> localFiles;
     private Collection<FileHandle> replicatedFiles;
     private String currFile;
@@ -70,21 +72,15 @@ public class FailureAgent implements Runnable, Serializable {
 
             //Stap 2: We bekijken of een of meerdere gerepliceerde bestanden van deze node lokaal zijn op de gefaalde node.
             for (FileHandle fileHandle : replicatedFiles) {
-                currFile = fileHandle.getFile().getName();
-                //Kijken of file naar failed node verwijst
-                //Local eigenaar krijgen van NS
-                //Indien Local = failed node --> deze node eigenaar maken van bestand en op nieuwe node repliceren + ns informeren
-                /*
-                ownerAddressForThisFile = namingServerStub.getOwner(currFile);
-                ownerHashForThisFile = namingServerStub.getHashOfAddress(ownerAddressForThisFile);
-                //Bestand gerepliceerd op failed node dus naar nieuwe eigenaar sturen
-                if (ownerHashForThisFile == hashFailed) {
-
-
+                localAddress = fileHandle.getLocalAddress();
+                localHash = namingServerStub.getHashOfAddress(localAddress);
+                //Bestand dat op deze node gerepliceerd is, is lokaal op gefaalde node
+                if (localHash == hashFailed){
+                    //Bestand moet nu lokaal op deze node bijgehouden worden en opnieuw gerepliceerd worden
+                    fileHandle.setLocalAddress(currNode);
+                    currNodeStub.replicateWhenJoining(fileHandle);
                 }
-                */
             }
-
 
         } catch (IOException | NotBoundException e) {
             e.printStackTrace();

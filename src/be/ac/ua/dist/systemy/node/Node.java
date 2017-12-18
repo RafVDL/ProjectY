@@ -508,6 +508,7 @@ public class Node implements NodeInterface {
             if (file.isFile()) {
                 System.out.println("Found file " + file.getName());
                 FileHandle fileHandle = new FileHandle(file.getName(), true);
+                fileHandle.setLocalAddress(ownAddress);
                 addFileToNetwork(fileHandle);
             } else if (file.isDirectory()) {
                 System.out.println("Not checking files in nested folder " + file.getName());

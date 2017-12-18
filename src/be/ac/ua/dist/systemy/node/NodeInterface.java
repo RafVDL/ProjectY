@@ -71,5 +71,7 @@ public interface NodeInterface extends Remote {
 
     void replicateFailed(FileHandle fileHandle, InetAddress receiveAddress) throws RemoteException,NotBoundException, UnknownHostException;
 
+    void replicateWhenJoining(FileHandle fileHandle) throws RemoteException,NotBoundException, UnknownHostException;
+
 
 }
