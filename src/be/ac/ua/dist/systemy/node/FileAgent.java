@@ -1,7 +1,6 @@
 package be.ac.ua.dist.systemy.node;
 
 import be.ac.ua.dist.systemy.Constants;
-
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.InetAddress;
@@ -12,59 +11,65 @@ import java.rmi.registry.Registry;
 import java.util.Collection;
 import java.util.TreeMap;
 
-/*https://stackoverflow.com/questions/3429921/what-does-serializable-mean*/
-
 public class FileAgent implements Runnable, Serializable {
-    // to run: (new Thread(new FileAgent())).start();
-    private TreeMap<String, Integer> files = new TreeMap<>();
+    private TreeMap<String, Integer> files;
     private InetAddress nodeAddress;
     private Collection<FileHandle> localFiles;
     private String lockRequest;
 
-    public FileAgent(TreeMap<String, Integer> files, InetAddress nodeAddress) { //integer is hash of node that is downloading file
+    /**
+     * Creates FileAgent
+     *
+     * @param files: map of all files on the system with corresponding hash of node that has a lockrequest on this file
+     * @param nodeAddress: InetAddress of the node on which the current FileAgent is running
+     */
+    public FileAgent(TreeMap<String, Integer> files, InetAddress nodeAddress) {
         this.files = files;
         this.nodeAddress = nodeAddress;
     }
 
+    /**
+     * The FileAgent runs in several steps
+     * 0) initialize RMI connection to node on which the file agent is running
+     * 1) Add new local files of node to allFiles in FileAgent
+     * 2) update list of all files on the node
+     * 3) check if node wants to download a file in the network
+     *          A node can only download one file at a time
+     */
     public void run() {
-        //initialize rmi connection
-        try {
+        try { //Step 0
             Registry currNodeRegistry = LocateRegistry.getRegistry(nodeAddress.getHostAddress(), Constants.RMI_PORT);
             NodeInterface currNodeStub = (NodeInterface) currNodeRegistry.lookup("Node");
             localFiles = currNodeStub.getLocalFiles().values();
-            //Stap 1: voeg localFiles toe aan map met files
+            //Step 1
             for (FileHandle fileHandle : localFiles) {
                 files.putIfAbsent(fileHandle.getFile().getName(), 0);
             }
-            //Stap 2: update de lijst van bestanden
-            currNodeStub.emptyAllFileList();
+            //Step 2
             if (files != null) {
                 files.forEach((key, value) -> {
                     try {
-                        currNodeStub.addAllFileList(key, 0);
+                        if(!localFiles.contains(key)) {
+                            currNodeStub.addAllFileList(key, 0);
+                        }
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     }
                 });
-
-                //Stap 3: checken naar lock request
+            //Step 3
                 lockRequest = currNodeStub.getFileLockRequest();
-                if (!lockRequest.equals("null") && !currNodeStub.getDownloadFileGranted().equals("downloading")) { //if pending lockrequest, and node not downloading
+                if (currNodeStub.getDownloadFileGranted().equals("downloading") && !currNodeStub.getDownloadingFiles().contains(currNodeStub.getFileLockRequest())) {//if file downloaded
+                    currNodeStub.setDownloadFileGranted("null");                                                //reset nodes downloadfilegranted
+                    files.put(lockRequest, 0);                                                                  //lift up lock request in FileAgent
+                    currNodeStub.addAllFileList(lockRequest, 0);                                          //clear lockrequest on node
+
+                }
+                if (!lockRequest.equals("null") && !currNodeStub.getDownloadFileGranted().equals("downloading")) {  //if pending lockrequest, and node not downloading
                     if (files.get(lockRequest) == 0) {
-                        currNodeStub.setDownloadFileGranted(lockRequest);  //set lockrequest to downloadfilegranted
-                        files.put(lockRequest, currNodeStub.getOwnHash()); //add lock request to file agent
-                        currNodeStub.addAllFileList(lockRequest, 0); //delete lockrequest on node
+                        currNodeStub.setDownloadFileGranted(lockRequest);                                           //tell node he can download the file
+                        files.put(lockRequest, currNodeStub.getOwnHash());                                          //lock file in FileAgent
                     }
                 }
-                if (currNodeStub.getDownloadFileGranted().equals("downloading")) { //if node downloading
-                    if (!currNodeStub.getDownloadingFiles().contains(currNodeStub.getFileLockRequest())) { //file downloaded
-                        currNodeStub.setDownloadFileGranted("null"); //reset nodes downloadfilegranted
-                        files.put(lockRequest, 0);  //lift up lock request in file agent
-                    }
-                }
-
-
-                currNodeStub.setFiles(this.files);
             }
         } catch (IOException | NotBoundException e) {
             e.printStackTrace();
