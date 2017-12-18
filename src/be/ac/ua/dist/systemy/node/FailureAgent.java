@@ -3,6 +3,7 @@ package be.ac.ua.dist.systemy.node;
 import be.ac.ua.dist.systemy.Constants;
 import be.ac.ua.dist.systemy.namingServer.NamingServerInterface;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.InetAddress;
@@ -29,7 +30,7 @@ public class FailureAgent implements Runnable, Serializable {
     private Collection<FileHandle> replicatedFiles;
     private String currFile;
     private int[] neighboursOfFailed;
-
+    private String newFileName;
 
     public FailureAgent(int hashFailed, int hashStart, InetAddress currNode) { //integer is hash of node that is downloading file
         this.hashFailed = hashFailed;
@@ -76,6 +77,10 @@ public class FailureAgent implements Runnable, Serializable {
                 if (localHash == hashFailed){
                     //Bestand moet nu lokaal op deze node bijgehouden worden en opnieuw gerepliceerd worden
                     fileHandle.setLocalAddress(currNode);
+                    //Verander map van file
+                    newFileName =  "localFiles/" + fileHandle.getFile().getName();
+                    File currFile = fileHandle.getFile();
+                    currFile.renameTo(new File(newFileName));
                     currNodeStub.replicateWhenJoining(fileHandle);
                 }
             }
