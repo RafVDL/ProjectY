@@ -7,15 +7,17 @@ import java.io.DataInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
 
+/**
+ * This class is instantiated and ran as a new Thread when a known packet is received by the {@link TCPServer}.
+ */
 public class TCPListenerRunnable implements Runnable {
 
     private final TCPServer tcpServer;
     private final Socket socket;
 
-    public TCPListenerRunnable(TCPServer tcpServer, Socket socket) {
+    TCPListenerRunnable(TCPServer tcpServer, Socket socket) {
         this.tcpServer = tcpServer;
         this.socket = socket;
     }
@@ -54,7 +56,7 @@ public class TCPListenerRunnable implements Runnable {
             } catch (IOException e1) {
                 e1.printStackTrace();
             }
-        } catch (IOException | IllegalAccessException | InstantiationException | NoSuchMethodException | InvocationTargetException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

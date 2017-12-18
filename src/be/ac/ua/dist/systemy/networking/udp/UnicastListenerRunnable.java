@@ -11,12 +11,15 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.DatagramPacket;
 import java.net.SocketException;
 
+/**
+ * This class is instantiated and ran as a new Thread when a known packet is received by the {@link UnicastServer}.
+ */
 public class UnicastListenerRunnable implements Runnable {
 
     private final UnicastServer unicastServer;
     private final DatagramPacket datagramPacket;
 
-    public UnicastListenerRunnable(UnicastServer unicastServer, DatagramPacket datagramPacket) {
+    UnicastListenerRunnable(UnicastServer unicastServer, DatagramPacket datagramPacket) {
         this.unicastServer = unicastServer;
         this.datagramPacket = datagramPacket;
     }

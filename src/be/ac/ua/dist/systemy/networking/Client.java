@@ -6,13 +6,16 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetAddress;
 
+/**
+ *
+ */
 public class Client implements Closeable {
 
     private final InetAddress address;
     private final int port;
     private final Connection connection;
 
-    protected Client(InetAddress address, int port, Connection connection) {
+    Client(InetAddress address, int port, Connection connection) {
         this.address = address;
         this.port = port;
         this.connection = connection;
@@ -61,6 +64,7 @@ public class Client implements Closeable {
      * Blocks until a packet of the given type is received, and if the backing connection supports it.
      *
      * @param clazz the packet class to wait for
+     * @param <E>   the packet this method will wait for
      * @return The packet once it is received
      * @throws IOException if an I/O exception occurs.
      */

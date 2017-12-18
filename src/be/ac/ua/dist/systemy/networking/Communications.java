@@ -11,6 +11,9 @@ import java.net.SocketException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * This class provides communication methods.
+ */
 public class Communications {
 
     private static boolean debug = false;
