@@ -56,12 +56,28 @@ public class FailureAgent implements Runnable, Serializable {
                 ownerHashForThisFile = namingServerStub.getHashOfAddress(ownerAddressForThisFile);
                 //Bestand gerepliceerd op failed node dus naar nieuwe eigenaar sturen
                 if (ownerHashForThisFile == hashFailed) {
+                    //Bestand sturen naar nieuwe node ??? currNodeStub.replicateToNewNode() ???
+                }
+            }
+
+
+            //Stap 2: We bekijken of een of meerdere gerepliceerde bestanden van deze node lokaal zijn op de gefaalde node.
+            for (FileHandle fileHandle : replicatedFiles) {
+                currFile = fileHandle.getFile().getName();
+                //Kijken of file naar failed node verwijst
+                //Local eigenaar krijgen van NS
+                //Indien Local = failed node --> deze node eigenaar maken van bestand en op nieuwe node repliceren + ns informeren
+                /*
+                ownerAddressForThisFile = namingServerStub.getOwner(currFile);
+                ownerHashForThisFile = namingServerStub.getHashOfAddress(ownerAddressForThisFile);
+                //Bestand gerepliceerd op failed node dus naar nieuwe eigenaar sturen
+                if (ownerHashForThisFile == hashFailed) {
+
 
                 }
-
-
-
+                */
             }
+
 
         } catch (IOException | NotBoundException e) {
             e.printStackTrace();

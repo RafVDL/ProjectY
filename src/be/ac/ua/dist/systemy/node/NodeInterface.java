@@ -48,6 +48,8 @@ public interface NodeInterface extends Remote {
 
     void runFileAgent(TreeMap<String, Integer> files) throws RemoteException, InterruptedException, NotBoundException;
 
+    void runFailureAgent(int hashFailed, int hashStart, InetAddress currNode) throws RemoteException, InterruptedException, NotBoundException;
+
     void emptyAllFileList() throws RemoteException;
 
     void addAllFileList(String file, int value) throws RemoteException;

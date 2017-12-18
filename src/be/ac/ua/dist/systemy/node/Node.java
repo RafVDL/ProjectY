@@ -44,6 +44,9 @@ public class Node implements NodeInterface {
     private InetAddress prevAddress;
     private InetAddress nextAddress;
 
+    private int hashFailedNode;
+    private int hashStartNode;
+
     private volatile int prevHash;
     private volatile int nextHash;
 
@@ -331,6 +334,29 @@ public class Node implements NodeInterface {
 
     }
 
+    @Override
+    public void runFailureAgent(int hashFailed, int hashStart, InetAddress currNode) throws InterruptedException, RemoteException, NotBoundException {
+        Thread t = new Thread(new FailureAgent(hashFailedNode, hashStartNode, ownAddress));
+        t.start();
+        t.join(); //wait for thread to stop
+        if (ownHash != nextHash) {
+            Thread t2 = new Thread(() -> {
+                try {
+                    Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
+                    NodeInterface stub = (NodeInterface) registry.lookup("Node");
+                    //Check of volgende node niet de node is waarop de failureagent is gestart
+                    if (hashStart != stub.getOwnHash()) {
+                        stub.runFailureAgent(hashFailedNode, hashStartNode, nextAddress);
+                    }
+                } catch (RemoteException | NotBoundException | InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+            t2.start();
+        }
+
+
+    }
 
     /**
      * Gets invoked when a new Node is joining the network.
