@@ -60,13 +60,11 @@ public class FailureAgent implements Runnable, Serializable {
                 ownerHashForThisFile = namingServerStub.getHashOfAddress(ownerAddressForThisFile);
                 //Bestand gerepliceerd op failed node dus naar nieuwe eigenaar sturen
                 if (ownerHashForThisFile == hashFailed) {
-                    //Bestand sturen naar nieuwe node ??? currNodeStub.replicateToNewNode() ???
+                    //Bestand sturen naar nieuwe node, deze node zal de vorige buur zijn van de gefaalde node
                     neighboursOfFailed = namingServerStub.getNeighbours(hashFailed);
                     hashOfPrevNeighbour = neighboursOfFailed[0];
                     addressOfPrevNeighbour = namingServerStub.getIPNode(hashOfPrevNeighbour);
-                    Registry newOwnerRegistry = LocateRegistry.getRegistry(currNode.getHostAddress(), Constants.RMI_PORT);
-                    NodeInterface newOwnerStub = (NodeInterface) newOwnerRegistry.lookup("Node");
-                    newOwnerStub.replicateFailed(fileHandle, addressOfPrevNeighbour);
+                    currNodeStub.replicateFailed(fileHandle, addressOfPrevNeighbour);
                 }
             }
 
