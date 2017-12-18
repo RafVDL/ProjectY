@@ -20,11 +20,13 @@ public class FailureAgent implements Runnable, Serializable {
     private InetAddress currNode;
     private InetAddress nsAddress;
     private InetAddress ownerAddressForThisFile;
+    private InetAddress addressOfPrevNeighbour;
     private int ownerHashForThisFile;
+    private int hashOfPrevNeighbour;
     private Collection<FileHandle> localFiles;
     private Collection<FileHandle> replicatedFiles;
     private String currFile;
-
+    private int[] neighboursOfFailed;
 
 
     public FailureAgent(int hashFailed, int hashStart, InetAddress currNode) { //integer is hash of node that is downloading file
@@ -57,9 +59,14 @@ public class FailureAgent implements Runnable, Serializable {
                 //Bestand gerepliceerd op failed node dus naar nieuwe eigenaar sturen
                 if (ownerHashForThisFile == hashFailed) {
                     //Bestand sturen naar nieuwe node ??? currNodeStub.replicateToNewNode() ???
+                    neighboursOfFailed = namingServerStub.getNeighbours(hashFailed);
+                    hashOfPrevNeighbour = neighboursOfFailed[0];
+                    addressOfPrevNeighbour = namingServerStub.getIPNode(hashOfPrevNeighbour);
+                    Registry newOwnerRegistry = LocateRegistry.getRegistry(currNode.getHostAddress(), Constants.RMI_PORT);
+                    NodeInterface newOwnerStub = (NodeInterface) newOwnerRegistry.lookup("Node");
+                    newOwnerStub.replicateFailed(fileHandle, addressOfPrevNeighbour);
                 }
             }
-
 
             //Stap 2: We bekijken of een of meerdere gerepliceerde bestanden van deze node lokaal zijn op de gefaalde node.
             for (FileHandle fileHandle : replicatedFiles) {

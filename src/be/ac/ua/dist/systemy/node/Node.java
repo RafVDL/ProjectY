@@ -631,6 +631,43 @@ public class Node implements NodeInterface {
         }
     }
 
+    public void replicateFailed(FileHandle fileHandle, InetAddress receiveAddress) throws RemoteException, NotBoundException, UnknownHostException {
+        File file = fileHandle.getFile();
+
+        if (receiveAddress == null) // no owner
+            return;
+
+        if (receiveAddress.equals(nextAddress)) {
+            ownerFiles.put(fileHandle.getFile().getName(), fileHandle);
+            return;
+        }
+
+        Registry nodeRegistry;
+        if (receiveAddress.equals(ownAddress)) {
+            //Replicate to previous node
+            nodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
+        }
+
+        else {
+            // Replicate to receive node
+            nodeRegistry = LocateRegistry.getRegistry(receiveAddress.getHostAddress(), Constants.RMI_PORT);
+        }
+
+        NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
+        nodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
+
+        fileHandle.getAvailableNodes().add(receiveAddress.equals(ownAddress) ? prevHash : nodeStub.getOwnHash());
+
+        FileHandle newFileHandle = fileHandle.getAsReplicated();
+        nodeStub.addReplicatedFileList(newFileHandle);
+
+        if (receiveAddress.equals(ownAddress)) {
+            ownerFiles.put(newFileHandle.getFile().getName(), fileHandle);
+        } else {
+            nodeStub.addOwnerFileList(newFileHandle);
+        }
+    }
+
     /**
      * Transfer all replicated and process all local files. Then leave the network.
      */

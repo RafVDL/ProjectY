@@ -1,6 +1,7 @@
 package be.ac.ua.dist.systemy.node;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -67,6 +68,8 @@ public interface NodeInterface extends Remote {
     int calculateHash(String name) throws RemoteException;
 
     InetAddress getNamingServerAddress() throws RemoteException;
+
+    void replicateFailed(FileHandle fileHandle, InetAddress receiveAddress) throws RemoteException,NotBoundException, UnknownHostException;
 
 
 }
