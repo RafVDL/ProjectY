@@ -61,7 +61,7 @@ public interface NodeInterface extends Remote {
 
     Set getDownloadingFiles() throws RemoteException;
 
-    void setFiles(TreeMap<String, Integer> files) throws RemoteException;
+    void setFileAgentFiles(TreeMap<String, Integer> files) throws RemoteException;
 
     int calculateHash(String name) throws RemoteException;
 

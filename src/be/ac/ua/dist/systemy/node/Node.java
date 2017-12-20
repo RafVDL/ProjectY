@@ -37,7 +37,7 @@ public class Node implements NodeInterface {
     private Map<String, FileHandle> ownerFiles;
     private Set<String> downloadingFiles;
     private Map<String, Integer> allFiles;
-    private TreeMap<String, Integer> files;
+    private TreeMap<String, Integer> fileAgentFiles;
 
 
     private volatile InetAddress namingServerAddress;
@@ -151,8 +151,8 @@ public class Node implements NodeInterface {
         this.allFiles.put(file, value);
     }
 
-    public void setFiles(TreeMap<String, Integer> files) {
-        this.files = files;
+    public void setFileAgentFiles(TreeMap<String, Integer> files) {
+        this.fileAgentFiles = files;
     }
 
     public void setDownloadFileGranted(String download) {
@@ -285,13 +285,13 @@ public class Node implements NodeInterface {
     /**
      * Starts running the file agent, this method can be run via RMI
      *
-     * @param files: list of all files
+     * @param fileAgentFiles: list of all files
      *             String: filename
      *             Integer: hash of node that has a lock request on that file
      */
     @Override
-    public void runFileAgent(TreeMap<String, Integer> files) throws InterruptedException, RemoteException, NotBoundException {
-        Thread t = new Thread(new FileAgent(files, ownAddress));
+    public void runFileAgent(TreeMap<String, Integer> fileAgentFiles) throws InterruptedException, RemoteException, NotBoundException {
+        Thread t = new Thread(new FileAgent(fileAgentFiles, ownAddress));
         t.start();
         t.join(); //wait for thread to stop
         if (ownHash != nextHash) { //check if not alone in network
@@ -299,7 +299,7 @@ public class Node implements NodeInterface {
                 try {
                     Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
                     NodeInterface stub = (NodeInterface) registry.lookup("Node");
-                    stub.runFileAgent(files);
+                    stub.runFileAgent(fileAgentFiles);
                 } catch (RemoteException | NotBoundException | InterruptedException e) {
                     e.printStackTrace();
                     try {
@@ -357,7 +357,7 @@ public class Node implements NodeInterface {
                         stub.runFailureAgent(hashFailed, hashStart, nextAddress);
                     }
                     else {
-                        stub.runFileAgent(files);
+                        stub.runFileAgent(fileAgentFiles);
                     }
                 } catch (RemoteException | NotBoundException | InterruptedException e) {
                     e.printStackTrace();
@@ -1058,7 +1058,7 @@ public class Node implements NodeInterface {
                     break;
 
                 case "allfiles":
-                    System.out.println("All files: " + node.files);
+                    System.out.println("All files: " + node.allFiles);
             }
         }
     }

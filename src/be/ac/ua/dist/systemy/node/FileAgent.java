@@ -70,6 +70,7 @@ public class FileAgent implements Runnable, Serializable {
                         files.put(lockRequest, currNodeStub.getOwnHash());                                          //lock file in FileAgent
                     }
                 }
+                currNodeStub.setFileAgentFiles(files);
             }
         } catch (IOException | NotBoundException e) {
             e.printStackTrace();
