@@ -9,6 +9,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Collection;
+import java.util.Map;
 import java.util.TreeMap;
 
 public class FileAgent implements Runnable, Serializable {
@@ -41,6 +42,7 @@ public class FileAgent implements Runnable, Serializable {
             Registry currNodeRegistry = LocateRegistry.getRegistry(nodeAddress.getHostAddress(), Constants.RMI_PORT);
             NodeInterface currNodeStub = (NodeInterface) currNodeRegistry.lookup("Node");
             localFiles = currNodeStub.getLocalFiles().keySet();
+            Map<String, Integer> allFilesNode = currNodeStub.getAllFiles();
             //Step 1
             for (String fileHandle : localFiles) {
                 files.putIfAbsent(fileHandle, 0);
@@ -49,7 +51,7 @@ public class FileAgent implements Runnable, Serializable {
             if (files != null) {
                 files.forEach((key, value) -> {
                     try {
-                        if(!localFiles.contains(key)) {
+                        if(!allFilesNode.containsKey(key)) {
                             currNodeStub.addAllFileList(key, 0);
                         }
                     } catch (RemoteException e) {
@@ -65,7 +67,7 @@ public class FileAgent implements Runnable, Serializable {
 
                 }
                 if (!lockRequest.equals("null") && !currNodeStub.getDownloadFileGranted().equals("downloading")) {  //if pending lockrequest, and node not downloading
-                    if (files.get(lockRequest) == 0) {
+                    if (files.containsKey(lockRequest) && files.get(lockRequest) == 0) {
                         currNodeStub.setDownloadFileGranted(lockRequest);                                           //tell node he can download the file
                         files.put(lockRequest, currNodeStub.getOwnHash());                                          //lock file in FileAgent
                     }

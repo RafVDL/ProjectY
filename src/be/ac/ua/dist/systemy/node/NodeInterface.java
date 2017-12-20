@@ -71,5 +71,7 @@ public interface NodeInterface extends Remote {
 
     void replicateWhenJoining(FileHandle fileHandle) throws RemoteException,NotBoundException, UnknownHostException;
 
+    Map<String, Integer> getAllFiles() throws RemoteException;
+
 
 }

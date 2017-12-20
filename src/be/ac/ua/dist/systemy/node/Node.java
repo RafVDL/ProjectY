@@ -154,6 +154,10 @@ public class Node implements NodeInterface {
         this.allFiles.put(file, value);
     }
 
+    public Map<String, Integer> getAllFiles(){
+        return this.allFiles;
+    }
+
     public void setFileAgentFiles(TreeMap<String, Integer> files) {
         this.fileAgentFiles = files;
     }
