@@ -14,7 +14,7 @@ import java.util.TreeMap;
 public class FileAgent implements Runnable, Serializable {
     private TreeMap<String, Integer> files;
     private InetAddress nodeAddress;
-    private Collection<FileHandle> localFiles;
+    private Collection<String> localFiles;
     private String lockRequest;
 
     /**
@@ -40,10 +40,10 @@ public class FileAgent implements Runnable, Serializable {
         try { //Step 0
             Registry currNodeRegistry = LocateRegistry.getRegistry(nodeAddress.getHostAddress(), Constants.RMI_PORT);
             NodeInterface currNodeStub = (NodeInterface) currNodeRegistry.lookup("Node");
-            localFiles = currNodeStub.getLocalFiles().values();
+            localFiles = currNodeStub.getLocalFiles().keySet();
             //Step 1
-            for (FileHandle fileHandle : localFiles) {
-                files.putIfAbsent(fileHandle.getFile().getName(), 0);
+            for (String fileHandle : localFiles) {
+                files.putIfAbsent(fileHandle, 0);
             }
             //Step 2
             if (files != null) {
