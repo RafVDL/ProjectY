@@ -311,6 +311,15 @@ public class Node implements NodeInterface {
                     stub.runFileAgent(files);
                 } catch (RemoteException | NotBoundException | InterruptedException e) {
                     e.printStackTrace();
+                    try {
+                        runFailureAgent(nextHash,ownHash,ownAddress);
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                    } catch (RemoteException e1) {
+                        e1.printStackTrace();
+                    } catch (NotBoundException e1) {
+                        e1.printStackTrace();
+                    }
                 }
 
             });
@@ -355,6 +364,9 @@ public class Node implements NodeInterface {
                     //Check of volgende node niet de node is waarop de failureagent is gestart
                     if (hashStart != stub.getOwnHash()) {
                         stub.runFailureAgent(hashFailedNode, hashStartNode, nextAddress);
+                    }
+                    else {
+                        stub.runFileAgent(files);
                     }
                 } catch (RemoteException | NotBoundException | InterruptedException e) {
                     e.printStackTrace();
