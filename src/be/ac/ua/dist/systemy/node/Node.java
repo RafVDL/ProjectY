@@ -44,9 +44,6 @@ public class Node implements NodeInterface {
     private InetAddress prevAddress;
     private InetAddress nextAddress;
 
-    private int hashFailedNode;
-    private int hashStartNode;
-
     private volatile int prevHash;
     private volatile int nextHash;
 
@@ -152,12 +149,6 @@ public class Node implements NodeInterface {
 
     public void addAllFileList(String file, int value) {
         this.allFiles.put(file, value);
-    }
-
-    public void emptyAllFileList() {
-        if (allFiles != null) {
-            this.allFiles.clear();
-        }
     }
 
     public void setFiles(TreeMap<String, Integer> files) {
@@ -363,7 +354,7 @@ public class Node implements NodeInterface {
                     NodeInterface stub = (NodeInterface) registry.lookup("Node");
                     //Check of volgende node niet de node is waarop de failureagent is gestart
                     if (hashStart != stub.getOwnHash()) {
-                        stub.runFailureAgent(hashFailedNode, hashStartNode, nextAddress);
+                        stub.runFailureAgent(hashFailed, hashStart, nextAddress);
                     }
                     else {
                         stub.runFileAgent(files);
@@ -388,7 +379,7 @@ public class Node implements NodeInterface {
                     NodeInterface stub = (NodeInterface) registry.lookup("Node");
                     //Check of volgende node niet de node is waarop de failureagent is gestart
                     if (hashStart != stub.getOwnHash()) {
-                        stub.runFailureAgent(hashFailedNode, hashStartNode, nextAddress);
+                        stub.runFailureAgent(hashFailed, ownHash, nextAddress);
                     }
                 } catch (RemoteException | NotBoundException | InterruptedException e) {
                     e.printStackTrace();

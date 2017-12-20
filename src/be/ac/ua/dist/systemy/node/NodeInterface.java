@@ -51,8 +51,6 @@ public interface NodeInterface extends Remote {
 
     void runFailureAgent(int hashFailed, int hashStart, InetAddress currNode) throws RemoteException, InterruptedException, NotBoundException;
 
-    void emptyAllFileList() throws RemoteException;
-
     void addAllFileList(String file, int value) throws RemoteException;
 
     String getFileLockRequest() throws RemoteException;
