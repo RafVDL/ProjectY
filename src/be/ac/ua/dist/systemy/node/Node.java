@@ -9,6 +9,8 @@ import be.ac.ua.dist.systemy.networking.packet.*;
 import be.ac.ua.dist.systemy.networking.tcp.TCPServer;
 import be.ac.ua.dist.systemy.networking.udp.MulticastServer;
 import be.ac.ua.dist.systemy.networking.udp.UnicastServer;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableMap;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -36,7 +38,7 @@ public class Node implements NodeInterface {
     private Map<String, FileHandle> replicatedFiles;
     private Map<String, FileHandle> ownerFiles;
     private Set<String> downloadingFiles;
-    private Map<String, Integer> allFiles;
+    private ObservableMap<String, Integer> allFiles;
     private TreeMap<String, Integer> files;
 
 
@@ -56,11 +58,16 @@ public class Node implements NodeInterface {
     private Server multicastServer;
     private Server tcpServer;
 
-    public Node(String nodeName, InetAddress address) throws IOException {
+    public Node(String nodeName, InetAddress address) throws UnknownHostException {
         this.ownAddress = address;
         this.ownHash = calculateHash(nodeName);
-        this.allFiles = new TreeMap<>();
+        this.allFiles = FXCollections.observableMap(new TreeMap<>());
         this.grantedDownloadFile = "null";
+
+        this.localFiles = new HashMap<>();
+        this.replicatedFiles = new HashMap<>();
+        this.ownerFiles = new HashMap<>();
+        this.downloadingFiles = new HashSet<>();
 
         multicastGroup = InetAddress.getByName(Constants.MULTICAST_ADDRESS);
     }
@@ -115,9 +122,13 @@ public class Node implements NodeInterface {
     public String getFileLockRequest() {
         AtomicReference<String> fileLockRequest = new AtomicReference<>("null");
         allFiles.forEach((String key, Integer value) -> {
-            if(ownHash == value) fileLockRequest.set(key);
+            if (ownHash == value) fileLockRequest.set(key);
         });
         return fileLockRequest.get();
+    }
+
+    public ObservableMap<String, Integer> getAllFiles() {
+        return allFiles;
     }
 
     @Override
@@ -879,6 +890,52 @@ public class Node implements NodeInterface {
         }
     }
 
+    public static Node startNode(String nodeName, InetAddress address) {
+        Node node;
+        try {
+            node = new Node(nodeName, address);
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+            System.err.println("Unknown multicast address, cannot create Node.");
+            return null;
+        }
+
+        node.clearDir(Constants.REPLICATED_FILES_PATH);
+        node.initializeRMI();
+        System.out.println("Hash: " + node.getOwnHash());
+        Communications.setSenderHash(node.getOwnHash());
+        node.setupMulticastServer();
+        node.setupTCPServer();
+        try {
+            node.joinNetwork();
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Unable to join network.");
+            return null;
+        }
+
+
+        // Discover local files
+        while (node.namingServerAddress == null || node.prevHash == 0 || node.nextHash == 0 || node.prevAddress == null || node.nextAddress == null) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                System.err.println("Interrupted while waiting for Node to initialize.");
+                return null;
+            }
+        }
+        node.discoverLocalFiles();
+
+
+        // Start file update watcher
+        FileUpdateWatcher fileUpdateWatcherThread = new FileUpdateWatcher(node, Constants.LOCAL_FILES_PATH);
+        Thread thread = new Thread(fileUpdateWatcherThread);
+        thread.start();
+
+        return node;
+    }
+
     public static void main(String[] args) throws IOException {
         // Get IP and hostname
         Scanner sc = new Scanner(System.in);
@@ -896,42 +953,11 @@ public class Node implements NodeInterface {
         }
 
 
-        // Create Node object and initialize
-        Node node = new Node(hostname, InetAddress.getByName(ip));
-
-        node.clearDir(Constants.REPLICATED_FILES_PATH);
-        node.localFiles = new HashMap<>();
-        node.replicatedFiles = new HashMap<>();
-        node.ownerFiles = new HashMap<>();
-        node.downloadingFiles = new HashSet<>();
-
-        node.initializeRMI();
-        System.out.println("Hash: " + node.getOwnHash());
-
-        Communications.setSenderHash(node.getOwnHash());
-
-        node.setupMulticastServer();
-        node.setupTCPServer();
-
-        node.joinNetwork();
-
-
-        // Discover local files
-        while (node.namingServerAddress == null || node.prevHash == 0 || node.nextHash == 0 || node.prevAddress == null || node.nextAddress == null) {
-            try {
-                Thread.sleep(500);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        // Start the Node
+        Node node = Node.startNode(hostname, InetAddress.getByName(ip));
+        if (node == null) {
+            return;
         }
-        node.discoverLocalFiles();
-
-
-        // Start file update watcher
-        FileUpdateWatcher fileUpdateWatcherThread = new FileUpdateWatcher(node, Constants.LOCAL_FILES_PATH);
-        Thread thread = new Thread(fileUpdateWatcherThread);
-        thread.start();
-
 
         // Listen for commands
         while (node.running) {
