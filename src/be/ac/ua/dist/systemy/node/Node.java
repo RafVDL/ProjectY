@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static be.ac.ua.dist.systemy.Constants.DOWNLOADED_FILES_PATH;
+import static be.ac.ua.dist.systemy.Constants.LOCAL_FILES_PATH;
 import static be.ac.ua.dist.systemy.Constants.RMI_PORT;
 
 public class Node implements NodeInterface {
@@ -118,7 +119,11 @@ public class Node implements NodeInterface {
     }
 
     public void downloadAFile(String filename){
-        allFiles.put(filename, ownHash);
+        if(allFiles.containsKey(filename)) {
+            allFiles.put(filename, ownHash);
+        } else {
+            System.out.println("File does not exist or you are the owner, try again");
+        }
     }
     @Override
     public void addLocalFileList(FileHandle fileHandle) {
@@ -336,7 +341,7 @@ public class Node implements NodeInterface {
                     if (ownerAddress == null) {
                         //Error
                     } else {
-                        downloadFile(grantedDownloadFile, DOWNLOADED_FILES_PATH + grantedDownloadFile, ownerAddress);
+                        downloadFile(LOCAL_FILES_PATH + grantedDownloadFile, DOWNLOADED_FILES_PATH + grantedDownloadFile, ownerAddress);
                         grantedDownloadFile = "downloading";
                     }
                 });
