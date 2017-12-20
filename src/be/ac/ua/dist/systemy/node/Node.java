@@ -117,6 +117,9 @@ public class Node implements NodeInterface {
         return fileLockRequest.get();
     }
 
+    public void downloadAFile(String filename){
+        allFiles.put(filename, ownHash);
+    }
     @Override
     public void addLocalFileList(FileHandle fileHandle) {
         localFiles.put(fileHandle.getFile().getName(), fileHandle);
@@ -1059,6 +1062,17 @@ public class Node implements NodeInterface {
 
                 case "allfiles":
                     System.out.println("All files: " + node.allFiles);
+                    break;
+
+                case "fafiles":
+                    System.out.println("All fileagentfiles: " + node.fileAgentFiles);
+                    break;
+
+                case "dl":
+                    System.out.print("Enter filename to download: ");
+                    node.downloadAFile(sc.nextLine().toLowerCase());
+                    break;
+
             }
         }
     }
