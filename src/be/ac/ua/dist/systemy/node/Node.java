@@ -291,12 +291,19 @@ public class Node implements NodeInterface {
         prevHash = newHash;
     }
 
+    /**
+     * Starts running the file agent, this method can be run via RMI
+     *
+     * @param files: list of all files
+     *             String: filename
+     *             Integer: hash of node that has a lock request on that file
+     */
     @Override
     public void runFileAgent(TreeMap<String, Integer> files) throws InterruptedException, RemoteException, NotBoundException {
         Thread t = new Thread(new FileAgent(files, ownAddress));
         t.start();
         t.join(); //wait for thread to stop
-        if (ownHash != nextHash) {
+        if (ownHash != nextHash) { //check if not alone in network
             Thread t2 = new Thread(() -> {
                 try {
                     Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
