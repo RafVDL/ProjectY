@@ -3,16 +3,15 @@ package be.ac.ua.dist.systemy.node;
 import be.ac.ua.dist.systemy.Constants;
 import be.ac.ua.dist.systemy.namingServer.NamingServerInterface;
 
-import java.io.File;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Collection;
-import java.util.*;
+
 
 public class FailureAgent implements Runnable, Serializable {
 
@@ -77,17 +76,15 @@ public class FailureAgent implements Runnable, Serializable {
                 if (localHash == hashFailed){
                     //Bestand moet nu lokaal op deze node bijgehouden worden en opnieuw gerepliceerd worden
                     fileHandle.setLocalAddress(currNode);
-                    //Verander map van file
-                    newFileName =  "localFiles/" + fileHandle.getFile().getName();
-                    File currFile = fileHandle.getFile();
-                    currFile.renameTo(new File(newFileName));
+                    //Verander map van file - laten voor nu
+                    //newFileName =  "localFiles/" + fileHandle.getFile().getName();
+                    //File currFile = fileHandle.getFile();
+                    //currFile.renameTo(new File(newFileName));
                     currNodeStub.replicateWhenJoining(fileHandle);
                 }
             }
-
         } catch (IOException | NotBoundException e) {
             e.printStackTrace();
-
         }
     }
 }

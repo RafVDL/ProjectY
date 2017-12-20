@@ -336,10 +336,11 @@ public class Node implements NodeInterface {
 
     @Override
     public void runFailureAgent(int hashFailed, int hashStart, InetAddress currNode) throws InterruptedException, RemoteException, NotBoundException {
-        Thread t = new Thread(new FailureAgent(hashFailedNode, hashStartNode, ownAddress));
+        Thread t = new Thread(new FailureAgent(hashFailed, hashStart, currNode));
         t.start();
         t.join(); //wait for thread to stop
-        if (ownHash != nextHash) {
+        //Kijken of hij niet alleen in het netwerk zit en dat zijn volgende node niet de gefaalde node is.
+        if (ownHash != nextHash && hashFailed != nextHash) {
             Thread t2 = new Thread(() -> {
                 try {
                     Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
@@ -354,7 +355,28 @@ public class Node implements NodeInterface {
             });
             t2.start();
         }
-
+        //Kijken of hij niet alleen in het netwerk zit en dat de volgende node de gefaalde node is.
+        if(ownHash != nextHash && hashFailed == nextHash) {
+            //Volgende node is de gefaalde node dus agent moet deze overslaan en naar de volgende node in de cycle gaan (=volgende buur van de gefaalde node).
+            Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
+            NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+            int[] neighboursOfFailed = namingServerStub.getNeighbours(hashFailed);
+            int hashOfNextNeighbour = neighboursOfFailed[1];
+            InetAddress addressOfNextNeighbour = namingServerStub.getIPNode(hashOfNextNeighbour);
+            Thread t2 = new Thread(() -> {
+                try {
+                    Registry registry = LocateRegistry.getRegistry(addressOfNextNeighbour.getHostAddress(), RMI_PORT);
+                    NodeInterface stub = (NodeInterface) registry.lookup("Node");
+                    //Check of volgende node niet de node is waarop de failureagent is gestart
+                    if (hashStart != stub.getOwnHash()) {
+                        stub.runFailureAgent(hashFailedNode, hashStartNode, nextAddress);
+                    }
+                } catch (RemoteException | NotBoundException | InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+            t2.start();
+        }
 
     }
 
