@@ -4,6 +4,7 @@ import be.ac.ua.dist.systemy.Constants;
 import be.ac.ua.dist.systemy.namingServer.NamingServerInterface;
 
 
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.InetAddress;
@@ -77,10 +78,10 @@ public class FailureAgent implements Runnable, Serializable {
                 if (localHash == hashFailed){
                     //Bestand moet nu lokaal op deze node bijgehouden worden en opnieuw gerepliceerd worden
                     fileHandle.setLocalAddress(currNode);
-                    //Verander map van file - laten voor nu
-                    //newFileName =  "localFiles/" + fileHandle.getFile().getName();
-                    //File currFile = fileHandle.getFile();
-                    //currFile.renameTo(new File(newFileName));
+                    //Verander map van file
+                    newFileName =  Constants.LOCAL_FILES_PATH + fileHandle.getFile().getName();
+                    File currFile = fileHandle.getFile();
+                    currFile.renameTo(new File(newFileName));
                     currNodeStub.replicateWhenJoining(fileHandle);
                 }
             }
