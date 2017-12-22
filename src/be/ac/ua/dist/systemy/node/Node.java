@@ -1100,7 +1100,7 @@ public class Node implements NodeInterface {
 
                 case "dl":
                     System.out.print("Enter filename to download: ");
-                    node.downloadAFile(sc.nextLine().toLowerCase());
+                    node.downloadAFile(sc.nextLine());
                     break;
 
             }
