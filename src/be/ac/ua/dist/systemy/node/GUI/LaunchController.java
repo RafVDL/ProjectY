@@ -53,8 +53,8 @@ public class LaunchController {
                     showIPNotLocal();
                     return;
                 }
-                //TODO: ENABLE THIS WHEN DONE TESTING
                 NodeMain.setNode(Node.startNode(enteredHostName, address));
+                primaryStage.close();
                 startMainGUI();
 
             } catch (UnknownHostException e) {
@@ -108,6 +108,7 @@ public class LaunchController {
             loader.setController(nodeController);
             primaryStage.setScene(new Scene(loader.load()));
             primaryStage.setTitle("Node active");
+            primaryStage.show();
         } catch (IOException e) {
             e.printStackTrace();
         }
