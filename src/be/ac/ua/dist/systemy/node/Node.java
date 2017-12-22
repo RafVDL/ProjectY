@@ -330,7 +330,7 @@ public class Node implements NodeInterface {
 
             });
             String fileLockRequest = getFileLockRequest();
-            if (!grantedDownloadFile.equals("null")&&!grantedDownloadFile.equals("downloading")) { //download file
+            if (!grantedDownloadFile.equals("null")&&!grantedDownloadFile.equals("downloading")&&fileLockRequest.equals("null")) { //download file
                 Thread t3 = new Thread(() -> {
                     try {
                         // Get ownerAddress from NamingServer via RMI.
