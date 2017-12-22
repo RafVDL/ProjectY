@@ -350,6 +350,7 @@ public class Node implements NodeInterface {
                     if (ownerAddress.equals(ownAddress)) {
                         System.out.println("You are the owner");
                         grantedDownloadFile = "null";
+                        allFiles.put(getFileLockRequest(), 0);
                     } else {
                         downloadFile(Constants.LOCAL_FILES_PATH + grantedDownloadFile, Constants.DOWNLOADED_FILES_PATH + grantedDownloadFile, ownerAddress);
                         grantedDownloadFile = "downloading";
@@ -371,7 +372,7 @@ public class Node implements NodeInterface {
         t.join(); //wait for thread to stop
         //Kijken of hij niet alleen in het netwerk zit en dat zijn volgende node niet de gefaalde node is.
         if (ownHash != nextHash && hashFailed != nextHash) {
-            Thread t2 = new Thread(() -> {
+            Thread t4 = new Thread(() -> {
                 try {
                     Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
                     NodeInterface stub = (NodeInterface) registry.lookup("Node");
@@ -386,7 +387,7 @@ public class Node implements NodeInterface {
                     e.printStackTrace();
                 }
             });
-            t2.start();
+            t4.start();
         }
         //Kijken of hij niet alleen in het netwerk zit en dat de volgende node de gefaalde node is.
         if(ownHash != nextHash && hashFailed == nextHash) {
@@ -396,7 +397,7 @@ public class Node implements NodeInterface {
             int[] neighboursOfFailed = namingServerStub.getNeighbours(hashFailed);
             int hashOfNextNeighbour = neighboursOfFailed[1];
             InetAddress addressOfNextNeighbour = namingServerStub.getIPNode(hashOfNextNeighbour);
-            Thread t2 = new Thread(() -> {
+            Thread t5 = new Thread(() -> {
                 try {
                     Registry registry = LocateRegistry.getRegistry(addressOfNextNeighbour.getHostAddress(), RMI_PORT);
                     NodeInterface stub = (NodeInterface) registry.lookup("Node");
@@ -408,7 +409,7 @@ public class Node implements NodeInterface {
                     e.printStackTrace();
                 }
             });
-            t2.start();
+            t5.start();
         }
 
     }

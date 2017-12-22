@@ -40,6 +40,7 @@ public class FailureAgent implements Runnable, Serializable {
     public void run() {
         //initialize rmi connection
         try {
+            System.out.println("running FailureAgent");
             Registry currNodeRegistry = LocateRegistry.getRegistry(currNode.getHostAddress(), Constants.RMI_PORT);
             NodeInterface currNodeStub = (NodeInterface) currNodeRegistry.lookup("Node");
             localFiles = currNodeStub.getLocalFiles().values();
