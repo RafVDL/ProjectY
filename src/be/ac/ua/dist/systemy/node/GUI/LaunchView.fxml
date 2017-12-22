@@ -26,7 +26,7 @@
                </rowConstraints>
                <children>
                   <Label text="Network address" />
-                  <TextField fx:id="addressField" onAction="#handleLaunch" promptText="address" GridPane.columnIndex="1" />
+                  <TextField fx:id="addressField" onAction="#handleAddressEnter" promptText="address" GridPane.columnIndex="1" />
                   <Label text="Node name" GridPane.rowIndex="1" />
                   <TextField fx:id="nameField" onAction="#handleLaunch" promptText="name" GridPane.columnIndex="1" GridPane.rowIndex="1" />
                </children>

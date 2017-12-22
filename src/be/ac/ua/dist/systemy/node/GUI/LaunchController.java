@@ -28,7 +28,12 @@ public class LaunchController {
 
     @FXML
     private void initialize() {
-
+        try {
+            addressField.setText(InetAddress.getLocalHost().getHostAddress());
+            nameField.setText(InetAddress.getLocalHost().getHostName());
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -40,42 +45,31 @@ public class LaunchController {
     }
 
     @FXML
+    private void handleAddressEnter() {
+        nameField.requestFocus();
+    }
+
+    @FXML
     private void handleLaunch() {
         String enteredAddress = addressField.getText();
         String enteredHostName = nameField.getText();
-
-        if (enteredAddress.isEmpty() || enteredHostName.isEmpty()) {
-            showJoinError();
-        } else {
-            try {
-                InetAddress address = InetAddress.getByName(enteredAddress);
-                if (NetworkInterface.getByInetAddress(address) == null) {
-                    showIPNotLocal();
-                    return;
-                }
-                NodeMain.setNode(Node.startNode(enteredHostName, address));
-                primaryStage.close();
-                startMainGUI();
-
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
-                showIPInvalid();
-            } catch (IOException e) {
-                e.printStackTrace();
+        try {
+            InetAddress address = InetAddress.getByName(enteredAddress);
+            if (NetworkInterface.getByInetAddress(address) == null) {
                 showIPNotLocal();
+                return;
             }
-        }
-    }
+            NodeMain.setNode(Node.startNode(enteredHostName, address));
+            primaryStage.close();
+            startMainGUI();
 
-    private void showJoinError() {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle("Error");
-        alert.setHeaderText("Incorrect credentials");
-        alert.setContentText("Please fill in all fields");
-        alert.showAndWait();
-        addressField.clear();
-        nameField.clear();
-        addressField.requestFocus();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+            showIPInvalid();
+        } catch (IOException e) {
+            e.printStackTrace();
+            showIPNotLocal();
+        }
     }
 
     private void showIPInvalid() {
