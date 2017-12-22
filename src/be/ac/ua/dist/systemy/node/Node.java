@@ -44,6 +44,7 @@ public class Node implements NodeInterface {
     private volatile InetAddress namingServerAddress;
     private InetAddress prevAddress;
     private InetAddress nextAddress;
+    private InetAddress ownerAddress;
 
     private volatile int prevHash;
     private volatile int nextHash;
@@ -56,6 +57,7 @@ public class Node implements NodeInterface {
 
     public Node(String nodeName, InetAddress address) throws IOException {
         this.ownAddress = address;
+        this.ownerAddress = ownAddress;
         this.ownHash = calculateHash(nodeName);
         this.allFiles = new TreeMap<>();
         this.grantedDownloadFile = "null";
@@ -303,6 +305,7 @@ public class Node implements NodeInterface {
      */
     @Override
     public void runFileAgent(TreeMap<String, Integer> fileAgentFiles) throws InterruptedException, RemoteException, NotBoundException {
+        ownerAddress = ownAddress;
         Thread t = new Thread(new FileAgent(fileAgentFiles, ownAddress));
         t.start();
         t.join(); //wait for thread to stop
@@ -326,23 +329,27 @@ public class Node implements NodeInterface {
                 }
 
             });
-            if (!grantedDownloadFile.equals("null")) { //download file
+            if (!grantedDownloadFile.equals("null")&&!grantedDownloadFile.equals("downloading")) { //download file
                 Thread t3 = new Thread(() -> {
-                    InetAddress ownerAddress = null;
                     try {
                         // Get ownerAddress from NamingServer via RMI.
                         Registry namingServerRegistry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
                         NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
                         ownerAddress = namingServerStub.getOwner(grantedDownloadFile);
-                        Registry registry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), RMI_PORT);
-                        NodeInterface ownerStub = (NodeInterface) registry.lookup("Node");
-                        ownerAddress = ownerStub.getLocalAddressOfFile(grantedDownloadFile);
+                        if(ownerAddress.equals(ownAddress)){
+                            ownerAddress = getLocalAddressOfFile(grantedDownloadFile);
+                        } else {
+                            Registry registry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), RMI_PORT);
+                            NodeInterface ownerStub = (NodeInterface) registry.lookup("Node");
+                            ownerAddress = ownerStub.getLocalAddressOfFile(grantedDownloadFile);
+                        }
                     } catch (IOException | NotBoundException e) {
                         e.printStackTrace();
                     }
 
-                    if (ownerAddress == null) {
-                        //Error
+                    if (ownerAddress.equals(ownAddress)) {
+                        System.out.println("You are the owner");
+                        grantedDownloadFile = "null";
                     } else {
                         downloadFile(Constants.LOCAL_FILES_PATH + grantedDownloadFile, Constants.DOWNLOADED_FILES_PATH + grantedDownloadFile, ownerAddress);
                         grantedDownloadFile = "downloading";
