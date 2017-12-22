@@ -400,14 +400,15 @@ public class Node implements NodeInterface {
         }
         //Kijken of hij niet alleen in het netwerk zit en dat de volgende node de gefaalde node is.
         if(ownHash != nextHash && hashFailed == nextHash && nextHash != hashStart) {
-            //Volgende node is de gefaalde node dus agent moet deze overslaan en naar de volgende node in de cycle gaan (=volgende buur van de gefaalde node).
-            Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
-            NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
-            int[] neighboursOfFailed = namingServerStub.getNeighbours(hashFailed);
-            int hashOfNextNeighbour = neighboursOfFailed[1];
-            InetAddress addressOfNextNeighbour = namingServerStub.getIPNode(hashOfNextNeighbour);
             Thread t5 = new Thread(() -> {
                 try {
+                    //Volgende node is de gefaalde node dus agent moet deze overslaan en naar de volgende node in de cycle gaan (=volgende buur van de gefaalde node).
+                    Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
+                    NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+                    int[] neighboursOfFailed = namingServerStub.getNeighbours(hashFailed);
+                    int hashOfNextNeighbour = neighboursOfFailed[1];
+                    InetAddress addressOfNextNeighbour = namingServerStub.getIPNode(hashOfNextNeighbour);
+
                     Registry registry = LocateRegistry.getRegistry(addressOfNextNeighbour.getHostAddress(), RMI_PORT);
                     NodeInterface stub = (NodeInterface) registry.lookup("Node");
                     //Check of volgende node niet de node is waarop de failureagent is gestart
