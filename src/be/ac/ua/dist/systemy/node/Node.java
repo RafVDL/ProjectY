@@ -405,7 +405,11 @@ public class Node implements NodeInterface {
                     //Check of volgende node niet de node is waarop de failureagent is gestart
                     if (hashStart != stub.getOwnHash()) {
                         stub.runFailureAgent(hashFailed, ownHash, nextAddress);
+                    } else{
+                        FailureHandler failureHandler = new FailureHandler(hashFailed, this);
+                        failureHandler.repairFailedNode();
                     }
+
                 } catch (RemoteException | NotBoundException | InterruptedException e) {
                     e.printStackTrace();
                 }
