@@ -316,7 +316,6 @@ public class Node implements NodeInterface {
                     NodeInterface stub = (NodeInterface) registry.lookup("Node");
                     stub.runFileAgent(fileAgentFiles);
                 } catch (RemoteException | NotBoundException | InterruptedException e) {
-                    e.printStackTrace();
                     try {
                         runFailureAgent(nextHash,ownHash,ownAddress);
                     } catch (InterruptedException e1) {
