@@ -413,7 +413,9 @@ public class Node implements NodeInterface {
                     else {
                         FailureHandler failureHandler = new FailureHandler(hashFailed, this);
                         failureHandler.repairFailedNode();
-                        stub.runFileAgent(fileAgentFiles);
+                        if (ownHash != stub.getOwnHash()) {
+                            stub.runFileAgent(fileAgentFiles);
+                        }
                     }
 
                 } catch (RemoteException | NotBoundException | InterruptedException e) {
