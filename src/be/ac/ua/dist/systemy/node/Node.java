@@ -399,7 +399,7 @@ public class Node implements NodeInterface {
             t4.start();
         }
         //Kijken of hij niet alleen in het netwerk zit en dat de volgende node de gefaalde node is.
-        if(ownHash != nextHash && hashFailed == nextHash && nextHash != hashStart) {
+        if(ownHash != nextHash && hashFailed == nextHash && hashFailed != prevHash && nextHash != hashStart) {
             Thread t5 = new Thread(() -> {
                 try {
                     //Volgende node is de gefaalde node dus agent moet deze overslaan en naar de volgende node in de cycle gaan (=volgende buur van de gefaalde node).
@@ -430,6 +430,10 @@ public class Node implements NodeInterface {
                 }
             });
             t5.start();
+        }
+        if(prevHash == hashFailed && nextHash == hashFailed) {
+            FailureHandler failureHandler = new FailureHandler(hashFailed, this);
+            failureHandler.repairFailedNode();
         }
     }
 
