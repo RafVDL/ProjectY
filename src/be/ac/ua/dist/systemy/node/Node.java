@@ -329,6 +329,7 @@ public class Node implements NodeInterface {
                 }
 
             });
+            String fileLockRequest = getFileLockRequest();
             if (!grantedDownloadFile.equals("null")&&!grantedDownloadFile.equals("downloading")) { //download file
                 Thread t3 = new Thread(() -> {
                     try {
@@ -350,7 +351,7 @@ public class Node implements NodeInterface {
                     if (ownerAddress.equals(ownAddress)) {
                         System.out.println("You are the owner");
                         grantedDownloadFile = "null";
-                        allFiles.put(getFileLockRequest(), 0);
+                        allFiles.put(fileLockRequest, 0);
                     } else {
                         downloadFile(Constants.LOCAL_FILES_PATH + grantedDownloadFile, Constants.DOWNLOADED_FILES_PATH + grantedDownloadFile, ownerAddress);
                         grantedDownloadFile = "downloading";
