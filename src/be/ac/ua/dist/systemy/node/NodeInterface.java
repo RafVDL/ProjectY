@@ -15,6 +15,8 @@ public interface NodeInterface extends Remote {
 
     int getPrevHash() throws RemoteException;
 
+    int getNextHash() throws RemoteException;
+
     InetAddress getPrevAddress() throws RemoteException;
 
     InetAddress getNextAddress() throws RemoteException;

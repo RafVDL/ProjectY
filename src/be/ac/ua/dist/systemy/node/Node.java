@@ -89,6 +89,11 @@ public class Node implements NodeInterface {
         return prevHash;
     }
 
+    @Override
+    public int getNextHash() {
+        return nextHash;
+    }
+
     public void setNamingServerAddress(InetAddress ipAddress) {
         this.namingServerAddress = ipAddress;
     }
@@ -413,6 +418,7 @@ public class Node implements NodeInterface {
                     else {
                         FailureHandler failureHandler = new FailureHandler(hashFailed, this);
                         failureHandler.repairFailedNode();
+                        //Check of er meer dan 1 node in netwerk is
                         if (ownHash != stub.getOwnHash()) {
                             stub.runFileAgent(fileAgentFiles);
                         }

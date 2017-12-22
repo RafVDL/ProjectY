@@ -22,9 +22,12 @@ public class FailureAgent implements Runnable, Serializable {
     private InetAddress nsAddress;
     private InetAddress ownerAddressForThisFile;
     private InetAddress addressOfPrevNeighbour;
+    private InetAddress addressOfNextNeighbour;
     private InetAddress localAddress;
     private int ownerHashForThisFile;
+    private int hashOfThisNode;
     private int hashOfPrevNeighbour;
+    private int hashOfNextNeighbour;
     private int localHash;
     private Collection<FileHandle> localFiles;
     private Collection<FileHandle> replicatedFiles;
@@ -65,8 +68,13 @@ public class FailureAgent implements Runnable, Serializable {
                     //Bestand sturen naar nieuwe node, deze node zal de vorige buur zijn van de gefaalde node
                     neighboursOfFailed = namingServerStub.getNeighbours(hashFailed);
                     hashOfPrevNeighbour = neighboursOfFailed[0];
+                    hashOfNextNeighbour = neighboursOfFailed[1];
                     addressOfPrevNeighbour = namingServerStub.getIPNode(hashOfPrevNeighbour);
-                    currNodeStub.replicateFailed(fileHandle, addressOfPrevNeighbour);
+                    addressOfNextNeighbour = namingServerStub.getIPNode((hashOfNextNeighbour));
+                    //Checken of node niet alleen in het netwerk zit
+                    if(!(addressOfPrevNeighbour == currNode && addressOfNextNeighbour == currNode)) {
+                        currNodeStub.replicateFailed(fileHandle, addressOfPrevNeighbour);
+                    }
                 }
             }
 
@@ -74,8 +82,10 @@ public class FailureAgent implements Runnable, Serializable {
             for (FileHandle fileHandle : replicatedFiles) {
                 localAddress = fileHandle.getLocalAddress();
                 localHash = namingServerStub.getHashOfAddress(localAddress);
-                //Bestand dat op deze node gerepliceerd is, is lokaal op gefaalde node
-                if (localHash == hashFailed){
+                hashOfPrevNeighbour = currNodeStub.getPrevHash();
+                hashOfNextNeighbour = currNodeStub.getNextHash();
+                //Bestand dat op deze node gerepliceerd is, is lokaal op gefaalde node en checken of node niet alleen in netwerk zit
+                if (localHash == hashFailed && hashOfNextNeighbour != hashFailed && hashOfPrevNeighbour != hashFailed){
                     //Bestand moet nu lokaal op deze node bijgehouden worden en opnieuw gerepliceerd worden
                     fileHandle.setLocalAddress(currNode);
                     //Verander map van file
