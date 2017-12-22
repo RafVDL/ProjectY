@@ -59,6 +59,7 @@ public class FileHandle implements Serializable {
     public FileHandle getAsLocal() {
         FileHandle fileHandle = new FileHandle(fileName, true);
         fileHandle.downloads = downloads;
+        fileHandle.localAddress = localAddress;
         fileHandle.availableNodes.addAll(availableNodes);
         return fileHandle;
     }
@@ -66,6 +67,7 @@ public class FileHandle implements Serializable {
     public FileHandle getAsReplicated() {
         FileHandle fileHandle = new FileHandle(fileName, false);
         fileHandle.downloads = downloads;
+        fileHandle.localAddress = localAddress;
         fileHandle.availableNodes.addAll(availableNodes);
         return fileHandle;
     }
