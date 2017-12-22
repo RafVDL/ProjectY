@@ -373,65 +373,70 @@ public class Node implements NodeInterface {
 
     @Override
     public void runFailureAgent(int hashFailed, int hashStart, InetAddress currNode) throws InterruptedException, RemoteException, NotBoundException {
-        Thread t = new Thread(new FailureAgent(hashFailed, hashStart, currNode));
-        t.start();
-        t.join(); //wait for thread to stop
-        //Kijken of hij niet alleen in het netwerk zit en dat zijn volgende node niet de gefaalde node is.
-        if (ownHash != nextHash && hashFailed != nextHash && hashStart != nextHash) {
-            Thread t4 = new Thread(() -> {
-                try {
-                    Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
-                    NodeInterface stub = (NodeInterface) registry.lookup("Node");
-                    //Check of volgende node niet de node is waarop de failureagent is gestart
-                    if (hashStart != stub.getOwnHash()) {
+        //failureAgent niet starten als er maar 2 nodes in het netwerk zitten waarvan er 1 gefaald is
+        if(!(hashFailed == prevHash && hashFailed == nextHash)) {
+            Thread t = new Thread(new FailureAgent(hashFailed, hashStart, currNode));
+            t.start();
+            t.join(); //wait for thread to stop
+            //Kijken of hij niet alleen in het netwerk zit en dat zijn volgende node niet de gefaalde node is.
+            if (ownHash != nextHash && hashFailed != nextHash && hashStart != nextHash) {
+                Thread t4 = new Thread(() -> {
+                    try {
+                        Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
+                        NodeInterface stub = (NodeInterface) registry.lookup("Node");
                         stub.runFailureAgent(hashFailed, hashStart, nextAddress);
+                    } catch (RemoteException | NotBoundException | InterruptedException e) {
+                        e.printStackTrace();
                     }
-                    //Volgende node is de node waarop de agent is gestart, dus gefaalde node mag uit netwerk verwijderd worden
-                    else {
-                        FailureHandler handler = new FailureHandler(hashFailed, this);
-                        handler.repairFailedNode();
-                        stub.runFileAgent(fileAgentFiles);
-                    }
-                } catch (RemoteException | NotBoundException | InterruptedException e) {
-                    e.printStackTrace();
-                }
-            });
-            t4.start();
-        }
-        //Kijken of hij niet alleen in het netwerk zit en dat de volgende node de gefaalde node is.
-        if(ownHash != nextHash && hashFailed == nextHash && hashFailed != prevHash && nextHash != hashStart) {
-            Thread t5 = new Thread(() -> {
-                try {
-                    //Volgende node is de gefaalde node dus agent moet deze overslaan en naar de volgende node in de cycle gaan (=volgende buur van de gefaalde node).
-                    Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
-                    NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
-                    int[] neighboursOfFailed = namingServerStub.getNeighbours(hashFailed);
-                    int hashOfNextNeighbour = neighboursOfFailed[1];
-                    InetAddress addressOfNextNeighbour = namingServerStub.getIPNode(hashOfNextNeighbour);
+                });
+                t4.start();
+            }
+            //Kijken of hij niet alleen in het netwerk zit en dat de volgende node de gefaalde node is.
+            if (hashFailed == nextHash && hashFailed != prevHash && nextHash != hashStart) {
+                Thread t5 = new Thread(() -> {
+                    try {
+                        //Volgende node is de gefaalde node dus agent moet deze overslaan en naar de volgende node in de cycle gaan (=volgende buur van de gefaalde node).
+                        Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
+                        NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+                        int[] neighboursOfFailed = namingServerStub.getNeighbours(hashFailed);
+                        int hashOfNextNeighbour = neighboursOfFailed[1];
+                        InetAddress addressOfNextNeighbour = namingServerStub.getIPNode(hashOfNextNeighbour);
 
-                    Registry registry = LocateRegistry.getRegistry(addressOfNextNeighbour.getHostAddress(), RMI_PORT);
-                    NodeInterface stub = (NodeInterface) registry.lookup("Node");
-                    //Check of volgende node niet de node is waarop de failureagent is gestart
-                    if (hashStart != stub.getOwnHash()) {
-                        stub.runFailureAgent(hashFailed, hashStart, nextAddress);
-                    }
-                    //Volgende node na de gefaalde node is de node waarop de agent is gestart dus gefaalde node mag uit het netwerk verwijderd worden
-                    else {
-                        FailureHandler failureHandler = new FailureHandler(hashFailed, this);
-                        failureHandler.repairFailedNode();
-                        //Check of er meer dan 1 node in netwerk is
-                        if (ownHash != stub.getOwnHash()) {
+                        Registry registry = LocateRegistry.getRegistry(addressOfNextNeighbour.getHostAddress(), RMI_PORT);
+                        NodeInterface stub = (NodeInterface) registry.lookup("Node");
+                        //Checken of volgende buur van de gefaalde node niet de node is waarop de agent werd gestart
+                        if(hashOfNextNeighbour != hashStart) {
+                            stub.runFailureAgent(hashFailed, hashStart, addressOfNextNeighbour);
+                        }
+                        else {
+                            FailureHandler failureHandler = new FailureHandler(hashFailed, this);
+                            failureHandler.repairFailedNode();
                             stub.runFileAgent(fileAgentFiles);
                         }
+                    } catch (RemoteException | NotBoundException | InterruptedException e) {
+                        e.printStackTrace();
                     }
-
-                } catch (RemoteException | NotBoundException | InterruptedException e) {
-                    e.printStackTrace();
-                }
-            });
-            t5.start();
+                });
+                t5.start();
+            }
+            //Agent is de kring rond gegaan
+            if (nextHash == hashStart) {
+                Thread t6 = new Thread(() -> {
+                    try {
+                        Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
+                        NodeInterface stub = (NodeInterface) registry.lookup("Node");
+                        FailureHandler failureHandler = new FailureHandler(hashFailed, this);
+                        failureHandler.repairFailedNode();
+                        stub.runFileAgent(fileAgentFiles);
+                    } catch (RemoteException | NotBoundException | InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                });
+                t6.start();
+            }
         }
-        if(prevHash == hashFailed && nextHash == hashFailed) {
+        //node zit alleen in het netwerk, gefaalde node mag eruit verwijderd worden
+        else {
             FailureHandler failureHandler = new FailureHandler(hashFailed, this);
             failureHandler.repairFailedNode();
         }
