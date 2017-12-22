@@ -73,5 +73,7 @@ public interface NodeInterface extends Remote {
 
     Map<String, Integer> getAllFiles() throws RemoteException;
 
+    InetAddress getLocalAddressOfFile(String filename) throws RemoteException;
+
 
 }

@@ -334,6 +334,9 @@ public class Node implements NodeInterface {
                         Registry namingServerRegistry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
                         NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
                         ownerAddress = namingServerStub.getOwner(grantedDownloadFile);
+                        Registry registry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), RMI_PORT);
+                        NodeInterface ownerStub = (NodeInterface) registry.lookup("Node");
+                        ownerAddress = ownerStub.getLocalAddressOfFile(grantedDownloadFile);
                     } catch (IOException | NotBoundException e) {
                         e.printStackTrace();
                     }
@@ -341,7 +344,7 @@ public class Node implements NodeInterface {
                     if (ownerAddress == null) {
                         //Error
                     } else {
-                        downloadFile(LOCAL_FILES_PATH + grantedDownloadFile, DOWNLOADED_FILES_PATH + grantedDownloadFile, ownerAddress);
+                        downloadFile(Constants.LOCAL_FILES_PATH + grantedDownloadFile, Constants.DOWNLOADED_FILES_PATH + grantedDownloadFile, ownerAddress);
                         grantedDownloadFile = "downloading";
                     }
                 });
@@ -537,6 +540,10 @@ public class Node implements NodeInterface {
 
     public void setRunning(boolean running) {
         this.running = running;
+    }
+
+    public InetAddress getLocalAddressOfFile(String filename){
+        return ownerFiles.get(filename).getLocalAddress();
     }
 
     /**
