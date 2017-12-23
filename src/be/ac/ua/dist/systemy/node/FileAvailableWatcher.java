@@ -28,6 +28,7 @@ public class FileAvailableWatcher implements Runnable {
             }
         } while (!Files.isReadable(file.toPath()));
         FileHandle fileHandle = new FileHandle(file.getName(), file.getParent().equals(Constants.LOCAL_FILES_PATH.substring(0, Constants.LOCAL_FILES_PATH.length() - 1)));
+        fileHandle.setLocalAddress(node.getOwnAddress());
         node.addFileToNetwork(fileHandle);
     }
 }

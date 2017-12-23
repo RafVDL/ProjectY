@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static be.ac.ua.dist.systemy.Constants.DOWNLOADED_FILES_PATH;
+import static be.ac.ua.dist.systemy.Constants.LOCAL_FILES_PATH;
 import static be.ac.ua.dist.systemy.Constants.RMI_PORT;
 
 public class Node implements NodeInterface {
@@ -39,15 +40,13 @@ public class Node implements NodeInterface {
     private Map<String, FileHandle> ownerFiles;
     private Set<String> downloadingFiles;
     private ObservableMap<String, Integer> allFiles;
-    private TreeMap<String, Integer> files;
+    private TreeMap<String, Integer> fileAgentFiles;
 
 
     private volatile InetAddress namingServerAddress;
     private InetAddress prevAddress;
     private InetAddress nextAddress;
-
-    private int hashFailedNode;
-    private int hashStartNode;
+    private InetAddress ownerAddress;
 
     private volatile int prevHash;
     private volatile int nextHash;
@@ -60,6 +59,7 @@ public class Node implements NodeInterface {
 
     public Node(String nodeName, InetAddress address) throws UnknownHostException {
         this.ownAddress = address;
+        this.ownerAddress = ownAddress;
         this.ownHash = calculateHash(nodeName);
         this.allFiles = FXCollections.observableMap(new TreeMap<>());
         this.grantedDownloadFile = "null";
@@ -96,6 +96,11 @@ public class Node implements NodeInterface {
         return prevHash;
     }
 
+    @Override
+    public int getNextHash() {
+        return nextHash;
+    }
+
     public void setNamingServerAddress(InetAddress ipAddress) {
         this.namingServerAddress = ipAddress;
     }
@@ -125,6 +130,14 @@ public class Node implements NodeInterface {
             if (ownHash == value) fileLockRequest.set(key);
         });
         return fileLockRequest.get();
+    }
+
+    public void downloadAFile(String filename){
+        if(allFiles.containsKey(filename)) {
+            allFiles.put(filename, ownHash);
+        } else {
+            System.out.println("File does not exist or you are the owner, try again");
+        }
     }
 
     public ObservableMap<String, Integer> getAllFiles() {
@@ -165,14 +178,8 @@ public class Node implements NodeInterface {
         this.allFiles.put(file, value);
     }
 
-    public void emptyAllFileList() {
-        if (allFiles != null) {
-            this.allFiles.clear();
-        }
-    }
-
-    public void setFiles(TreeMap<String, Integer> files) {
-        this.files = files;
+    public void setFileAgentFiles(TreeMap<String, Integer> files) {
+        this.fileAgentFiles = files;
     }
 
     public void setDownloadFileGranted(String download) {
@@ -302,71 +309,143 @@ public class Node implements NodeInterface {
         prevHash = newHash;
     }
 
+    /**
+     * Starts running the file agent, this method can be run via RMI
+     *
+     * @param fileAgentFiles: list of all files
+     *             String: filename
+     *             Integer: hash of node that has a lock request on that file
+     */
     @Override
-    public void runFileAgent(TreeMap<String, Integer> files) throws InterruptedException, RemoteException, NotBoundException {
-        Thread t = new Thread(new FileAgent(files, ownAddress));
+    public void runFileAgent(TreeMap<String, Integer> fileAgentFiles) throws InterruptedException, RemoteException, NotBoundException {
+        ownerAddress = ownAddress;
+        Thread t = new Thread(new FileAgent(fileAgentFiles, ownAddress));
         t.start();
         t.join(); //wait for thread to stop
-        if (ownHash != nextHash) {
+        if (ownHash != nextHash) { //check if not alone in network
             Thread t2 = new Thread(() -> {
                 try {
                     Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
                     NodeInterface stub = (NodeInterface) registry.lookup("Node");
-                    stub.runFileAgent(files);
+                    stub.runFileAgent(fileAgentFiles);
                 } catch (RemoteException | NotBoundException | InterruptedException e) {
-                    e.printStackTrace();
+                    try {
+                        //failureAgent wordt voor de eerste keer gestart en zal uitgevoerd vooraleer de fileAgent terug zal worden opgestart
+                        runFailureAgent(nextHash,ownHash,ownAddress);
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                    } catch (RemoteException e1) {
+                        e1.printStackTrace();
+                    } catch (NotBoundException e1) {
+                        e1.printStackTrace();
+                    }
                 }
 
             });
-            if (!grantedDownloadFile.equals("null")) { //download file
+            String fileLockRequest = getFileLockRequest();
+            if (!grantedDownloadFile.equals("null")&&!grantedDownloadFile.equals("downloading")&&!fileLockRequest.equals("null")) { //download file
                 Thread t3 = new Thread(() -> {
-                    InetAddress ownerAddress = null;
                     try {
                         // Get ownerAddress from NamingServer via RMI.
                         Registry namingServerRegistry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
                         NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
                         ownerAddress = namingServerStub.getOwner(grantedDownloadFile);
+                        if(ownerAddress.equals(ownAddress)){
+                            ownerAddress = getLocalAddressOfFile(grantedDownloadFile);
+                        } else {
+                            Registry registry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), RMI_PORT);
+                            NodeInterface ownerStub = (NodeInterface) registry.lookup("Node");
+                            ownerAddress = ownerStub.getLocalAddressOfFile(grantedDownloadFile);
+                        }
                     } catch (IOException | NotBoundException e) {
                         e.printStackTrace();
                     }
 
-                    if (ownerAddress == null) {
-                        //Error
+                    if (ownerAddress.equals(ownAddress)) {
+                        System.out.println("You are the owner");
+                        grantedDownloadFile = "null";
+                        allFiles.put(fileLockRequest, 0);
                     } else {
-                        downloadFile(grantedDownloadFile, DOWNLOADED_FILES_PATH + grantedDownloadFile, ownerAddress);
+                        downloadFile(Constants.LOCAL_FILES_PATH + grantedDownloadFile, Constants.DOWNLOADED_FILES_PATH + grantedDownloadFile, ownerAddress);
                         grantedDownloadFile = "downloading";
                     }
                 });
                 t3.start();
+                Thread.sleep(1000);
             }
             t2.start();
         }
-
-
     }
 
     @Override
     public void runFailureAgent(int hashFailed, int hashStart, InetAddress currNode) throws InterruptedException, RemoteException, NotBoundException {
-        Thread t = new Thread(new FailureAgent(hashFailedNode, hashStartNode, ownAddress));
-        t.start();
-        t.join(); //wait for thread to stop
-        if (ownHash != nextHash) {
-            Thread t2 = new Thread(() -> {
-                try {
-                    Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
-                    NodeInterface stub = (NodeInterface) registry.lookup("Node");
-                    //Check of volgende node niet de node is waarop de failureagent is gestart
-                    if (hashStart != stub.getOwnHash()) {
-                        stub.runFailureAgent(hashFailedNode, hashStartNode, nextAddress);
+        //failureAgent niet starten als er maar 2 nodes in het netwerk zitten waarvan er 1 gefaald is
+        if(!(hashFailed == prevHash && hashFailed == nextHash)) {
+            Thread t = new Thread(new FailureAgent(hashFailed, hashStart, currNode));
+            t.start();
+            t.join(); //wait for thread to stop
+            //Kijken of hij niet alleen in het netwerk zit en dat zijn volgende node niet de gefaalde node is.
+            if (ownHash != nextHash && hashFailed != nextHash && hashStart != nextHash) {
+                Thread t4 = new Thread(() -> {
+                    try {
+                        Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
+                        NodeInterface stub = (NodeInterface) registry.lookup("Node");
+                        stub.runFailureAgent(hashFailed, hashStart, nextAddress);
+                    } catch (RemoteException | NotBoundException | InterruptedException e) {
+                        e.printStackTrace();
                     }
-                } catch (RemoteException | NotBoundException | InterruptedException e) {
-                    e.printStackTrace();
-                }
-            });
-            t2.start();
+                });
+                t4.start();
+            }
+            //Kijken of hij niet alleen in het netwerk zit en dat de volgende node de gefaalde node is.
+            if (hashFailed == nextHash && hashFailed != prevHash && nextHash != hashStart) {
+                Thread t5 = new Thread(() -> {
+                    try {
+                        //Volgende node is de gefaalde node dus agent moet deze overslaan en naar de volgende node in de cycle gaan (=volgende buur van de gefaalde node).
+                        Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
+                        NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+                        int[] neighboursOfFailed = namingServerStub.getNeighbours(hashFailed);
+                        int hashOfNextNeighbour = neighboursOfFailed[1];
+                        InetAddress addressOfNextNeighbour = namingServerStub.getIPNode(hashOfNextNeighbour);
+
+                        Registry registry = LocateRegistry.getRegistry(addressOfNextNeighbour.getHostAddress(), RMI_PORT);
+                        NodeInterface stub = (NodeInterface) registry.lookup("Node");
+                        //Checken of volgende buur van de gefaalde node niet de node is waarop de agent werd gestart
+                        if(hashOfNextNeighbour != hashStart) {
+                            stub.runFailureAgent(hashFailed, hashStart, addressOfNextNeighbour);
+                        }
+                        else {
+                            FailureHandler failureHandler = new FailureHandler(hashFailed, this);
+                            failureHandler.repairFailedNode();
+                            stub.runFileAgent(fileAgentFiles);
+                        }
+                    } catch (RemoteException | NotBoundException | InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                });
+                t5.start();
+            }
+            //Agent is de kring rond gegaan
+            if (nextHash == hashStart) {
+                Thread t6 = new Thread(() -> {
+                    try {
+                        Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
+                        NodeInterface stub = (NodeInterface) registry.lookup("Node");
+                        FailureHandler failureHandler = new FailureHandler(hashFailed, this);
+                        failureHandler.repairFailedNode();
+                        stub.runFileAgent(fileAgentFiles);
+                    } catch (RemoteException | NotBoundException | InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                });
+                t6.start();
+            }
         }
-
-
+        //node zit alleen in het netwerk, gefaalde node mag eruit verwijderd worden
+        else {
+            FailureHandler failureHandler = new FailureHandler(hashFailed, this);
+            failureHandler.repairFailedNode();
+        }
     }
 
     /**
@@ -506,6 +585,10 @@ public class Node implements NodeInterface {
         this.running = running;
     }
 
+    public InetAddress getLocalAddressOfFile(String filename){
+        return ownerFiles.get(filename).getLocalAddress();
+    }
+
     /**
      * Iterates through all files in the LOCAL_FILES_PATH and introduces each one in the network.
      */
@@ -519,6 +602,7 @@ public class Node implements NodeInterface {
             if (file.isFile()) {
                 System.out.println("Found file " + file.getName());
                 FileHandle fileHandle = new FileHandle(file.getName(), true);
+                fileHandle.setLocalAddress(ownAddress);
                 addFileToNetwork(fileHandle);
             } else if (file.isDirectory()) {
                 System.out.println("Not checking files in nested folder " + file.getName());
@@ -639,6 +723,43 @@ public class Node implements NodeInterface {
 
             replicatedFiles.remove(fileHandle.getFile().getName());
             ownerFiles.remove(fileHandle.getFile().getName());
+        }
+    }
+
+    public void replicateFailed(FileHandle fileHandle, InetAddress receiveAddress) throws RemoteException, NotBoundException, UnknownHostException {
+        File file = fileHandle.getFile();
+
+        if (receiveAddress == null) // no owner
+            return;
+
+        if (receiveAddress.equals(nextAddress)) {
+            ownerFiles.put(fileHandle.getFile().getName(), fileHandle);
+            return;
+        }
+
+        Registry nodeRegistry;
+        if (receiveAddress.equals(ownAddress)) {
+            //Replicate to previous node
+            nodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
+        }
+
+        else {
+            // Replicate to receive node
+            nodeRegistry = LocateRegistry.getRegistry(receiveAddress.getHostAddress(), Constants.RMI_PORT);
+        }
+
+        NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
+        nodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
+
+        fileHandle.getAvailableNodes().add(receiveAddress.equals(ownAddress) ? prevHash : nodeStub.getOwnHash());
+
+        FileHandle newFileHandle = fileHandle.getAsReplicated();
+        nodeStub.addReplicatedFileList(newFileHandle);
+
+        if (receiveAddress.equals(ownAddress)) {
+            ownerFiles.put(newFileHandle.getFile().getName(), fileHandle);
+        } else {
+            nodeStub.addOwnerFileList(newFileHandle);
         }
     }
 
@@ -1014,7 +1135,18 @@ public class Node implements NodeInterface {
                     break;
 
                 case "allfiles":
-                    System.out.println("All files: " + node.files);
+                    System.out.println("All files: " + node.allFiles);
+                    break;
+
+                case "fafiles":
+                    System.out.println("All fileagentfiles: " + node.fileAgentFiles);
+                    break;
+
+                case "dl":
+                    System.out.print("Enter filename to download: ");
+                    node.downloadAFile(sc.nextLine());
+                    break;
+
             }
         }
     }

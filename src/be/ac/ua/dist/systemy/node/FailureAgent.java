@@ -3,15 +3,16 @@ package be.ac.ua.dist.systemy.node;
 import be.ac.ua.dist.systemy.Constants;
 import be.ac.ua.dist.systemy.namingServer.NamingServerInterface;
 
+
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.rmi.NotBoundException;
-import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Collection;
-import java.util.*;
+
 
 public class FailureAgent implements Runnable, Serializable {
 
@@ -20,12 +21,16 @@ public class FailureAgent implements Runnable, Serializable {
     private InetAddress currNode;
     private InetAddress nsAddress;
     private InetAddress ownerAddressForThisFile;
+    private InetAddress addressOfPrevNeighbour;
+    private InetAddress localAddress;
     private int ownerHashForThisFile;
+    private int hashOfPrevNeighbour;
+    private int localHash;
     private Collection<FileHandle> localFiles;
     private Collection<FileHandle> replicatedFiles;
     private String currFile;
-
-
+    private int[] neighboursOfFailed;
+    private String newFileName;
 
     public FailureAgent(int hashFailed, int hashStart, InetAddress currNode) { //integer is hash of node that is downloading file
         this.hashFailed = hashFailed;
@@ -36,6 +41,7 @@ public class FailureAgent implements Runnable, Serializable {
     public void run() {
         //initialize rmi connection
         try {
+            System.out.println("running FailureAgent");
             Registry currNodeRegistry = LocateRegistry.getRegistry(currNode.getHostAddress(), Constants.RMI_PORT);
             NodeInterface currNodeStub = (NodeInterface) currNodeRegistry.lookup("Node");
             localFiles = currNodeStub.getLocalFiles().values();
@@ -56,32 +62,31 @@ public class FailureAgent implements Runnable, Serializable {
                 ownerHashForThisFile = namingServerStub.getHashOfAddress(ownerAddressForThisFile);
                 //Bestand gerepliceerd op failed node dus naar nieuwe eigenaar sturen
                 if (ownerHashForThisFile == hashFailed) {
-                    //Bestand sturen naar nieuwe node ??? currNodeStub.replicateToNewNode() ???
+                    //Bestand sturen naar nieuwe node, deze node zal de vorige buur zijn van de gefaalde node
+                    neighboursOfFailed = namingServerStub.getNeighbours(hashFailed);
+                    hashOfPrevNeighbour = neighboursOfFailed[0];
+                    addressOfPrevNeighbour = namingServerStub.getIPNode(hashOfPrevNeighbour);
+                    currNodeStub.replicateFailed(fileHandle, addressOfPrevNeighbour);
                 }
             }
-
 
             //Stap 2: We bekijken of een of meerdere gerepliceerde bestanden van deze node lokaal zijn op de gefaalde node.
             for (FileHandle fileHandle : replicatedFiles) {
-                currFile = fileHandle.getFile().getName();
-                //Kijken of file naar failed node verwijst
-                //Local eigenaar krijgen van NS
-                //Indien Local = failed node --> deze node eigenaar maken van bestand en op nieuwe node repliceren + ns informeren
-                /*
-                ownerAddressForThisFile = namingServerStub.getOwner(currFile);
-                ownerHashForThisFile = namingServerStub.getHashOfAddress(ownerAddressForThisFile);
-                //Bestand gerepliceerd op failed node dus naar nieuwe eigenaar sturen
-                if (ownerHashForThisFile == hashFailed) {
-
-
+                localAddress = fileHandle.getLocalAddress();
+                localHash = namingServerStub.getHashOfAddress(localAddress);
+                //Bestand dat op deze node gerepliceerd is, is lokaal op gefaalde node en checken of node niet alleen in netwerk zit
+                if (localHash == hashFailed){
+                    //Bestand moet nu lokaal op deze node bijgehouden worden en opnieuw gerepliceerd worden
+                    fileHandle.setLocalAddress(currNode);
+                    //Verander map van file
+                    //newFileName =  Constants.LOCAL_FILES_PATH + fileHandle.getFile().getName();
+                    //File currFile = fileHandle.getFile();
+                    //currFile.renameTo(new File(newFileName));
+                    currNodeStub.replicateWhenJoining(fileHandle);
                 }
-                */
             }
-
-
         } catch (IOException | NotBoundException e) {
             e.printStackTrace();
-
         }
     }
 }

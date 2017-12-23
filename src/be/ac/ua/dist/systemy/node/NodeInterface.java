@@ -1,6 +1,7 @@
 package be.ac.ua.dist.systemy.node;
 
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -13,6 +14,8 @@ public interface NodeInterface extends Remote {
     int getOwnHash() throws RemoteException;
 
     int getPrevHash() throws RemoteException;
+
+    int getNextHash() throws RemoteException;
 
     InetAddress getPrevAddress() throws RemoteException;
 
@@ -50,8 +53,6 @@ public interface NodeInterface extends Remote {
 
     void runFailureAgent(int hashFailed, int hashStart, InetAddress currNode) throws RemoteException, InterruptedException, NotBoundException;
 
-    void emptyAllFileList() throws RemoteException;
-
     void addAllFileList(String file, int value) throws RemoteException;
 
     String getFileLockRequest() throws RemoteException;
@@ -62,11 +63,19 @@ public interface NodeInterface extends Remote {
 
     Set getDownloadingFiles() throws RemoteException;
 
-    void setFiles(TreeMap<String, Integer> files) throws RemoteException;
+    void setFileAgentFiles(TreeMap<String, Integer> files) throws RemoteException;
 
     int calculateHash(String name) throws RemoteException;
 
     InetAddress getNamingServerAddress() throws RemoteException;
+
+    void replicateFailed(FileHandle fileHandle, InetAddress receiveAddress) throws RemoteException,NotBoundException, UnknownHostException;
+
+    void replicateWhenJoining(FileHandle fileHandle) throws RemoteException,NotBoundException, UnknownHostException;
+
+    Map<String, Integer> getAllFiles() throws RemoteException;
+
+    InetAddress getLocalAddressOfFile(String filename) throws RemoteException;
 
 
 }
