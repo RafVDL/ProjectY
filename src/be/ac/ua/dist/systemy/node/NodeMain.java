@@ -2,9 +2,11 @@ package be.ac.ua.dist.systemy.node;
 
 import be.ac.ua.dist.systemy.node.GUI.LaunchController;
 import javafx.application.Application;
+import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
 public class NodeMain extends Application {
     private static Node node;
@@ -21,6 +23,8 @@ public class NodeMain extends Application {
         primaryStage.setScene(new Scene(loader.load()));
         primaryStage.setTitle("Node launcher");
         primaryStage.show();
+
+        primaryStage.setOnCloseRequest(event -> node.shutdown());
     }
 
     public static Node getNode() {

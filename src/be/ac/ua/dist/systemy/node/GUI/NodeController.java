@@ -32,4 +32,19 @@ public class NodeController {
         alert.setContentText("The node was not initialised when launching the gui. Please restart.");
         alert.showAndWait();
     }
+
+    @FXML
+    private void handleOpen(){
+        System.out.println("Open button pressed");
+    }
+
+    @FXML
+    private void handleDelete(){
+        System.out.println("Delete button pressed");
+    }
+
+    @FXML
+    private void handleDeleteLocal(){
+        System.out.println("Delete local button pressed");
+    }
 }
