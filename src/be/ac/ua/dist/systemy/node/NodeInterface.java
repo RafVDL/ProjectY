@@ -77,8 +77,6 @@ public interface NodeInterface extends Remote {
 
     Map<String, Integer> getAllFiles() throws RemoteException;
 
-    ObservableMap<String, Integer> getAllFilesObservable() throws RemoteException;
-
     InetAddress getLocalAddressOfFile(String filename) throws RemoteException;
 
 

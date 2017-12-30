@@ -21,8 +21,8 @@ public class NodeController {
             showNodeStartError();
             Platform.exit();
         }
-        System.out.println("Allfiles: " + node.getAllFilesObservable().entrySet().size());
-        fileListView.getItems().addAll(node.getAllFilesObservable().keySet());
+
+        fileListView.setItems(node.getAllFilesObservable());
     }
 
     private void showNodeStartError() {
@@ -34,17 +34,23 @@ public class NodeController {
     }
 
     @FXML
-    private void handleOpen(){
+    private void handleOpen() {
         System.out.println("Open button pressed");
     }
 
     @FXML
-    private void handleDelete(){
+    private void handleDelete() {
         System.out.println("Delete button pressed");
     }
 
     @FXML
-    private void handleDeleteLocal(){
+    private void handleDeleteLocal() {
         System.out.println("Delete local button pressed");
+    }
+
+    @FXML
+    private void handlePrintObservable() {
+        System.out.println("Contents of the observable: " + node.getAllFilesObservable());
+        System.out.println("Contents of the map: " + node.getAllFiles());
     }
 }

@@ -16,6 +16,7 @@
             <Button fx:id="openBtn" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handleOpen" prefHeight="50.0" text="Open" />
             <Button fx:id="deleteBtn" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handleDelete" prefHeight="50.0" text="Delete" />
             <Button fx:id="deleteLocalBtn" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handleDeleteLocal" prefHeight="50.0" text="Delete Local" />
+            <Button fx:id="PrintObservableBtn" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handlePrintObservable" prefHeight="50.0" text="PrintObservable" />
          </children>
          <padding>
             <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
