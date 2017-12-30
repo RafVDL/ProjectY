@@ -1,13 +1,15 @@
 package be.ac.ua.dist.systemy.node;
 
+import javafx.collections.ObservableMap;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.NotBoundException;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 
 public interface NodeInterface extends Remote {
 
@@ -49,7 +51,7 @@ public interface NodeInterface extends Remote {
 
     void updatePrev(InetAddress newAddress, int newHash) throws RemoteException;
 
-    void runFileAgent(TreeMap<String, Integer> files) throws RemoteException, InterruptedException, NotBoundException;
+    void runFileAgent(HashMap<String, Integer> files) throws RemoteException, InterruptedException, NotBoundException;
 
     void runFailureAgent(int hashFailed, int hashStart, InetAddress currNode) throws RemoteException, InterruptedException, NotBoundException;
 
@@ -63,17 +65,17 @@ public interface NodeInterface extends Remote {
 
     Set getDownloadingFiles() throws RemoteException;
 
-    void setFileAgentFiles(TreeMap<String, Integer> files) throws RemoteException;
+    void setFileAgentFiles(HashMap<String, Integer> files) throws RemoteException;
 
     int calculateHash(String name) throws RemoteException;
 
     InetAddress getNamingServerAddress() throws RemoteException;
 
-    void replicateFailed(FileHandle fileHandle, InetAddress receiveAddress) throws RemoteException,NotBoundException, UnknownHostException;
+    void replicateFailed(FileHandle fileHandle, InetAddress receiveAddress) throws RemoteException, NotBoundException, UnknownHostException;
 
-    void replicateWhenJoining(FileHandle fileHandle) throws RemoteException,NotBoundException, UnknownHostException;
+    void replicateWhenJoining(FileHandle fileHandle) throws RemoteException, NotBoundException, UnknownHostException;
 
-    Map<String, Integer> getAllFiles() throws RemoteException;
+    ObservableMap<String, Integer> getAllFilesObservable() throws RemoteException;
 
     InetAddress getLocalAddressOfFile(String filename) throws RemoteException;
 

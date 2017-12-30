@@ -39,8 +39,9 @@ public class Node implements NodeInterface {
     private Map<String, FileHandle> replicatedFiles;
     private Map<String, FileHandle> ownerFiles;
     private Set<String> downloadingFiles;
-    private ObservableMap<String, Integer> allFiles;
-    private TreeMap<String, Integer> fileAgentFiles;
+    private Map<String, Integer> allFiles;
+    private ObservableMap<String, Integer> allFilesObservable;
+    private HashMap<String, Integer> fileAgentFiles;
 
 
     private volatile InetAddress namingServerAddress;
@@ -61,7 +62,8 @@ public class Node implements NodeInterface {
         this.ownAddress = address;
         this.ownerAddress = ownAddress;
         this.ownHash = calculateHash(nodeName);
-        this.allFiles = FXCollections.observableMap(new TreeMap<>());
+        this.allFiles = new HashMap<>();
+        this.allFilesObservable = FXCollections.observableMap(new HashMap<>());
         this.grantedDownloadFile = "null";
 
         this.localFiles = new HashMap<>();
@@ -140,8 +142,8 @@ public class Node implements NodeInterface {
         }
     }
 
-    public ObservableMap<String, Integer> getAllFiles() {
-        return allFiles;
+    public ObservableMap<String, Integer> getAllFilesObservable() {
+        return allFilesObservable;
     }
 
     @Override
@@ -178,7 +180,7 @@ public class Node implements NodeInterface {
         this.allFiles.put(file, value);
     }
 
-    public void setFileAgentFiles(TreeMap<String, Integer> files) {
+    public void setFileAgentFiles(HashMap<String, Integer> files) {
         this.fileAgentFiles = files;
     }
 
@@ -317,11 +319,17 @@ public class Node implements NodeInterface {
      *             Integer: hash of node that has a lock request on that file
      */
     @Override
-    public void runFileAgent(TreeMap<String, Integer> fileAgentFiles) throws InterruptedException, RemoteException, NotBoundException {
+    public void runFileAgent(HashMap<String, Integer> fileAgentFiles) throws InterruptedException, RemoteException, NotBoundException {
         ownerAddress = ownAddress;
         Thread t = new Thread(new FileAgent(fileAgentFiles, ownAddress));
         t.start();
         t.join(); //wait for thread to stop
+
+        // Update the observable for the GUI
+        allFilesObservable.clear();
+        allFilesObservable.putAll(fileAgentFiles);
+
+
         if (ownHash != nextHash) { //check if not alone in network
             Thread t2 = new Thread(() -> {
                 try {
@@ -963,7 +971,7 @@ public class Node implements NodeInterface {
                 updatePrev(getOwnAddress(), getOwnHash());
                 updateNext(getOwnAddress(), getOwnHash());
             } else if (packet.getNodeCount() == 1) {
-                TreeMap<String, Integer> files = new TreeMap<>();
+                HashMap<String, Integer> files = new HashMap<>();
                 try {
                     Thread.sleep(5000);
                     runFileAgent(files);

@@ -21,8 +21,8 @@ public class NodeController {
             showNodeStartError();
             Platform.exit();
         }
-        System.out.println("Allfiles: " + node.getAllFiles().entrySet().size());
-        fileListView.getItems().addAll(node.getAllFiles().keySet());
+        System.out.println("Allfiles: " + node.getAllFilesObservable().entrySet().size());
+        fileListView.getItems().addAll(node.getAllFilesObservable().keySet());
     }
 
     private void showNodeStartError() {

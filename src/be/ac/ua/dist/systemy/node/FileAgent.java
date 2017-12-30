@@ -1,6 +1,7 @@
 package be.ac.ua.dist.systemy.node;
 
 import be.ac.ua.dist.systemy.Constants;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.InetAddress;
@@ -9,11 +10,11 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.TreeMap;
 
 public class FileAgent implements Runnable, Serializable {
-    private TreeMap<String, Integer> files;
+    private HashMap<String, Integer> files;
     private InetAddress nodeAddress;
     private Collection<String> localFiles;
     private String lockRequest;
@@ -21,10 +22,10 @@ public class FileAgent implements Runnable, Serializable {
     /**
      * Creates FileAgent
      *
-     * @param files: map of all files on the system with corresponding hash of node that has a lockrequest on this file
+     * @param files:       map of all files on the system with corresponding hash of node that has a lockrequest on this file
      * @param nodeAddress: InetAddress of the node on which the current FileAgent is running
      */
-    public FileAgent(TreeMap<String, Integer> files, InetAddress nodeAddress) {
+    public FileAgent(HashMap<String, Integer> files, InetAddress nodeAddress) {
         this.files = files;
         this.nodeAddress = nodeAddress;
     }
@@ -35,14 +36,14 @@ public class FileAgent implements Runnable, Serializable {
      * 1) Add new local files of node to allFiles in FileAgent
      * 2) update list of all files on the node
      * 3) check if node wants to download a file in the network
-     *          A node can only download one file at a time
+     * A node can only download one file at a time
      */
     public void run() {
         try { //Step 0
             Registry currNodeRegistry = LocateRegistry.getRegistry(nodeAddress.getHostAddress(), Constants.RMI_PORT);
             NodeInterface currNodeStub = (NodeInterface) currNodeRegistry.lookup("Node");
             localFiles = currNodeStub.getLocalFiles().keySet();
-            Map<String, Integer> allFilesNode = currNodeStub.getAllFiles();
+            Map<String, Integer> allFilesNode = currNodeStub.getAllFilesObservable();
             //Step 1
             for (String fileHandle : localFiles) {
                 files.putIfAbsent(fileHandle, 0);
@@ -51,14 +52,14 @@ public class FileAgent implements Runnable, Serializable {
             if (files != null) {
                 files.forEach((key, value) -> {
                     try {
-                        if(!allFilesNode.containsKey(key)) {
+                        if (!allFilesNode.containsKey(key)) {
                             currNodeStub.addAllFileList(key, 0);
                         }
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     }
                 });
-            //Step 3
+                //Step 3
                 lockRequest = currNodeStub.getFileLockRequest();
                 if (currNodeStub.getDownloadFileGranted().equals("downloading") && !currNodeStub.getDownloadingFiles().contains(currNodeStub.getFileLockRequest())) {//if file downloaded
                     currNodeStub.setDownloadFileGranted("null");                                                //reset nodes downloadfilegranted
