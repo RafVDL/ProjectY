@@ -59,7 +59,7 @@ public class LaunchController {
                 showIPNotLocal();
                 return;
             }
-            NodeMain.setNode(Node.startNode(enteredHostName, address));
+            NodeMain.setNode(Node.startNode(enteredHostName, address, true));
             primaryStage.close();
             startMainGUI();
 

@@ -51,13 +51,16 @@ public class Node implements NodeInterface {
     private volatile int prevHash;
     private volatile int nextHash;
 
-    private boolean running = true;
+    private boolean isRunning = true;
+    private boolean isGUIStarted;
 
     private InetAddress multicastGroup;
     private Server multicastServer;
     private Server tcpServer;
 
-    public Node(String nodeName, InetAddress address) throws UnknownHostException {
+    public Node(String nodeName, InetAddress address, boolean isGUIStarted) throws UnknownHostException {
+        this.isGUIStarted = isGUIStarted;
+
         this.ownAddress = address;
         this.ownerAddress = ownAddress;
         this.ownHash = calculateHash(nodeName);
@@ -316,7 +319,7 @@ public class Node implements NodeInterface {
     }
 
     /**
-     * Starts running the file agent, this method can be run via RMI
+     * Starts isRunning the file agent, this method can be run via RMI
      *
      * @param fileAgentFiles: list of all files
      *                        String: filename
@@ -329,11 +332,13 @@ public class Node implements NodeInterface {
         t.start();
         t.join(); //wait for thread to stop
 
-        // Update the observable for the GUI
-        Platform.runLater(() -> {
-            allFilesObservable.clear();
-            allFilesObservable.addAll(fileAgentFiles.keySet());
-        });
+        // Update the observable for the GUI is the node has a GUI
+        if (isGUIStarted) {
+            Platform.runLater(() -> {
+                allFilesObservable.clear();
+                allFilesObservable.addAll(fileAgentFiles.keySet());
+            });
+        }
 
 
         Thread t2 = new Thread(() -> {
@@ -589,11 +594,11 @@ public class Node implements NodeInterface {
     }
 
     public boolean isRunning() {
-        return running;
+        return isRunning;
     }
 
     public void setRunning(boolean running) {
-        this.running = running;
+        this.isRunning = running;
     }
 
     public InetAddress getLocalAddressOfFile(String filename) {
@@ -1020,10 +1025,10 @@ public class Node implements NodeInterface {
         }
     }
 
-    public static Node startNode(String nodeName, InetAddress address) {
+    public static Node startNode(String nodeName, InetAddress address, boolean isGUIStarted) {
         Node node;
         try {
-            node = new Node(nodeName, address);
+            node = new Node(nodeName, address, isGUIStarted);
         } catch (UnknownHostException e) {
             e.printStackTrace();
             System.err.println("Unknown multicast address, cannot create Node.");
@@ -1084,13 +1089,13 @@ public class Node implements NodeInterface {
 
 
         // Start the Node
-        Node node = Node.startNode(hostname, InetAddress.getByName(ip));
+        Node node = Node.startNode(hostname, InetAddress.getByName(ip), false);
         if (node == null) {
             return;
         }
 
         // Listen for commands
-        while (node.running) {
+        while (node.isRunning) {
             String cmd = sc.nextLine().toLowerCase();
             switch (cmd) {
                 case "debug":
