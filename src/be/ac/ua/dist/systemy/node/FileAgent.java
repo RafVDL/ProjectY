@@ -43,7 +43,7 @@ public class FileAgent implements Runnable, Serializable {
             Registry currNodeRegistry = LocateRegistry.getRegistry(nodeAddress.getHostAddress(), Constants.RMI_PORT);
             NodeInterface currNodeStub = (NodeInterface) currNodeRegistry.lookup("Node");
             localFiles = currNodeStub.getLocalFiles().keySet();
-            Map<String, Integer> allFilesNode = currNodeStub.getAllFilesObservable();
+            Map<String, Integer> allFilesNode = currNodeStub.getAllFiles();
             //Step 1
             for (String fileHandle : localFiles) {
                 files.putIfAbsent(fileHandle, 0);

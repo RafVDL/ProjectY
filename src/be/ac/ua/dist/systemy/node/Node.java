@@ -142,6 +142,12 @@ public class Node implements NodeInterface {
         }
     }
 
+    @Override
+    public Map<String, Integer> getAllFiles() {
+        return allFiles;
+    }
+
+    @Override
     public ObservableMap<String, Integer> getAllFilesObservable() {
         return allFilesObservable;
     }
