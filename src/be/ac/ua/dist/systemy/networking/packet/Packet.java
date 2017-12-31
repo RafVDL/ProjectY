@@ -58,24 +58,52 @@ public abstract class Packet {
 
     private int senderHash;
 
-    public Packet() {
+    /**
+     * Instantiates a Packet with an unknown sender (-1).
+     */
+    protected Packet() {
         this(-1);
     }
 
-    public Packet(int senderHash) {
+    /**
+     * Instantiates a Packet with a known sender.
+     *
+     * @param senderHash the sender of this packet
+     */
+    protected Packet(int senderHash) {
         this.senderHash = senderHash;
     }
 
+    /**
+     * @return The sender of this packet.
+     */
     public int getSenderHash() {
         return senderHash;
     }
 
+    /**
+     * Sets the sender of this packet.
+     *
+     * @param senderHash the new sender of this packet
+     */
     public void setSenderHash(int senderHash) {
         this.senderHash = senderHash;
     }
 
+    /**
+     * Invokes when a packet of the given type is received. The implementation needs to fill its data by reading from the given {@link java.io.DataInputStream}.
+     *
+     * @param dis the stream to read the data from
+     * @throws IOException If an I/O exception occurs.
+     */
     public abstract void receive(DataInputStream dis) throws IOException;
 
+    /**
+     * Invokes when a packet of the given type needs to be sent. The implementation needs to sent its data through the given {@link java.io.DataOutputStream}.
+     *
+     * @param dos the stream to read the data from
+     * @throws IOException If an I/O exception occurs.
+     */
     public abstract void send(DataOutputStream dos) throws IOException;
 
 }

@@ -1,17 +1,19 @@
 package be.ac.ua.dist.systemy.networking.tcp;
 
-import be.ac.ua.dist.systemy.networking.Connection;
 import be.ac.ua.dist.systemy.networking.Communications;
+import be.ac.ua.dist.systemy.networking.Connection;
 import be.ac.ua.dist.systemy.networking.packet.Packet;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
+/**
+ * Handles incoming TCP packets.
+ */
 public class TCPConnection implements Connection {
 
     private final Socket socket;
@@ -83,17 +85,7 @@ public class TCPConnection implements Connection {
 
     @Override
     public Packet waitForPacket() throws IOException {
-        try {
-            Packet packet = TCPUtil.readPacket(socket, dis);
-
-            if (packet == null)
-                return null;
-
-            return packet;
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
-            e.printStackTrace();
-        }
-        return null;
+        return TCPUtil.readPacket(socket, dis);
     }
 
     @Override

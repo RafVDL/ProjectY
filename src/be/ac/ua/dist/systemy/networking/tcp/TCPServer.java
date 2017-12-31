@@ -14,6 +14,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Handles incoming TCP packets.
+ */
 public class TCPServer implements Server, Runnable {
 
     private volatile boolean running = true;

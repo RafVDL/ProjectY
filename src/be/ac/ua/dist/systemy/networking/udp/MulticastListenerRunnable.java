@@ -11,12 +11,15 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.DatagramPacket;
 import java.net.SocketException;
 
+/**
+ * This class is instantiated and ran as a new Thread when a known packet is received by the {@link MulticastServer}.
+ */
 public class MulticastListenerRunnable implements Runnable {
 
     private final MulticastServer multicastServer;
     private final DatagramPacket datagramPacket;
 
-    public MulticastListenerRunnable(MulticastServer multicastServer, DatagramPacket datagramPacket) {
+    MulticastListenerRunnable(MulticastServer multicastServer, DatagramPacket datagramPacket) {
         this.multicastServer = multicastServer;
         this.datagramPacket = datagramPacket;
     }

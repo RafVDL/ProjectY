@@ -14,6 +14,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Handles incoming Multicast (UDP) packets.
+ */
 public class MulticastServer implements Server, Runnable {
 
     private volatile boolean running = true;

@@ -11,6 +11,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Handles incoming Unicast UDP packets.
+ */
 public class UnicastServer implements Server, Runnable {
 
     private volatile boolean running = true;

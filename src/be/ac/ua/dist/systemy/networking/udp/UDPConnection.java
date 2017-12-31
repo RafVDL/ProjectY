@@ -13,6 +13,9 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 
+/**
+ * Handles UDP connection (unicast/multicast).
+ */
 public class UDPConnection implements Connection {
 
     private final DatagramSocket socket;

@@ -4,6 +4,9 @@ import be.ac.ua.dist.systemy.networking.packet.Packet;
 
 import java.io.*;
 
+/**
+ * This class handles communication protocols (UDP, TCP).
+ */
 public interface Connection extends Flushable, Closeable {
 
     /**
@@ -34,7 +37,9 @@ public interface Connection extends Flushable, Closeable {
      * Blocks until a packet of the given type is received, and if the backing connection supports it.
      *
      * @param clazz the packet class to wait for
+     * @param <E>   the packet this method will wait for
      * @return The packet once it is received
+     * @throws IOException If an I/O exception occurs.
      */
     <E extends Packet> E waitForPacket(Class<E> clazz) throws IOException;
 
