@@ -1050,6 +1050,7 @@ public class Node implements NodeInterface {
         }
 
         node.clearDir(Constants.REPLICATED_FILES_PATH);
+        node.clearDir(Constants.DOWNLOADED_FILES_PATH);
         node.initializeRMI();
         System.out.println("Hash: " + node.getOwnHash());
         Communications.setSenderHash(node.getOwnHash());

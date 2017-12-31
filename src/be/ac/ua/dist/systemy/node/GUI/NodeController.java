@@ -1,11 +1,16 @@
 package be.ac.ua.dist.systemy.node.GUI;
 
+import be.ac.ua.dist.systemy.Constants;
 import be.ac.ua.dist.systemy.node.Node;
 import be.ac.ua.dist.systemy.node.NodeMain;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ListView;
+
+import java.awt.*;
+import java.io.File;
+import java.io.IOException;
 
 public class NodeController {
     private Node node;
@@ -35,17 +40,54 @@ public class NodeController {
 
     @FXML
     private void handleOpen() {
-        System.out.println("Open button pressed on: " + fileListView.getSelectionModel().getSelectedItems());
+        String fileName = fileListView.getSelectionModel().getSelectedItem();
+        System.out.println("Open button pressed on: " + fileName);
+        if (fileName != null) {
+            File fileToOpen;
+
+            if(node.getLocalFiles().containsKey(fileName)){
+                fileToOpen = new File(Constants.LOCAL_FILES_PATH+fileName);
+            }else if (node.getReplicatedFiles().containsKey(fileName)){
+                fileToOpen = new File(Constants.REPLICATED_FILES_PATH+fileName);
+            }else {
+            node.downloadAFile(fileName);
+                fileToOpen = new File(Constants.DOWNLOADED_FILES_PATH+fileName);
+                while (!fileToOpen.isFile()) {
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        System.err.println("Interrupted while waiting file to finish downloading.");
+                    }
+                }
+            }
+
+            try {
+                Desktop.getDesktop().open(fileToOpen);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     @FXML
     private void handleDelete() {
-        System.out.println("Delete button pressed on: " + fileListView.getSelectionModel().getSelectedItems());
+        String fileName = fileListView.getSelectionModel().getSelectedItem();
+        System.out.println("Delete button pressed on: " + fileName);
+        if (fileName != null) {
+//            node.dosomething
+            fileListView.getSelectionModel().selectFirst();
+        }
     }
 
     @FXML
     private void handleDeleteLocal() {
-        System.out.println("Delete local button pressed on: " + fileListView.getSelectionModel().getSelectedItems());
+        String fileName = fileListView.getSelectionModel().getSelectedItem();
+        System.out.println("Delete local button pressed on: " + fileName);
+        if (fileName != null) {
+//            node.dosomething
+            fileListView.getSelectionModel().selectFirst();
+        }
     }
 
     @FXML
