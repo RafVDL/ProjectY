@@ -326,7 +326,7 @@ public class Node implements NodeInterface {
      *                        Integer: hash of node that has a lock request on that file
      */
     @Override
-    public void runFileAgent(HashMap<String, Integer> fileAgentFiles) throws InterruptedException, RemoteException, NotBoundException {
+    public void runFileAgent(HashMap<String, Integer> fileAgentFiles) throws InterruptedException {
         ownerAddress = ownAddress;
         Thread t = new Thread(new FileAgent(fileAgentFiles, ownAddress));
         t.start();
@@ -634,7 +634,7 @@ public class Node implements NodeInterface {
         System.out.println("Finished discovery of " + folder.getName());
     }
 
-    public void replicateNewOwnerFiles() throws RemoteException, NotBoundException {
+    public void replicateNewOwnerFiles() {
         Map<String, FileHandle> originalOwnerFiles = new HashMap<>(ownerFiles);
 
         originalOwnerFiles.forEach(((s, fileHandle) -> {
@@ -748,7 +748,7 @@ public class Node implements NodeInterface {
         }
     }
 
-    public void replicateFailed(FileHandle fileHandle, InetAddress receiveAddress) throws RemoteException, NotBoundException, UnknownHostException {
+    public void replicateFailed(FileHandle fileHandle, InetAddress receiveAddress) throws RemoteException, NotBoundException {
         File file = fileHandle.getFile();
 
         if (receiveAddress == null) // no owner
@@ -963,11 +963,7 @@ public class Node implements NodeInterface {
             if (packet.getSenderHash() != getOwnHash()) {
                 updateNeighbours(client.getAddress(), packet.getSenderHash());
 
-                try {
-                    replicateNewOwnerFiles();
-                } catch (NotBoundException e) {
-                    e.printStackTrace();
-                }
+                replicateNewOwnerFiles();
             }
         }));
 
@@ -987,7 +983,7 @@ public class Node implements NodeInterface {
                 try {
                     Thread.sleep(5000);
                     runFileAgent(files);
-                } catch (InterruptedException | NotBoundException e) {
+                } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
