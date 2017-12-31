@@ -1,5 +1,4 @@
 # SystemY
-A distributed 
 ## Naming server
 The naming server keeps track of the nodes in the network. It contains information about the hash of the node and its IP address.
 
