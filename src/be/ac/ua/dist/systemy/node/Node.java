@@ -332,11 +332,17 @@ public class Node implements NodeInterface {
         t.start();
         t.join(); //wait for thread to stop
 
-        // Update the observable for the GUI is the node has a GUI
+        // Update the observable for the GUI if the node has a GUI
         if (isGUIStarted) {
             Platform.runLater(() -> {
-                allFilesObservable.clear();
-                allFilesObservable.addAll(fileAgentFiles.keySet());
+                for (Iterator<String> iterator = fileAgentFiles.keySet().iterator(); iterator.hasNext(); ) {
+                    String fileName = iterator.next();
+                    if (!allFilesObservable.contains(fileName)) {
+                        allFilesObservable.add(fileName);
+                    }
+                }
+
+                allFilesObservable.retainAll(fileAgentFiles.keySet());
             });
         }
 

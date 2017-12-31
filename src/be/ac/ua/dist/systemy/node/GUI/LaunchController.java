@@ -97,9 +97,9 @@ public class LaunchController {
      */
     private void startMainGUI() {
         try {
-            NodeController nodeController = new NodeController();
+//            NodeController nodeController = new NodeController();
             FXMLLoader loader = new FXMLLoader(getClass().getResource("NodeView.fxml"));
-            loader.setController(nodeController);
+//            loader.setController(nodeController); // Controller is set in the FXML
             primaryStage.setScene(new Scene(loader.load()));
             primaryStage.setTitle("Node active");
             primaryStage.show();

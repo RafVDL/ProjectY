@@ -35,17 +35,17 @@ public class NodeController {
 
     @FXML
     private void handleOpen() {
-        System.out.println("Open button pressed");
+        System.out.println("Open button pressed on: " + fileListView.getSelectionModel().getSelectedItems());
     }
 
     @FXML
     private void handleDelete() {
-        System.out.println("Delete button pressed");
+        System.out.println("Delete button pressed on: " + fileListView.getSelectionModel().getSelectedItems());
     }
 
     @FXML
     private void handleDeleteLocal() {
-        System.out.println("Delete local button pressed");
+        System.out.println("Delete local button pressed on: " + fileListView.getSelectionModel().getSelectedItems());
     }
 
     @FXML
