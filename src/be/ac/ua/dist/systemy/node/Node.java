@@ -53,6 +53,7 @@ public class Node implements NodeInterface {
 
     private boolean isRunning = true;
     private boolean isGUIStarted;
+    private boolean isInitialized = false;
 
     private InetAddress multicastGroup;
     private Server multicastServer;
@@ -103,6 +104,14 @@ public class Node implements NodeInterface {
     @Override
     public int getNextHash() {
         return nextHash;
+    }
+
+    public boolean isInitialized() {
+        return isInitialized;
+    }
+
+    public void setInitialized(boolean initialized) {
+        isInitialized = initialized;
     }
 
     public void setNamingServerAddress(InetAddress ipAddress) {
@@ -327,6 +336,17 @@ public class Node implements NodeInterface {
      */
     @Override
     public void runFileAgent(HashMap<String, Integer> fileAgentFiles) throws InterruptedException {
+        // This method can get called (RMI) before the node has finished initializing -> wait
+        while (!isInitialized) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                System.err.println("Interrupted while waiting for Node to initialize.");
+            }
+        }
+
+
         ownerAddress = ownAddress;
         Thread t = new Thread(new FileAgent(fileAgentFiles, ownAddress));
         t.start();
@@ -1054,6 +1074,7 @@ public class Node implements NodeInterface {
                 return null;
             }
         }
+        node.setInitialized(true);
         node.discoverLocalFiles();
 
         // Start the FileAgent if this is the first Node in the network
