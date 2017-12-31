@@ -978,14 +978,6 @@ public class Node implements NodeInterface {
             if (packet.getNodeCount() < 1) {
                 updatePrev(getOwnAddress(), getOwnHash());
                 updateNext(getOwnAddress(), getOwnHash());
-
-                HashMap<String, Integer> files = new HashMap<>();
-                try {
-                    Thread.sleep(5000);
-                    runFileAgent(files);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
             }
             client.close();
         }));
@@ -1063,6 +1055,17 @@ public class Node implements NodeInterface {
             }
         }
         node.discoverLocalFiles();
+
+        // Start the FileAgent if this is the first Node in the network
+        if (node.prevHash == node.ownHash) {
+            HashMap<String, Integer> files = new HashMap<>();
+            try {
+                Thread.sleep(5000);
+                node.runFileAgent(files);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
 
 
         // Start file update watcher
