@@ -196,7 +196,7 @@ public class Node implements NodeInterface {
         this.allFiles.put(file, value);
     }
 
-    public void removeAllFileList(String file){
+    public void removeAllFileList(String file) {
         this.allFiles.remove(file);
     }
 
@@ -253,17 +253,18 @@ public class Node implements NodeInterface {
      */
     @Override
     public void deleteFileFromNode(FileHandle fileHandle) {
+        System.out.println("[debug] Deleting from Node: contain check (of/lf/rf): " + ownerFiles.containsKey(fileHandle.getFile().getName()) + "|" + localFiles.containsKey(fileHandle.getFile().getName()) + "|" + replicatedFiles.containsKey(fileHandle.getFile().getName()));
         ownerFiles.remove(fileHandle.getFile().getName());
         localFiles.remove(fileHandle.getFile().getName());
         replicatedFiles.remove(fileHandle.getFile().getName());
-        if(fileHandle.getFile().exists()) {
+        if (fileHandle.getFile().exists()) {
             fileHandle.getFile().delete();
-        } else if(fileHandle.getAsReplicated().getFile().exists()){
+        } else if (fileHandle.getAsReplicated().getFile().exists()) {
             fileHandle.getAsReplicated().getFile().delete();
         }
     }
 
-    public void deleteFileFromNetwork(String filename){
+    public void deleteFileFromNetwork(String filename) {
         if (allFiles.containsKey(filename)) {
             allFiles.put(filename, -1);
         } else {
@@ -1203,6 +1204,12 @@ public class Node implements NodeInterface {
                 case "dl":
                     System.out.print("Enter filename to download: ");
                     node.downloadAFile(sc.nextLine());
+                    break;
+
+                case "delnetw":
+                    System.out.println("All files: " + node.allFiles);
+                    System.out.print("Enter filename to delete from the network: ");
+                    node.deleteFileFromNetwork(sc.nextLine());
                     break;
 
             }

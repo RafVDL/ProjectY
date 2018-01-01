@@ -75,7 +75,7 @@ public class NodeController {
         String fileName = fileListView.getSelectionModel().getSelectedItem();
         System.out.println("Delete button pressed on: " + fileName);
         if (fileName != null) {
-//            node.dosomething
+            node.deleteFileFromNetwork(fileName);
             fileListView.getSelectionModel().selectFirst();
         }
     }
