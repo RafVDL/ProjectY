@@ -256,7 +256,9 @@ public class Node implements NodeInterface {
         ownerFiles.remove(fileHandle.getFile().getName());
         localFiles.remove(fileHandle.getFile().getName());
         replicatedFiles.remove(fileHandle.getFile().getName());
-        fileHandle.getFile().delete();
+        if(fileHandle.getFile().exists()) {
+            fileHandle.getFile().delete();
+        }
     }
 
     public void deleteFileFromNetwork(String filename){
