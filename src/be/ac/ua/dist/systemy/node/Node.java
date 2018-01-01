@@ -258,6 +258,8 @@ public class Node implements NodeInterface {
         replicatedFiles.remove(fileHandle.getFile().getName());
         if(fileHandle.getFile().exists()) {
             fileHandle.getFile().delete();
+        } else if(new FileHandle(fileHandle.getFile().getName(), false).getFile().exists()){
+            fileHandle.getFile().delete();
         }
     }
 
