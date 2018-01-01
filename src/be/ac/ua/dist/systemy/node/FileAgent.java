@@ -18,6 +18,7 @@ public class FileAgent implements Runnable, Serializable {
     private InetAddress nodeAddress;
     private Collection<String> localFiles;
     private String lockRequest;
+    private Map<String, Integer> filesFromNode;
 
     /**
      * Creates FileAgent
@@ -86,6 +87,13 @@ public class FileAgent implements Runnable, Serializable {
                         files.put(lockRequest, currNodeStub.getOwnHash());                                          //lock file in FileAgent
                     }
                 }
+                //Step 5
+                filesFromNode = currNodeStub.getAllFiles();
+                files.forEach((key, value) -> {
+                    if(value == -1){
+                        files.put(key, -1);
+                    }
+                        });
 
                 currNodeStub.setFileAgentFiles(files);
             }
