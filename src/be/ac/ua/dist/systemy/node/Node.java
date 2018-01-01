@@ -196,6 +196,10 @@ public class Node implements NodeInterface {
         this.allFiles.put(file, value);
     }
 
+    public void removeAllFileList(String file){
+        this.allFiles.remove(file);
+    }
+
     public void setFileAgentFiles(HashMap<String, Integer> files) {
         this.fileAgentFiles = files;
     }
@@ -254,6 +258,15 @@ public class Node implements NodeInterface {
         replicatedFiles.remove(fileHandle.getFile().getName());
         fileHandle.getFile().delete();
     }
+
+    public void deleteFileFromNetwork(String filename){
+        if (allFiles.containsKey(filename)) {
+            allFiles.put(filename, -1);
+        } else {
+            System.out.println("File does not exist or you are the owner, try again");
+        }
+    }
+
 
     /**
      * Add a Node's hash from the list of available hashes. Note that this method only work for updating the FileHandle

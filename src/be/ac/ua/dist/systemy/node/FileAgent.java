@@ -36,7 +36,9 @@ public class FileAgent implements Runnable, Serializable {
      * 1) Add new local files of node to allFiles in FileAgent
      * 2) update list of all files on the node
      * 3) check if node wants to download a file in the network
-     * A node can only download one file at a time
+     *      A  node can only download one file at a time
+     * 4) check if a file needs to be deleted and delete from node
+     * 5) check if current node wants to delete a file
      */
     public void run() {
         try { //Step 0
@@ -48,13 +50,25 @@ public class FileAgent implements Runnable, Serializable {
             for (String fileHandle : localFiles) {
                 files.putIfAbsent(fileHandle, 0);
             }
-            //Step 2
+            //Step 2 and 4
             if (files != null) {
+                Map<String, Integer> filesNode = currNodeStub.getAllFiles();
                 files.forEach((key, value) -> {
                     try {
                         if (!allFilesNode.containsKey(key)) {
                             currNodeStub.addAllFileList(key, 0);
                         }
+                        if (value == -1) { //file needs to be deleted
+                            if (filesNode.get(key) == -1) { //node that wanted the file deleted -> last node on which file needs to be deleted
+                                currNodeStub.deleteFileFromNode(new FileHandle(key, true));
+                                currNodeStub.removeAllFileList(key);
+                                files.remove(key);
+                            } else {
+                                currNodeStub.deleteFileFromNode(new FileHandle(key, true));
+                                currNodeStub.removeAllFileList(key);
+                            }
+                        }
+
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     }
@@ -72,6 +86,7 @@ public class FileAgent implements Runnable, Serializable {
                         files.put(lockRequest, currNodeStub.getOwnHash());                                          //lock file in FileAgent
                     }
                 }
+
                 currNodeStub.setFileAgentFiles(files);
             }
         } catch (IOException | NotBoundException e) {
