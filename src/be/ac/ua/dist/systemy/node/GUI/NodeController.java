@@ -45,13 +45,13 @@ public class NodeController {
         if (fileName != null) {
             File fileToOpen;
 
-            if(node.getLocalFiles().containsKey(fileName)){
-                fileToOpen = new File(Constants.LOCAL_FILES_PATH+fileName);
-            }else if (node.getReplicatedFiles().containsKey(fileName)){
-                fileToOpen = new File(Constants.REPLICATED_FILES_PATH+fileName);
-            }else {
-            node.downloadAFile(fileName);
-                fileToOpen = new File(Constants.DOWNLOADED_FILES_PATH+fileName);
+            if (node.getLocalFiles().containsKey(fileName)) {
+                fileToOpen = new File(Constants.LOCAL_FILES_PATH + fileName);
+            } else if (node.getReplicatedFiles().containsKey(fileName)) {
+                fileToOpen = new File(Constants.REPLICATED_FILES_PATH + fileName);
+            } else {
+                node.downloadAFile(fileName);
+                fileToOpen = new File(Constants.DOWNLOADED_FILES_PATH + fileName);
                 while (!fileToOpen.isFile()) {
                     try {
                         Thread.sleep(500);
@@ -85,8 +85,7 @@ public class NodeController {
         String fileName = fileListView.getSelectionModel().getSelectedItem();
         System.out.println("Delete local button pressed on: " + fileName);
         if (fileName != null) {
-//            node.dosomething
-            fileListView.getSelectionModel().selectFirst();
+            node.deleteDownloadedFile(fileName);
         }
     }
 

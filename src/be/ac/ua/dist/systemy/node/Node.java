@@ -173,18 +173,18 @@ public class Node implements NodeInterface {
 
     @Override
     public void addReplicatedFileList(FileHandle fileHandle) {
-        if(localFiles.containsKey(fileHandle.getFile().getName())){
+        if (localFiles.containsKey(fileHandle.getFile().getName())) {
             replicatedFiles.put(fileHandle.getFile().getName(), fileHandle.getAsLocal());
-        }else {
+        } else {
             replicatedFiles.put(fileHandle.getFile().getName(), fileHandle);
         }
     }
 
     @Override
     public void addOwnerFileList(FileHandle fileHandle) {
-        if(localFiles.containsKey(fileHandle.getFile().getName())){
+        if (localFiles.containsKey(fileHandle.getFile().getName())) {
             ownerFiles.put(fileHandle.getFile().getName(), fileHandle.getAsLocal());
-        }else {
+        } else {
             ownerFiles.put(fileHandle.getFile().getName(), fileHandle);
         }
 
@@ -260,13 +260,12 @@ public class Node implements NodeInterface {
     }
 
     /**
-     * Removes a file from the Node. This includes the actual file on disk as well as the lists.
+     * Removes a file from the Node. This includes the actual file on disk as well as the Maps.
      *
      * @param fileHandle the fileHandle of the file to remove
      */
     @Override
     public void deleteFileFromNode(FileHandle fileHandle) {
-        System.out.println("[debug] Deleting from Node: contain check (of/lf/rf): " + ownerFiles.containsKey(fileHandle.getFile().getName()) + "|" + localFiles.containsKey(fileHandle.getFile().getName()) + "|" + replicatedFiles.containsKey(fileHandle.getFile().getName()));
         ownerFiles.remove(fileHandle.getFile().getName());
         localFiles.remove(fileHandle.getFile().getName());
         replicatedFiles.remove(fileHandle.getFile().getName());
@@ -277,11 +276,45 @@ public class Node implements NodeInterface {
         }
     }
 
+    /**
+     * Marks a file so it is ready to remove from the entire network
+     *
+     * @param filename the name of the file to remove
+     */
     public void deleteFileFromNetwork(String filename) {
         if (allFiles.containsKey(filename)) {
             allFiles.put(filename, -1);
         } else {
             System.out.println("File does not exist or you are the owner, try again");
+        }
+    }
+
+    /**
+     * Deletes a the local copy of a downloaded file and updates the corresponding FileHandle at the owner
+     *
+     * @param filename the name of the file to remove
+     */
+    public void deleteDownloadedFile(String filename) {
+        try {
+            Registry namingServerRegistry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
+            NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+            InetAddress ownerAddress = namingServerStub.getOwner(filename);
+
+            Registry ownerNodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
+            NodeInterface ownerNodeStub = (NodeInterface) ownerNodeRegistry.lookup("Node");
+            ownerNodeStub.removeFromAvailableNodes(filename, ownHash);
+
+            File file = new File(Constants.DOWNLOADED_FILES_PATH + filename);
+            if (file.isFile()) {
+                file.delete();
+            }
+
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        } catch (NotBoundException e) {
+            e.printStackTrace();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
         }
     }
 
@@ -690,18 +723,6 @@ public class Node implements NodeInterface {
         System.out.println("Finished discovery of " + folder.getName());
     }
 
-//    public void replicateNewOwnerFiles() {
-//        Map<String, FileHandle> originalOwnerFiles = new HashMap<>(ownerFiles);
-//
-//        originalOwnerFiles.forEach(((s, fileHandle) -> {
-//            try {
-//                replicateToNewNode(fileHandle);
-//            } catch (RemoteException | NotBoundException | UnknownHostException e) {
-//                e.printStackTrace();
-//            }
-//        }));
-//    }
-
     /**
      * Introduces a new local file in the network.
      * <p>
@@ -862,7 +883,7 @@ public class Node implements NodeInterface {
     /**
      * Transfer all replicated and process all local files. Then leave the network.
      */
-    public void shutdown() {
+    private void shutdown() {
         multicastServer.stop();
 
         if (!(prevHash == ownHash)) {
@@ -1279,7 +1300,6 @@ public class Node implements NodeInterface {
                     System.out.print("Enter filename to delete from the network: ");
                     node.deleteFileFromNetwork(sc.nextLine());
                     break;
-
             }
         }
     }
