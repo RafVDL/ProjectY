@@ -20,7 +20,7 @@ public class FailureHandler {
     private Node node;
     private int hashFailedNode;
     private InetAddress namingServerAddress;
-    private int[] neighboursHash;
+    private int[] neighboursHashOfFailedNode;
     private InetAddress[] neighboursIP;
 
     public FailureHandler(int hashFailedNode, Node node) {
@@ -32,28 +32,30 @@ public class FailureHandler {
         Registry registry = LocateRegistry.getRegistry(node.getNamingServerAddress().getHostAddress(), RMI_PORT);
         NamingServerInterface stub = (NamingServerInterface) registry.lookup("NamingServer");
 
-        neighboursHash = stub.getNeighbours(hashFailedNode);
-        neighboursIP[0] = stub.getIPNode(neighboursHash[0]);
-        neighboursIP[1] = stub.getIPNode(neighboursHash[1]);
+        neighboursHashOfFailedNode = stub.getNeighbours(hashFailedNode);
+        neighboursIP[0] = stub.getIPNode(neighboursHashOfFailedNode[0]);
+        neighboursIP[1] = stub.getIPNode(neighboursHashOfFailedNode[1]);
 
         try {
             Client prevClient = Communications.getTCPClient(neighboursIP[0], Constants.TCP_PORT);
-            UpdateNeighboursPacket packet = new UpdateNeighboursPacket(-1, neighboursHash[0]);
+            //Update previous neighbour of failed node so that his next neighbour will be next neighbour of failed node
+            UpdateNeighboursPacket packet = new UpdateNeighboursPacket(-1, neighboursHashOfFailedNode[1]);
             prevClient.sendPacket(packet);
         } catch (IOException e) {
+            System.out.println("Failed to update previous neighbour of failed node");
             e.printStackTrace();
         }
 
         try {
-            Client prevClient = Communications.getTCPClient(neighboursIP[1], Constants.TCP_PORT);
-            UpdateNeighboursPacket packet = new UpdateNeighboursPacket(neighboursHash[1], -1);
-            prevClient.sendPacket(packet);
+            Client nextClient = Communications.getTCPClient(neighboursIP[1], Constants.TCP_PORT);
+            //Update next neighbour of failed node so that his prev neighbour will be prev neighbour of failed node
+            UpdateNeighboursPacket packet = new UpdateNeighboursPacket(neighboursHashOfFailedNode[1], -1);
+            nextClient.sendPacket(packet);
         } catch (IOException e) {
+            System.out.println("Failed to update next neighbour of failed node");
             e.printStackTrace();
         }
-
         stub.removeNodeFromNetwork(hashFailedNode);
-
     }
 }
 
