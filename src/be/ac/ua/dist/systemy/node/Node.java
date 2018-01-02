@@ -1100,7 +1100,6 @@ public class Node implements NodeInterface {
         if (node.prevHash == node.ownHash) {
             HashMap<String, Integer> files = new HashMap<>();
             try {
-                Thread.sleep(5000);
                 node.runFileAgent(files);
             } catch (InterruptedException e) {
                 e.printStackTrace();
