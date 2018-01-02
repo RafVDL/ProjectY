@@ -2,9 +2,7 @@ package be.ac.ua.dist.systemy.node;
 
 import be.ac.ua.dist.systemy.Constants;
 import be.ac.ua.dist.systemy.namingServer.NamingServerInterface;
-import be.ac.ua.dist.systemy.networking.Client;
-import be.ac.ua.dist.systemy.networking.Communications;
-import be.ac.ua.dist.systemy.networking.packet.UpdateNeighboursPacket;
+
 
 import java.io.IOException;
 import java.net.InetAddress;
