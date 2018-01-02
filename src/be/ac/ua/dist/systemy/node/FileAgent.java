@@ -11,7 +11,9 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 
 public class FileAgent implements Runnable, Serializable {
     private HashMap<String, Integer> files;
@@ -53,8 +55,12 @@ public class FileAgent implements Runnable, Serializable {
             //Step 2 and 4
             if (files != null) {
                 Map<String, Integer> filesNode = currNodeStub.getAllFiles();
-                files.forEach((key, value) -> {
+                Iterator it = files.entrySet().iterator();
+                while (it.hasNext()){
                     try {
+                        Entry<String, Integer> pair = (Entry<String, Integer>)it.next();
+                        String key = pair.getKey();
+                        int value = pair.getValue();
                         if (!allFilesNode.containsKey(key)) {
                             currNodeStub.addAllFileList(key, 0);
                         }
@@ -72,7 +78,7 @@ public class FileAgent implements Runnable, Serializable {
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     }
-                });
+                }
                 //Step 3
                 lockRequest = currNodeStub.getFileLockRequest();
                 if (currNodeStub.getDownloadFileGranted().equals("downloading") && !currNodeStub.getDownloadingFiles().contains(currNodeStub.getFileLockRequest())) {//if file downloaded
