@@ -680,17 +680,17 @@ public class Node implements NodeInterface {
         System.out.println("Finished discovery of " + folder.getName());
     }
 
-    public void replicateNewOwnerFiles() {
-        Map<String, FileHandle> originalOwnerFiles = new HashMap<>(ownerFiles);
-
-        originalOwnerFiles.forEach(((s, fileHandle) -> {
-            try {
-                replicateToNewNode(fileHandle);
-            } catch (RemoteException | NotBoundException | UnknownHostException e) {
-                e.printStackTrace();
-            }
-        }));
-    }
+//    public void replicateNewOwnerFiles() {
+//        Map<String, FileHandle> originalOwnerFiles = new HashMap<>(ownerFiles);
+//
+//        originalOwnerFiles.forEach(((s, fileHandle) -> {
+//            try {
+//                replicateToNewNode(fileHandle);
+//            } catch (RemoteException | NotBoundException | UnknownHostException e) {
+//                e.printStackTrace();
+//            }
+//        }));
+//    }
 
     /**
      * Introduces a new local file in the network.
@@ -759,6 +759,11 @@ public class Node implements NodeInterface {
         }
     }
 
+    /**
+     * Checks if this node is still the owner of the file and moves it around if necessary
+     *
+     * @param fileHandle to check/update
+     */
     public void replicateToNewNode(FileHandle fileHandle) throws RemoteException, NotBoundException, UnknownHostException {
         File file = fileHandle.getFile();
 
@@ -766,30 +771,40 @@ public class Node implements NodeInterface {
         NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
         InetAddress ownerAddress = namingServerStub.getOwner(file.getName());
 
-        if (ownerAddress == null) // no owner
+        if (ownerAddress == null) // No owner
             return;
 
-        if (ownAddress.equals(nextAddress)) {
-            ownerFiles.put(fileHandle.getFile().getName(), fileHandle);
-            return;
-        }
-
-        if (!ownerAddress.equals(ownAddress)) {
+        if (ownerAddress.equals(ownAddress) && prevHash == nextHash) {
+            // Still the owner but only two Nodes in the network -> replicate to second Node.
             Registry nextNodeRegistry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), Constants.RMI_PORT);
             NodeInterface nextNodeStub = (NodeInterface) nextNodeRegistry.lookup("Node");
-
             nextNodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
 
-            if (prevHash != nextHash)
-                fileHandle.getAvailableNodes().remove(ownHash);
+            fileHandle.getAvailableNodes().add(nextHash);
+            FileHandle newFileHandle = fileHandle.getAsReplicated();
+            nextNodeStub.addReplicatedFileList(newFileHandle);
+            replicatedFiles.remove(fileHandle.getFile().getName());
+
+        } else if (ownerAddress.equals(ownAddress) && prevHash != nextHash) {
+            // Still the owner -> no need to update.
+        } else if (!ownerAddress.equals(ownAddress)) {
+            // Next neighbour is new owner -> move to new owner
+            Registry nextNodeRegistry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), Constants.RMI_PORT);
+            NodeInterface nextNodeStub = (NodeInterface) nextNodeRegistry.lookup("Node");
+            nextNodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
 
             fileHandle.getAvailableNodes().add(nextHash);
 
+            if (prevHash == nextHash) {
+                // Only two Nodes in the network -> keep copy as replicated.
+            } else {
+                // Just move to new owner
+                fileHandle.getAvailableNodes().remove(ownHash);
+                replicatedFiles.remove(fileHandle.getFile().getName());
+            }
+
             FileHandle newFileHandle = fileHandle.getAsReplicated();
             nextNodeStub.addReplicatedFileList(newFileHandle);
-            nextNodeStub.addOwnerFileList(newFileHandle);
-
-            replicatedFiles.remove(fileHandle.getFile().getName());
             ownerFiles.remove(fileHandle.getFile().getName());
         }
     }
@@ -1014,7 +1029,16 @@ public class Node implements NodeInterface {
             if (packet.getSenderHash() != getOwnHash()) {
                 updateNeighbours(client.getAddress(), packet.getSenderHash());
 
-                replicateNewOwnerFiles();
+//                replicateNewOwnerFiles();
+                // Loop trough all ownerfiles and check if they need to be moved around
+                Map<String, FileHandle> originalOwnerFiles = new HashMap<>(ownerFiles);
+                originalOwnerFiles.forEach(((s, fileHandle) -> {
+                    try {
+                        replicateToNewNode(fileHandle);
+                    } catch (RemoteException | NotBoundException | UnknownHostException e) {
+                        e.printStackTrace();
+                    }
+                }));
             }
         }));
 
