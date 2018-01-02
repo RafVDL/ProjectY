@@ -13,6 +13,7 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
+import java.awt.*;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -257,6 +258,35 @@ public class Node implements NodeInterface {
         }
         downloadingFiles.remove(localFileName.split("/")[1]);
         System.out.println("Removing " + localFileName + " from downloading files");
+    }
+
+    public void openFile(String filename){
+        if (filename != null) {
+            File fileToOpen;
+
+            if (getLocalFiles().containsKey(filename)) {
+                fileToOpen = new File(Constants.LOCAL_FILES_PATH + filename);
+            } else if (getReplicatedFiles().containsKey(filename)) {
+                fileToOpen = new File(Constants.REPLICATED_FILES_PATH + filename);
+            } else {
+                downloadAFile(filename);
+                fileToOpen = new File(Constants.DOWNLOADED_FILES_PATH + filename);
+                while (!fileToOpen.isFile()) {
+                    try {
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                        System.err.println("Interrupted while waiting file to finish downloading.");
+                    }
+                }
+            }
+
+            try {
+                Desktop.getDesktop().open(fileToOpen);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     /**
@@ -882,7 +912,6 @@ public class Node implements NodeInterface {
             nodeStub.addOwnerFileList(newFileHandle);
         }
     }
-
 
     public void initializeShutdown() {
         this.shutdown = true;
