@@ -49,7 +49,7 @@ public class FailureHandler {
         try {
             Client nextClient = Communications.getTCPClient(neighboursIP[1], Constants.TCP_PORT);
             //Update next neighbour of failed node so that his prev neighbour will be prev neighbour of failed node
-            UpdateNeighboursPacket packet = new UpdateNeighboursPacket(neighboursHashOfFailedNode[1], -1);
+            UpdateNeighboursPacket packet = new UpdateNeighboursPacket(neighboursHashOfFailedNode[0], -1);
             nextClient.sendPacket(packet);
         } catch (IOException e) {
             System.out.println("Failed to update next neighbour of failed node");
