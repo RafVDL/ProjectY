@@ -435,10 +435,10 @@ public class Node implements NodeInterface {
             t3.start();
             Thread.sleep(1000);
         }
-        t2.start();
         if(shutdown){
             shutdown();
         }
+        t2.start();
     }
 
     @Override
