@@ -54,6 +54,7 @@ public class Node implements NodeInterface {
     private boolean isRunning = true;
     private boolean isGUIStarted;
     private boolean isInitialized = false;
+    private boolean shutdown = false;
 
     private InetAddress multicastGroup;
     private Server multicastServer;
@@ -121,7 +122,6 @@ public class Node implements NodeInterface {
     public InetAddress getNamingServerAddress() {
         return namingServerAddress;
     }
-
 
     @Override
     public Map<String, FileHandle> getLocalFiles() {
@@ -436,6 +436,9 @@ public class Node implements NodeInterface {
             Thread.sleep(1000);
         }
         t2.start();
+        if(shutdown){
+            shutdown();
+        }
     }
 
     @Override
@@ -821,6 +824,10 @@ public class Node implements NodeInterface {
         }
     }
 
+
+    public void initializeShutdown(){
+        this.shutdown = true;
+    }
     /**
      * Transfer all replicated and process all local files. Then leave the network.
      */
@@ -1168,7 +1175,7 @@ public class Node implements NodeInterface {
                 case "shutdown+":
                 case "shut+":
                 case "sh+":
-                    node.shutdown();
+                    node.initializeShutdown();
                     break;
 
                 case "neighbours":
