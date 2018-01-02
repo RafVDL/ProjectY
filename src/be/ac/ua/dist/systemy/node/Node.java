@@ -17,6 +17,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.AlreadyBoundException;
+import java.rmi.NoSuchObjectException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -59,6 +60,9 @@ public class Node implements NodeInterface {
     private InetAddress multicastGroup;
     private Server multicastServer;
     private Server tcpServer;
+
+    private long joinTimestamp = 0;
+    private int retries = 0;
 
     public Node(String nodeName, InetAddress address, boolean isGUIStarted) throws UnknownHostException {
         this.isGUIStarted = isGUIStarted;
@@ -435,7 +439,7 @@ public class Node implements NodeInterface {
             t3.start();
             Thread.sleep(1000);
         }
-        if(shutdown){
+        if (shutdown) {
             shutdown();
         }
         t2.start();
@@ -599,6 +603,7 @@ public class Node implements NodeInterface {
     }
 
     public void joinNetwork() throws IOException {
+        joinTimestamp = System.currentTimeMillis();
         HelloPacket helloPacket = new HelloPacket();
         Client client = Communications.getUDPClient(multicastGroup, Constants.MULTICAST_PORT);
         client.sendPacket(helloPacket);
@@ -825,9 +830,10 @@ public class Node implements NodeInterface {
     }
 
 
-    public void initializeShutdown(){
+    public void initializeShutdown() {
         this.shutdown = true;
     }
+
     /**
      * Transfer all replicated and process all local files. Then leave the network.
      */
@@ -1092,6 +1098,30 @@ public class Node implements NodeInterface {
 
         // Discover local files
         while (node.namingServerAddress == null || node.prevHash == 0 || node.nextHash == 0 || node.prevAddress == null || node.nextAddress == null) {
+            if (System.currentTimeMillis() - node.joinTimestamp >= 1000) {
+                // try to rejoin at most 5 times
+                if (++node.retries > 5) {
+                    System.err.println("Failed to join network. Naming server is not responding");
+                    node.multicastServer.stop();
+                    node.tcpServer.stop();
+                    try {
+                        UnicastRemoteObject.unexportObject(node, true);
+                    } catch (NoSuchObjectException e) {
+                        e.printStackTrace();
+                    }
+                    System.exit(0);
+                    return null;
+                }
+                System.out.println("Retrying to join the network (" + node.retries + ")");
+                node.joinTimestamp = System.currentTimeMillis();
+                try {
+                    node.joinNetwork();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    System.err.println("Unable to join network.");
+                    return null;
+                }
+            }
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
