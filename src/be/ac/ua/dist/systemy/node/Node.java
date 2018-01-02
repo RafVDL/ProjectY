@@ -168,17 +168,26 @@ public class Node implements NodeInterface {
 
     @Override
     public void addLocalFileList(FileHandle fileHandle) {
-        localFiles.put(fileHandle.getFile().getName(), fileHandle);
+        localFiles.put(fileHandle.getFile().getName(), fileHandle.getAsLocal());
     }
 
     @Override
     public void addReplicatedFileList(FileHandle fileHandle) {
-        replicatedFiles.put(fileHandle.getFile().getName(), fileHandle);
+        if(localFiles.containsKey(fileHandle.getFile().getName())){
+            replicatedFiles.put(fileHandle.getFile().getName(), fileHandle.getAsLocal());
+        }else {
+            replicatedFiles.put(fileHandle.getFile().getName(), fileHandle);
+        }
     }
 
     @Override
     public void addOwnerFileList(FileHandle fileHandle) {
-        ownerFiles.put(fileHandle.getFile().getName(), fileHandle);
+        if(localFiles.containsKey(fileHandle.getFile().getName())){
+            ownerFiles.put(fileHandle.getFile().getName(), fileHandle.getAsLocal());
+        }else {
+            ownerFiles.put(fileHandle.getFile().getName(), fileHandle);
+        }
+
     }
 
     @Override
@@ -911,9 +920,7 @@ public class Node implements NodeInterface {
                         e.printStackTrace();
                     }
                 }
-            } else {
-                // Not alone in the network
-
+            } else { // More than two Nodes in the network
                 // Transfer all replicated files
                 for (Map.Entry<String, FileHandle> entry : replicatedFiles.entrySet()) {
                     try {
@@ -923,7 +930,7 @@ public class Node implements NodeInterface {
                             // Previous Node has the file as local file -> replicate to previous' previous neighbour and make it owner of the file
                             replicatedFileHandle.getAvailableNodes().remove(ownHash);
                             replicatedFileHandle.getAvailableNodes().add(prevNodeStub.getPrevHash());
-                            prevNodeStub.addOwnerFileList(replicatedFileHandle);
+                            prevNodeStub.addOwnerFileList(replicatedFileHandle.getAsLocal());
 
                             Registry prevPrevNodeRegistry = LocateRegistry.getRegistry(prevNodeStub.getPrevAddress().getHostAddress(), Constants.RMI_PORT);
                             NodeInterface prevPrevNodeStub = (NodeInterface) prevPrevNodeRegistry.lookup("Node");
