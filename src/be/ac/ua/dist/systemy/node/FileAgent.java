@@ -65,11 +65,11 @@ public class FileAgent implements Runnable, Serializable {
                             currNodeStub.addAllFileList(key, 0);
                         }
                         if (value == -1) { //file needs to be deleted
-                            if (filesNode.get(key) == -1) { //node that wanted the file deleted -> last node on which file needs to be deleted
+                            if (filesNode.containsKey(key) && filesNode.get(key) == -1) { //node that wanted the file deleted -> last node on which file needs to be deleted
                                 currNodeStub.deleteFileFromNode(new FileHandle(key, true));
                                 currNodeStub.removeAllFileList(key);
                                 it.remove();
-                            } else {
+                            } else if (filesNode.containsKey(key)){
                                 currNodeStub.deleteFileFromNode(new FileHandle(key, true));
                                 currNodeStub.removeAllFileList(key);
                             }
