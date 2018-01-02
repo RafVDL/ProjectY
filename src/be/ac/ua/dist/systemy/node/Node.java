@@ -492,7 +492,7 @@ public class Node implements NodeInterface {
                 });
                 t5.start();
             }
-            //Agent is de kring rond gegaan
+            //Agent is de kring rond gegaan, fileAgent wordt op de volgende node opnieuw gestart nadat de gefaalde node is verwijderd
             if (nextHash == hashStart) {
                 Thread t6 = new Thread(() -> {
                     try {
@@ -508,10 +508,11 @@ public class Node implements NodeInterface {
                 t6.start();
             }
         }
-        //node zit alleen in het netwerk, gefaalde node mag eruit verwijderd worden
+        //node zit alleen in het netwerk, gefaalde node mag eruit verwijderd worden fileAgent wordt opnieuw gestart
         else {
             FailureHandler failureHandler = new FailureHandler(hashFailed, this);
             failureHandler.repairFailedNode();
+            runFileAgent(fileAgentFiles);
         }
     }
 
