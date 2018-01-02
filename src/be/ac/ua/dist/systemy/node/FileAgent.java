@@ -54,7 +54,6 @@ public class FileAgent implements Runnable, Serializable {
             }
             //Step 2 and 4
             if (files != null) {
-                Map<String, Integer> filesNode = currNodeStub.getAllFiles();
                 Iterator it = files.entrySet().iterator();
                 while (it.hasNext()){
                     try {
@@ -65,11 +64,11 @@ public class FileAgent implements Runnable, Serializable {
                             currNodeStub.addAllFileList(key, 0);
                         }
                         if (value == -1) { //file needs to be deleted
-                            if (filesNode.containsKey(key) && filesNode.get(key) == -1) { //node that wanted the file deleted -> last node on which file needs to be deleted
+                            if (allFilesNode.containsKey(key) && allFilesNode.get(key) == -1) { //node that wanted the file deleted -> last node on which file needs to be deleted
                                 currNodeStub.deleteFileFromNode(new FileHandle(key, true));
                                 currNodeStub.removeAllFileList(key);
                                 it.remove();
-                            } else if (filesNode.containsKey(key)){
+                            } else if (allFilesNode.containsKey(key)){
                                 currNodeStub.deleteFileFromNode(new FileHandle(key, true));
                                 currNodeStub.removeAllFileList(key);
                             }
@@ -93,7 +92,8 @@ public class FileAgent implements Runnable, Serializable {
                     }
                 }
                 //Step 5
-                filesNode.forEach((key, value) -> {
+                allFilesNode = currNodeStub.getAllFiles();
+                allFilesNode.forEach((key, value) -> {
                     if(value == -1){
                         files.put(key, -1);
                     }
