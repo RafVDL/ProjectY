@@ -29,33 +29,37 @@ public class FailureHandler {
     }
 
     public void repairFailedNode() throws RemoteException, NotBoundException {
-        Registry registry = LocateRegistry.getRegistry(node.getNamingServerAddress().getHostAddress(), RMI_PORT);
-        NamingServerInterface stub = (NamingServerInterface) registry.lookup("NamingServer");
-
-        neighboursHashOfFailedNode = stub.getNeighbours(hashFailedNode);
-        neighboursIP[0] = stub.getIPNode(neighboursHashOfFailedNode[0]);
-        neighboursIP[1] = stub.getIPNode(neighboursHashOfFailedNode[1]);
-
         try {
-            Client prevClient = Communications.getTCPClient(neighboursIP[0], Constants.TCP_PORT);
-            //Update previous neighbour of failed node so that his next neighbour will be next neighbour of failed node
-            UpdateNeighboursPacket packet = new UpdateNeighboursPacket(-1, neighboursHashOfFailedNode[1]);
-            prevClient.sendPacket(packet);
-        } catch (IOException e) {
-            System.out.println("Failed to update previous neighbour of failed node");
+            Registry registry = LocateRegistry.getRegistry(node.getNamingServerAddress().getHostAddress(), RMI_PORT);
+            NamingServerInterface stub = (NamingServerInterface) registry.lookup("NamingServer");
+
+            neighboursHashOfFailedNode = stub.getNeighbours(hashFailedNode);
+            neighboursIP[0] = stub.getIPNode(neighboursHashOfFailedNode[0]);
+            neighboursIP[1] = stub.getIPNode(neighboursHashOfFailedNode[1]);
+
+            try {
+                Client prevClient = Communications.getTCPClient(neighboursIP[0], Constants.TCP_PORT);
+                //Update previous neighbour of failed node so that his next neighbour will be next neighbour of failed node
+                UpdateNeighboursPacket packet = new UpdateNeighboursPacket(-1, neighboursHashOfFailedNode[1]);
+                prevClient.sendPacket(packet);
+            } catch (IOException e) {
+                System.out.println("Failed to update previous neighbour of failed node");
+                e.printStackTrace();
+            }
+
+            try {
+                Client nextClient = Communications.getTCPClient(neighboursIP[1], Constants.TCP_PORT);
+                //Update next neighbour of failed node so that his prev neighbour will be prev neighbour of failed node
+                UpdateNeighboursPacket packet = new UpdateNeighboursPacket(neighboursHashOfFailedNode[0], -1);
+                nextClient.sendPacket(packet);
+            } catch (IOException e) {
+                System.out.println("Failed to update next neighbour of failed node");
+                e.printStackTrace();
+            }
+            stub.removeNodeFromNetwork(hashFailedNode);
+        } catch (IOException | NotBoundException e) {
             e.printStackTrace();
         }
-
-        try {
-            Client nextClient = Communications.getTCPClient(neighboursIP[1], Constants.TCP_PORT);
-            //Update next neighbour of failed node so that his prev neighbour will be prev neighbour of failed node
-            UpdateNeighboursPacket packet = new UpdateNeighboursPacket(neighboursHashOfFailedNode[0], -1);
-            nextClient.sendPacket(packet);
-        } catch (IOException e) {
-            System.out.println("Failed to update next neighbour of failed node");
-            e.printStackTrace();
-        }
-        stub.removeNodeFromNetwork(hashFailedNode);
     }
 }
 
