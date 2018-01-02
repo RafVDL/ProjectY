@@ -884,8 +884,8 @@ public class Node implements NodeInterface {
                         if (prevNodeStub == null) {
                             continue;
                         }
-                        prevNodeStub.removeFromAvailableNodes(entry.getKey(), ownHash);
                         prevNodeStub.addOwnerFileList(entry.getValue());
+                        prevNodeStub.removeFromAvailableNodes(entry.getKey(), ownHash);
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     }
@@ -913,8 +913,8 @@ public class Node implements NodeInterface {
                             deleteFileFromNode(localEntry.getValue());
                         } else {
                             // Else update download locations in the FileHandle
-                            prevNodeStub.removeFromAvailableNodes(localEntry.getKey(), ownHash);
                             prevNodeStub.addOwnerFileList(localEntry.getValue());
+                            prevNodeStub.removeFromAvailableNodes(localEntry.getKey(), ownHash);
                         }
                     } catch (RemoteException e) {
                         e.printStackTrace();
