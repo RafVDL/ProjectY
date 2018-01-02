@@ -6,6 +6,7 @@ import be.ac.ua.dist.systemy.networking.Communications;
 import be.ac.ua.dist.systemy.networking.Server;
 import be.ac.ua.dist.systemy.networking.packet.*;
 import be.ac.ua.dist.systemy.networking.udp.MulticastServer;
+import be.ac.ua.dist.systemy.node.NodeInterface;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -15,15 +16,23 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.AlreadyBoundException;
 import java.rmi.NoSuchObjectException;
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 public class NamingServer implements NamingServerInterface {
     private final InetAddress serverIP;
     private TreeMap<Integer, InetAddress> ipAddresses = new TreeMap<>();
+
+    private static int latestAgentcount=-1;
+    private static int currentAgentcount;
+    private static InetAddress fileAgentAddress;
+    private static int fileAgentHash;
+    private static int nextFileAgentHash;
 
     private boolean running = true;
     private Server multicastServer;
@@ -113,19 +122,43 @@ public class NamingServer implements NamingServerInterface {
         int prevHash = 0;
         int nextHash = 0;
         boolean found = false;
-        while (it.hasNext() && !found) {
+        //If only one node in network --> neighbours of this node is this node
+        if(ipAddresses.size() == 1) {
             HashMap.Entry<Integer, InetAddress> pair = it.next();
             if (pair.getKey() == hashNode) {
-                prevHash = pair.getKey();
+                prevHash = hashNode;
+                nextHash = hashNode;
+            }
+        }
+        //If only two nodes in network --> neighbours of this node is other node
+        if(ipAddresses.size() == 2) {
+            HashMap.Entry<Integer, InetAddress> pairr = it.next();
+            if (pairr.getKey() == hashNode) {
                 if (it.hasNext()) {
-                    pair = it.next();
-                    nextHash = pair.getKey();
-                } else {
-                    it = ipAddresses.entrySet().iterator();
-                    pair = it.next();
-                    nextHash = pair.getKey();
+                    pairr = it.next();
+                    nextHash = pairr.getKey();
+                    prevHash = pairr.getKey();
                 }
-                found = true;
+            } else {
+                nextHash = pairr.getKey();
+                prevHash = pairr.getKey();
+            }
+        }
+        else {
+            while (it.hasNext() && !found) {
+                HashMap.Entry<Integer, InetAddress> pairrr = it.next();
+                if (pairrr.getKey() == hashNode) {
+                    prevHash = pairrr.getKey();
+                    if (it.hasNext()) {
+                        pairrr = it.next();
+                        nextHash = pairrr.getKey();
+                    } else {
+                        it = ipAddresses.entrySet().iterator();
+                        pairrr = it.next();
+                        nextHash = pairrr.getKey();
+                    }
+                    found = true;
+                }
             }
         }
         neighbours[0] = prevHash;
@@ -197,7 +230,29 @@ public class NamingServer implements NamingServerInterface {
         return returnHash;
     }
 
-    public static void main(String[] args) throws UnknownHostException, NoSuchObjectException {
+    public void latestFileAgent(InetAddress thisAddress, int thisHash, int nextHash, int number) {
+        fileAgentHash= thisHash;
+        fileAgentAddress = thisAddress;
+        nextFileAgentHash= nextHash;
+        currentAgentcount = number;
+    }
+
+
+    public static void checkRunningFileAgent() throws InterruptedException, RemoteException, NotBoundException {
+        //TimeUnit.SECONDS.sleep(1);
+        //fileAgent not updated thus failed
+        if (latestAgentcount == currentAgentcount) {
+            Registry currNodeRegistry = LocateRegistry.getRegistry(fileAgentAddress.getHostAddress(), Constants.RMI_PORT);
+            NodeInterface currNodeStub = (NodeInterface) currNodeRegistry.lookup("Node");
+            currNodeStub.runFailureAgent(nextFileAgentHash, fileAgentHash, fileAgentAddress);
+        }
+        else {
+            latestAgentcount = currentAgentcount;
+        }
+
+    }
+
+    public static void main(String[] args) throws UnknownHostException, RemoteException, InterruptedException, NotBoundException {
         Scanner sc = new Scanner(System.in);
         InetAddress detectedHostAddress = InetAddress.getLocalHost();
         System.out.println("(Detected localHost is: " + detectedHostAddress + ")");
@@ -218,7 +273,7 @@ public class NamingServer implements NamingServerInterface {
 
         while (namingServer.running) {
             String cmd = sc.nextLine().toLowerCase();
-
+            checkRunningFileAgent();
             switch (cmd) {
                 case "debug":
                     Communications.setDebugging(true);
@@ -249,6 +304,10 @@ public class NamingServer implements NamingServerInterface {
                 case "tab":
                 case "tb":
                     namingServer.printIPadresses();
+                    break;
+
+                case "nb":
+                    System.out.println("FileAgentNumber: " + latestAgentcount);
                     break;
             }
         }

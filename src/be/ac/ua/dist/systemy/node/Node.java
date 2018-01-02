@@ -399,7 +399,7 @@ public class Node implements NodeInterface {
      *                        Integer: hash of node that has a lock request on that file
      */
     @Override
-    public void runFileAgent(HashMap<String, Integer> fileAgentFiles) throws InterruptedException {
+    public void runFileAgent(HashMap<String, Integer> fileAgentFiles) throws InterruptedException, RemoteException, NotBoundException {
         // This method can get called (RMI) before the node has finished initializing -> wait
         while (!isInitialized) {
             try {
@@ -410,6 +410,11 @@ public class Node implements NodeInterface {
             }
         }
 
+        Random rand = new Random();
+        int number = rand.nextInt(100000);
+        Registry namingServerRegistry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
+        NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+        namingServerStub.latestFileAgent(ownAddress,ownHash,nextHash,number);
 
         ownerAddress = ownAddress;
         Thread t = new Thread(new FileAgent(fileAgentFiles, ownAddress));
@@ -455,8 +460,8 @@ public class Node implements NodeInterface {
             Thread t3 = new Thread(() -> {
                 try {
                     // Get ownerAddress from NamingServer via RMI.
-                    Registry namingServerRegistry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
-                    NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+                    //Registry namingServerRegistry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
+                    //NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
                     ownerAddress = namingServerStub.getOwner(grantedDownloadFile);
                     if (ownerAddress.equals(ownAddress)) {
                         ownerAddress = getLocalAddressOfFile(grantedDownloadFile);
@@ -552,9 +557,12 @@ public class Node implements NodeInterface {
         }
         //node zit alleen in het netwerk, gefaalde node mag eruit verwijderd worden fileAgent wordt opnieuw gestart
         else {
+            System.out.println("Starting failureHandler...");
             FailureHandler failureHandler = new FailureHandler(hashFailed, this);
             failureHandler.repairFailedNode();
+            System.out.println("Failure handled! Restarting fileAgent...");
             runFileAgent(fileAgentFiles);
+            System.out.println("FileAgent restarted.");
         }
     }
 
@@ -1192,6 +1200,10 @@ public class Node implements NodeInterface {
             try {
                 node.runFileAgent(files);
             } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (RemoteException e) {
+             e.printStackTrace();
+            } catch (NotBoundException e) {
                 e.printStackTrace();
             }
         }
