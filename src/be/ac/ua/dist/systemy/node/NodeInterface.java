@@ -1,7 +1,5 @@
 package be.ac.ua.dist.systemy.node;
 
-import javafx.collections.ObservableMap;
-
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.NotBoundException;
@@ -46,6 +44,8 @@ public interface NodeInterface extends Remote {
     void addToAvailableNodes(String fileName, int hashToAdd) throws RemoteException;
 
     void removeFromAvailableNodes(String fileName, int hashToRemove) throws RemoteException;
+
+    void increaseDownloads(String fileName) throws RemoteException;
 
     void updateNext(InetAddress newAddress, int newHash) throws RemoteException;
 

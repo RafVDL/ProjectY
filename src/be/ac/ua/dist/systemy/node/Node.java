@@ -13,7 +13,6 @@ import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
-import java.awt.*;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -260,35 +259,6 @@ public class Node implements NodeInterface {
         System.out.println("Removing " + localFileName + " from downloading files");
     }
 
-    public void openFile(String filename){
-        if (filename != null) {
-            File fileToOpen;
-
-            if (getLocalFiles().containsKey(filename)) {
-                fileToOpen = new File(Constants.LOCAL_FILES_PATH + filename);
-            } else if (getReplicatedFiles().containsKey(filename)) {
-                fileToOpen = new File(Constants.REPLICATED_FILES_PATH + filename);
-            } else {
-                downloadAFile(filename);
-                fileToOpen = new File(Constants.DOWNLOADED_FILES_PATH + filename);
-                while (!fileToOpen.isFile()) {
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                        System.err.println("Interrupted while waiting file to finish downloading.");
-                    }
-                }
-            }
-
-            try {
-                Desktop.getDesktop().open(fileToOpen);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
     /**
      * Removes a file from the Node. This includes the actual file on disk as well as the Maps.
      *
@@ -348,7 +318,6 @@ public class Node implements NodeInterface {
         }
     }
 
-
     /**
      * Add a Node's hash from the list of available hashes. Note that this method only work for updating the FileHandle
      * of a local file (otherwise it is unnecessary anyways).
@@ -379,6 +348,15 @@ public class Node implements NodeInterface {
             return;
         }
         ownerFiles.get(fileName).getAvailableNodes().remove(hashToRemove);
+    }
+
+    @Override
+    public void increaseDownloads(String fileName) {
+        if (!ownerFiles.containsKey(fileName)) {
+            System.out.println("Error: trying to update a FileHandle of a file that this Node does not own.");
+            return;
+        }
+        ownerFiles.get(fileName).increaseDownloads();
     }
 
     /**
@@ -444,7 +422,7 @@ public class Node implements NodeInterface {
         int number = rand.nextInt(100000);
         Registry namingServerRegistry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
         NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
-        namingServerStub.latestFileAgent(ownAddress,ownHash,nextHash,number);
+        namingServerStub.latestFileAgent(ownAddress, ownHash, nextHash, number);
 
         ownerAddress = ownAddress;
         Thread t = new Thread(new FileAgent(fileAgentFiles, ownAddress));
@@ -1231,7 +1209,7 @@ public class Node implements NodeInterface {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (RemoteException e) {
-             e.printStackTrace();
+                e.printStackTrace();
             } catch (NotBoundException e) {
                 e.printStackTrace();
             }
