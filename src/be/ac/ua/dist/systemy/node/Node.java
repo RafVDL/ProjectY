@@ -537,9 +537,12 @@ public class Node implements NodeInterface {
                         if (hashOfNextNeighbour != hashStart) {
                             stub.runFailureAgent(hashFailed, hashStart, addressOfNextNeighbour);
                         } else {
+                            System.out.println("Starting failureHandler...");
                             FailureHandler failureHandler = new FailureHandler(hashFailed, this);
                             failureHandler.repairFailedNode();
+                            System.out.println("Failure handled! Restarting fileAgent...");
                             stub.runFileAgent(fileAgentFiles);
+                            System.out.println("FileAgent restarted.");
                         }
                     } catch (RemoteException | NotBoundException | InterruptedException e) {
                         e.printStackTrace();
@@ -553,9 +556,12 @@ public class Node implements NodeInterface {
                     try {
                         Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
                         NodeInterface stub = (NodeInterface) registry.lookup("Node");
+                        System.out.println("Starting failureHandler...");
                         FailureHandler failureHandler = new FailureHandler(hashFailed, this);
                         failureHandler.repairFailedNode();
+                        System.out.println("Failure handled! Restarting fileAgent...");
                         stub.runFileAgent(fileAgentFiles);
+                        System.out.println("FileAgent restarted.");
                     } catch (RemoteException | NotBoundException | InterruptedException e) {
                         e.printStackTrace();
                     }
