@@ -50,19 +50,18 @@ public class FailureAgent implements Runnable, Serializable {
             nsAddress= currNodeStub.getNamingServerAddress();
             Registry namingServerRegistry = LocateRegistry.getRegistry(nsAddress.getHostAddress(), Constants.RMI_PORT);
             NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+            //Files replicared on failed node need to be rereplicated in the network
+            //Files which were available locally on failed node need to be locally available on node which has this file replicated + replicated again in network
 
-            //Bestanden die op de gefaalde node gerepliceerd zijn, moeten verplaatst worden naar zijn vorige node en de eigenaar moet verwittigd zodat deze downloadlocaties kan updaten
-            //Bestanden die op de gefaalde node lokaal zijn, de node die deze heeft gerepliceerd wordt de nieuwe eigenaar
-
-            //Stap 1: We bekijken of een of meerdere lokale bestanden van deze node gerepliceerd zijn op de gefaalde node.
+            //Step1: Localfiles
             for (FileHandle fileHandle : localFiles) {
                 currFile = fileHandle.getFile().getName();
-                //Kijken of file naar failed node verwijst
+                //Check if file is replicated on failed node
                 ownerAddressForThisFile = namingServerStub.getOwner(currFile);
                 ownerHashForThisFile = namingServerStub.getHashOfAddress(ownerAddressForThisFile);
-                //Bestand gerepliceerd op failed node dus naar nieuwe eigenaar sturen
+                //File needs to be rereplicated
                 if (ownerHashForThisFile == hashFailed) {
-                    //Bestand sturen naar nieuwe node, deze node zal de vorige buur zijn van de gefaalde node
+                    //New replicated node will be previous neighbour of failed node
                     neighboursOfFailed = namingServerStub.getNeighbours(hashFailed);
                     hashOfPrevNeighbour = neighboursOfFailed[0];
                     addressOfPrevNeighbour = namingServerStub.getIPNode(hashOfPrevNeighbour);
@@ -70,13 +69,13 @@ public class FailureAgent implements Runnable, Serializable {
                 }
             }
 
-            //Stap 2: We bekijken of een of meerdere gerepliceerde bestanden van deze node lokaal zijn op de gefaalde node.
+            //Stap 2: Replicated files
             for (FileHandle fileHandle : replicatedFiles) {
                 localAddress = fileHandle.getLocalAddress();
                 localHash = namingServerStub.getHashOfAddress(localAddress);
-                //Bestand dat op deze node gerepliceerd is, is lokaal op gefaalde node en checken of node niet alleen in netwerk zit
+                //Replicated file is locally available on failed node
                 if (localHash == hashFailed){
-                    //Bestand moet nu lokaal op deze node bijgehouden worden en opnieuw gerepliceerd worden
+                    //File needs locally available on this node and needs to be rereplicated
                     fileHandle.setLocalAddress(currNode);
                     //Verander map van file
                     //newFileName =  Constants.LOCAL_FILES_PATH + fileHandle.getFile().getName();

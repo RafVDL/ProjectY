@@ -502,12 +502,12 @@ public class Node implements NodeInterface {
 
     @Override
     public void runFailureAgent(int hashFailed, int hashStart, InetAddress currNode) throws InterruptedException, RemoteException, NotBoundException {
-        //failureAgent niet starten als er maar 2 nodes in het netwerk zitten waarvan er 1 gefaald is
+        //don't start FailureAgent if only two nodes in network of which one is failed
         if (!(hashFailed == prevHash && hashFailed == nextHash)) {
             Thread t = new Thread(new FailureAgent(hashFailed, hashStart, currNode));
             t.start();
             t.join(); //wait for thread to stop
-            //Kijken of hij niet alleen in het netwerk zit en dat zijn volgende node niet de gefaalde node is.
+            //Check if not alone in network and if next neighbour isn't the failed node or the start node
             if (ownHash != nextHash && hashFailed != nextHash && hashStart != nextHash) {
                 Thread t4 = new Thread(() -> {
                     try {
@@ -515,16 +515,17 @@ public class Node implements NodeInterface {
                         NodeInterface stub = (NodeInterface) registry.lookup("Node");
                         stub.runFailureAgent(hashFailed, hashStart, nextAddress);
                     } catch (RemoteException | NotBoundException | InterruptedException e) {
+                        System.out.println("ERROR1: Not able to run FailureAgent on next node!");
                         e.printStackTrace();
                     }
                 });
                 t4.start();
             }
-            //Kijken of hij niet alleen in het netwerk zit en dat de volgende node de gefaalde node is.
-            if (hashFailed == nextHash && hashFailed != prevHash && nextHash != hashStart) {
+            //Check if next neighbour is the failed node
+            if (hashFailed == nextHash) {
                 Thread t5 = new Thread(() -> {
                     try {
-                        //Volgende node is de gefaalde node dus agent moet deze overslaan en naar de volgende node in de cycle gaan (=volgende buur van de gefaalde node).
+                        //Need to skip next neighbour cause this one is the failed node. Need to start FailureAgent on next neighbour of failed node
                         Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
                         NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
                         int[] neighboursOfFailed = namingServerStub.getNeighbours(hashFailed);
@@ -533,7 +534,7 @@ public class Node implements NodeInterface {
 
                         Registry registry = LocateRegistry.getRegistry(addressOfNextNeighbour.getHostAddress(), RMI_PORT);
                         NodeInterface stub = (NodeInterface) registry.lookup("Node");
-                        //Checken of volgende buur van de gefaalde node niet de node is waarop de agent werd gestart
+                        //Check if next neighbour of failed node isn't the start node
                         if (hashOfNextNeighbour != hashStart) {
                             stub.runFailureAgent(hashFailed, hashStart, addressOfNextNeighbour);
                         } else {
@@ -545,12 +546,13 @@ public class Node implements NodeInterface {
                             System.out.println("FileAgent restarted.");
                         }
                     } catch (RemoteException | NotBoundException | InterruptedException e) {
+                        System.out.println("ERROR2: Not able to run FailureAgent on next node or restart the FileAgent!");
                         e.printStackTrace();
                     }
                 });
                 t5.start();
             }
-            //Agent is de kring rond gegaan, fileAgent wordt op de volgende node opnieuw gestart nadat de gefaalde node is verwijderd
+            //Agent is around the network and we can now remove the failed node from the network and afterwards restart FileAgent
             if (nextHash == hashStart) {
                 Thread t6 = new Thread(() -> {
                     try {
@@ -563,13 +565,14 @@ public class Node implements NodeInterface {
                         stub.runFileAgent(fileAgentFiles);
                         System.out.println("FileAgent restarted.");
                     } catch (RemoteException | NotBoundException | InterruptedException e) {
+                        System.out.println("ERROR3: Not able to restart FileAgent!");
                         e.printStackTrace();
                     }
                 });
                 t6.start();
             }
         }
-        //node zit alleen in het netwerk, gefaalde node mag eruit verwijderd worden fileAgent wordt opnieuw gestart
+        //Node is only working node in network, we may delete failed node and restart FileAgent
         else {
             System.out.println("Starting failureHandler...");
             FailureHandler failureHandler = new FailureHandler(hashFailed, this);
