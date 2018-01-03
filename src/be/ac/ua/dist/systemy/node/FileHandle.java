@@ -8,6 +8,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.net.InetAddress;
+import java.util.Iterator;
 
 public class FileHandle implements Serializable {
 
@@ -54,6 +55,15 @@ public class FileHandle implements Serializable {
 
     public Set<Integer> getAvailableNodes() {
         return availableNodes;
+    }
+
+    public void removeAvailable(int hashNode) {
+        for (Iterator<Integer> iterator = availableNodes.iterator(); iterator.hasNext();) {
+            Integer s =  iterator.next();
+            if (s == hashNode) {
+                iterator.remove();
+            }
+        }
     }
 
     public FileHandle getAsLocal() {

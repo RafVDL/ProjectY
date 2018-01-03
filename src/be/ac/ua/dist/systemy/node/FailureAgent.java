@@ -65,6 +65,7 @@ public class FailureAgent implements Runnable, Serializable {
                     neighboursOfFailed = namingServerStub.getNeighbours(hashFailed);
                     hashOfPrevNeighbour = neighboursOfFailed[0];
                     addressOfPrevNeighbour = namingServerStub.getIPNode(hashOfPrevNeighbour);
+                    fileHandle.removeAvailable(hashFailed);
                     currNodeStub.replicateFailed(fileHandle, addressOfPrevNeighbour);
                 }
             }
@@ -77,6 +78,7 @@ public class FailureAgent implements Runnable, Serializable {
                 if (localHash == hashFailed){
                     //File needs locally available on this node and needs to be rereplicated
                     fileHandle.setLocalAddress(currNode);
+                    fileHandle.removeAvailable(hashFailed);
                     //Verander map van file
                     //newFileName =  Constants.LOCAL_FILES_PATH + fileHandle.getFile().getName();
                     //File currFile = fileHandle.getFile();
