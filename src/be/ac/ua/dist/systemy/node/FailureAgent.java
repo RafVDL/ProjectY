@@ -18,6 +18,8 @@ public class FailureAgent implements Runnable, Serializable {
 
     private int hashFailed;
     private int hashStart;
+    private int currNodeHash;
+    private int currNodePrevNeighbour;
     private InetAddress currNode;
     private InetAddress nsAddress;
     private InetAddress ownerAddressForThisFile;
@@ -44,6 +46,8 @@ public class FailureAgent implements Runnable, Serializable {
             System.out.println("running FailureAgent");
             Registry currNodeRegistry = LocateRegistry.getRegistry(currNode.getHostAddress(), Constants.RMI_PORT);
             NodeInterface currNodeStub = (NodeInterface) currNodeRegistry.lookup("Node");
+            currNodeHash = currNodeStub.getOwnHash();
+            currNodePrevNeighbour = currNodeStub.getPrevHash();
             localFiles = currNodeStub.getLocalFiles().values();
             replicatedFiles = currNodeStub.getReplicatedFiles().values();
 
@@ -54,28 +58,36 @@ public class FailureAgent implements Runnable, Serializable {
             //Files which were available locally on failed node need to be locally available on node which has this file replicated + replicated again in network
 
             //Step1: Localfiles
+            System.out.println("Handling local files from this node...");
             for (FileHandle fileHandle : localFiles) {
                 currFile = fileHandle.getFile().getName();
                 //Check if file is replicated on failed node
                 ownerAddressForThisFile = namingServerStub.getOwner(currFile);
                 ownerHashForThisFile = namingServerStub.getHashOfAddress(ownerAddressForThisFile);
+                System.out.println("Replicated hash van "+ currFile + ": " + ownerHashForThisFile);
                 //File needs to be rereplicated
-                if (ownerHashForThisFile == hashFailed) {
+                if (ownerHashForThisFile == hashFailed || (ownerHashForThisFile == currNodeHash && hashFailed == currNodePrevNeighbour)) {
+                    System.out.println(currFile + "was replicated on failed node and will be processed...");
                     //New replicated node will be previous neighbour of failed node
                     neighboursOfFailed = namingServerStub.getNeighbours(hashFailed);
                     hashOfPrevNeighbour = neighboursOfFailed[0];
                     addressOfPrevNeighbour = namingServerStub.getIPNode(hashOfPrevNeighbour);
                     fileHandle.removeAvailable(hashFailed);
+                    System.out.println(currFile + " will be replicated on " + addressOfPrevNeighbour + " " + hashOfPrevNeighbour);
                     currNodeStub.replicateFailed(fileHandle, addressOfPrevNeighbour);
                 }
             }
-
+            /*
             //Stap 2: Replicated files
+            System.out.println("Handling replicated files from this node...");
             for (FileHandle fileHandle : replicatedFiles) {
+                currFile = fileHandle.getFile().getName();
                 localAddress = fileHandle.getLocalAddress();
                 localHash = namingServerStub.getHashOfAddress(localAddress);
+                System.out.println("Local hash van "+ currFile + ": " + localHash);
                 //Replicated file is locally available on failed node
                 if (localHash == hashFailed){
+                    System.out.println(currFile + "was local on failed node and will be processed...");
                     //File needs locally available on this node and needs to be rereplicated
                     fileHandle.setLocalAddress(currNode);
                     fileHandle.removeAvailable(hashFailed);
@@ -86,6 +98,7 @@ public class FailureAgent implements Runnable, Serializable {
                     currNodeStub.replicateWhenJoining(fileHandle);
                 }
             }
+            */
         } catch (IOException | NotBoundException e) {
             e.printStackTrace();
         }

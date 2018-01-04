@@ -244,11 +244,15 @@ public class NamingServer implements NamingServerInterface {
 
     public int getHashOfAddress(InetAddress thisAddress) {
         int returnHash = 0;
-        for (Map.Entry<Integer,InetAddress> entry : ipAddresses.entrySet()) {
-            int key = entry.getKey();
-            InetAddress value = entry.getValue();
-            if (value == thisAddress) {
+        int found = 0;
+        Iterator<HashMap.Entry<Integer, InetAddress>> it = ipAddresses.entrySet().iterator();
+        while (it.hasNext() && found == 0) {
+            HashMap.Entry<Integer, InetAddress> pair = it.next();
+            int key = pair.getKey();
+            InetAddress value = pair.getValue();
+            if (value.equals(thisAddress)) {
                 returnHash = key;
+                found = 1;
             }
         }
         return returnHash;

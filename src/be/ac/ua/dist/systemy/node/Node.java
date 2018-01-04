@@ -871,20 +871,7 @@ public class Node implements NodeInterface {
         if (receiveAddress == null) // no owner
             return;
 
-        if (receiveAddress.equals(nextAddress)) {
-            ownerFiles.put(fileHandle.getFile().getName(), fileHandle);
-            return;
-        }
-
-        Registry nodeRegistry;
-        if (receiveAddress.equals(ownAddress)) {
-            //Replicate to previous node
-            nodeRegistry = LocateRegistry.getRegistry(prevAddress.getHostAddress(), Constants.RMI_PORT);
-        } else {
-            // Replicate to receive node
-            nodeRegistry = LocateRegistry.getRegistry(receiveAddress.getHostAddress(), Constants.RMI_PORT);
-        }
-
+        Registry nodeRegistry = LocateRegistry.getRegistry(receiveAddress.getHostAddress(), Constants.RMI_PORT);
         NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
         nodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
 
