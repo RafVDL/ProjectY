@@ -121,6 +121,8 @@ public class NamingServer implements NamingServerInterface {
         int[] neighbours = new int[2];
         int prevHash = 0;
         int nextHash = 0;
+        int currentMinimum = 0;
+        int currentMaximum = 10000000;
         boolean found = false;
         //If only one node in network --> neighbours of this node is this node
         if(ipAddresses.size() == 1) {
@@ -145,8 +147,15 @@ public class NamingServer implements NamingServerInterface {
             }
         }
         else {
-            while (it.hasNext() && !found) {
+            while (it.hasNext()) {
                 HashMap.Entry<Integer, InetAddress> pairrr = it.next();
+                if(pairrr.getKey() > currentMinimum && pairrr.getKey() < hashNode) {
+                    currentMinimum = pairrr.getKey();
+                }
+                if(pairrr.getKey() < currentMaximum && pairrr.getKey() > hashNode) {
+                    currentMaximum = pairrr.getKey();
+                }
+                /*
                 if (pairrr.getKey() == hashNode) {
                     prevHash = pairrr.getKey();
                     if (it.hasNext()) {
@@ -159,6 +168,7 @@ public class NamingServer implements NamingServerInterface {
                     }
                     found = true;
                 }
+                */
             }
         }
         neighbours[0] = prevHash;
