@@ -122,7 +122,9 @@ public class NamingServer implements NamingServerInterface {
         int prevHash = 0;
         int nextHash = 0;
         int currentMinimum = 0;
+        int minimum=10000000;
         int currentMaximum = 10000000;
+        int maximum=0;
         boolean found = false;
         //If only one node in network --> neighbours of this node is this node
         if(ipAddresses.size() == 1) {
@@ -149,12 +151,17 @@ public class NamingServer implements NamingServerInterface {
         else {
             while (it.hasNext()) {
                 HashMap.Entry<Integer, InetAddress> pairrr = it.next();
-                if(pairrr.getKey() > currentMinimum && pairrr.getKey() < hashNode) {
-                    currentMinimum = pairrr.getKey();
+                if (pairrr.getKey() < minimum) {
+                    minimum = pairrr.getKey();
                 }
-                if(pairrr.getKey() < currentMaximum && pairrr.getKey() > hashNode) {
-                    currentMaximum = pairrr.getKey();
-                }
+                if (pairrr.getKey() > maximum) {
+                    maximum = pairrr.getKey();
+                    if (pairrr.getKey() > currentMinimum && pairrr.getKey() < hashNode) {
+                        currentMinimum = pairrr.getKey();
+                    }
+                    if (pairrr.getKey() < currentMaximum && pairrr.getKey() > hashNode) {
+                        currentMaximum = pairrr.getKey();
+                    }
                 /*
                 if (pairrr.getKey() == hashNode) {
                     prevHash = pairrr.getKey();
@@ -169,10 +176,30 @@ public class NamingServer implements NamingServerInterface {
                     found = true;
                 }
                 */
+                }
             }
         }
-        neighbours[0] = prevHash;
-        neighbours[1] = nextHash;
+        if (prevHash != 0 && nextHash != 0) {
+            neighbours[0] = prevHash;
+            neighbours[1] = nextHash;
+        }
+        else {
+                //Lowest node prev neighbour is highest node
+                if(currentMinimum == 0) {
+                    neighbours[0] = maximum;
+                    neighbours[1] = currentMaximum;
+                }
+                //Highest node next neighbour is lowest node
+                if(currentMaximum == 10000000) {
+                    neighbours[0] = currentMinimum;
+                    neighbours[1] = minimum;
+                }
+                //Node is neither highest node or lowest node
+                else {
+                    neighbours[0] = currentMinimum;
+                    neighbours[1] = currentMaximum;
+                }
+        }
         return neighbours;
     }
 
