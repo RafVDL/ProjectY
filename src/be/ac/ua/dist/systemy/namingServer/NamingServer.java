@@ -273,6 +273,7 @@ public class NamingServer implements NamingServerInterface {
             Registry currNodeRegistry = LocateRegistry.getRegistry(fileAgentAddress.getHostAddress(), Constants.RMI_PORT);
             NodeInterface currNodeStub = (NodeInterface) currNodeRegistry.lookup("Node");
             currNodeStub.runFailureAgent(nextFileAgentHash, fileAgentHash, fileAgentAddress);
+            System.out.println("Unresponding FileAgent! Starting FailureAgent");
         }
         else {
             latestAgentcount = currentAgentcount;
