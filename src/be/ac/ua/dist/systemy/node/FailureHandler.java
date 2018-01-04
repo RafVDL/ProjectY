@@ -62,6 +62,7 @@ public class FailureHandler {
                             prevNodeStub.updateNext(nextneighboursIP, neighboursHashOfFailedNode[1]);
                         }
                     }
+
                 } catch (IOException e) {
                     System.out.println("Failed to update previous neighbour of failed node");
                     e.printStackTrace();
@@ -70,7 +71,7 @@ public class FailureHandler {
                 try {
                     //Check if next neighbour of failed node equals the node where failureHandler is started
                     if (neighboursHashOfFailedNode[1] == node.getOwnHash()) {
-                        node.updateNext(prevneighboursIP, neighboursHashOfFailedNode[0]);
+                        node.updatePrev(prevneighboursIP, neighboursHashOfFailedNode[0]);
                     }
                     else {
                         if(neighboursHashOfFailedNode[0] != 0 && neighboursHashOfFailedNode[1] != 0 && neighboursHashOfFailedNode[1] != hashFailedNode) {
