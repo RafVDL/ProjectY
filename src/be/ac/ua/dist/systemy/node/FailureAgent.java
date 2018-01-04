@@ -71,6 +71,10 @@ public class FailureAgent implements Runnable, Serializable {
                     //New replicated node will be previous neighbour of failed node
                     neighboursOfFailed = namingServerStub.getNeighbours(hashFailed);
                     hashOfPrevNeighbour = neighboursOfFailed[0];
+                    //If previous neighbour of failed node is this node, send replicated file to own previous neighbour
+                    if(hashOfPrevNeighbour == currNodeHash) {
+                        hashOfPrevNeighbour = currNodeStub.getPrevHash();
+                    }
                     addressOfPrevNeighbour = namingServerStub.getIPNode(hashOfPrevNeighbour);
                     fileHandle.removeAvailable(hashFailed);
                     System.out.println(currFile + " will be replicated on " + addressOfPrevNeighbour + " " + hashOfPrevNeighbour);
