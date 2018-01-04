@@ -1,5 +1,6 @@
 package be.ac.ua.dist.systemy.node.GUI;
 
+import be.ac.ua.dist.systemy.networking.Communications;
 import be.ac.ua.dist.systemy.node.Node;
 import be.ac.ua.dist.systemy.node.NodeMain;
 import javafx.application.Platform;
@@ -14,6 +15,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.UnknownHostException;
+import java.util.Scanner;
 
 public class LaunchController {
     private Stage primaryStage;
@@ -62,6 +64,60 @@ public class LaunchController {
             NodeMain.setNode(Node.startNode(enteredHostName, address, true));
             primaryStage.close();
             startMainGUI();
+
+            Thread thread = new Thread(()->{
+                // Listen for commands
+                while (NodeMain.getNode().isRunning()) {
+                    Scanner sc = new Scanner(System.in);
+                    String cmd = sc.nextLine().toLowerCase();
+                    switch (cmd) {
+                        case "debug":
+                            Communications.setDebugging(true);
+                            System.out.println("Debugging enabled");
+                            break;
+
+                        case "undebug":
+                            Communications.setDebugging(false);
+                            System.out.println("Debugging disabled");
+                            break;
+
+                        case "neighbours":
+                        case "neighbors":
+                        case "neigh":
+                        case "nb":
+                            System.out.println("Prev: " + NodeMain.getNode().getPrevHash() + " === Next: " + NodeMain.getNode().getNextHash());
+                            break;
+
+                        case "localFiles":
+                        case "lf":
+                            System.out.println("Local files: " + NodeMain.getNode().getLocalFiles());
+                            break;
+
+                        case "replicatedFiles":
+                        case "rf":
+                            System.out.println("Replicated files: " + NodeMain.getNode().getReplicatedFiles());
+                            break;
+
+                        case "ownerFiles":
+                        case "of":
+                            System.out.println("Owner files: " + NodeMain.getNode().getOwnerFiles());
+                            break;
+
+                        case "allfiles":
+                            System.out.println("All files: " + NodeMain.getNode().getAllFiles());
+                            break;
+
+                        case "fafiles":
+                            System.out.println("All fileagentfiles: " + NodeMain.getNode().getFileAgentFiles());
+                            break;
+
+                        case "obfiles":
+                            System.out.println("Contents of the observable: " + NodeMain.getNode().getAllFilesObservable());
+                            break;
+                    }
+                }
+            });
+            thread.start();
 
         } catch (UnknownHostException e) {
             e.printStackTrace();

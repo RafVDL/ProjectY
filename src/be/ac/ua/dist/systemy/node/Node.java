@@ -137,6 +137,14 @@ public class Node implements NodeInterface {
         return replicatedFiles;
     }
 
+    public Map<String, FileHandle> getOwnerFiles() {
+        return ownerFiles;
+    }
+
+    public HashMap<String, Integer> getFileAgentFiles() {
+        return fileAgentFiles;
+    }
+
     public Set getDownloadingFiles() {
         return downloadingFiles;
     }
