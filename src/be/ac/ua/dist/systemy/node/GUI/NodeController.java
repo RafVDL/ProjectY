@@ -8,6 +8,7 @@ import be.ac.ua.dist.systemy.node.NodeMain;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
 
 import java.awt.*;
@@ -22,9 +23,12 @@ import java.rmi.registry.Registry;
 
 public class NodeController {
     private Node node;
+    private String selectedFileName;
 
     @FXML
     private ListView<String> fileListView;
+    @FXML
+    private Button deleteLocalBtn;
 
     @FXML
     private void initialize() {
@@ -36,6 +40,15 @@ public class NodeController {
         }
 
         fileListView.setItems(node.getAllFilesObservable());
+        fileListView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+            selectedFileName = newValue;
+
+            // If the file is not downloaded, disable the delete local button
+            File selectedFile = new File(Constants.DOWNLOADED_FILES_PATH + selectedFileName);
+            if (!selectedFile.isFile()) {
+                deleteLocalBtn.setDisable(true);
+            }
+        });
     }
 
     private void showNodeStartError() {
@@ -48,18 +61,16 @@ public class NodeController {
 
     @FXML
     private void handleOpen() {
-        String fileName = fileListView.getSelectionModel().getSelectedItem();
-        System.out.println("Open button pressed on: " + fileName);
-        if (fileName != null) {
+        if (selectedFileName != null) {
             File fileToOpen;
 
-            if (node.getLocalFiles().containsKey(fileName)) {
-                fileToOpen = new File(Constants.LOCAL_FILES_PATH + fileName);
-            } else if (node.getReplicatedFiles().containsKey(fileName)) {
-                fileToOpen = new File(Constants.REPLICATED_FILES_PATH + fileName);
+            if (node.getLocalFiles().containsKey(selectedFileName)) {
+                fileToOpen = new File(Constants.LOCAL_FILES_PATH + selectedFileName);
+            } else if (node.getReplicatedFiles().containsKey(selectedFileName)) {
+                fileToOpen = new File(Constants.REPLICATED_FILES_PATH + selectedFileName);
             } else {
-                node.downloadAFile(fileName);
-                fileToOpen = new File(Constants.DOWNLOADED_FILES_PATH + fileName);
+                node.downloadAFile(selectedFileName);
+                fileToOpen = new File(Constants.DOWNLOADED_FILES_PATH + selectedFileName);
                 while (!fileToOpen.isFile()) {
                     try {
                         Thread.sleep(500);
@@ -68,22 +79,24 @@ public class NodeController {
                         System.err.println("Interrupted while waiting file to finish downloading.");
                     }
                 }
+                deleteLocalBtn.setDisable(true);
             }
 
             // Contact owner of the file and increase the downloads counter
             try {
                 Registry namingServerRegistry = LocateRegistry.getRegistry(node.getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
                 NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
-                InetAddress ownerAddress = namingServerStub.getOwner(fileName);
+                InetAddress ownerAddress = namingServerStub.getOwner(selectedFileName);
 
                 Registry ownerNodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
                 NodeInterface ownerNodeStub = (NodeInterface) ownerNodeRegistry.lookup("Node");
-                ownerNodeStub.increaseDownloads(fileName);
+                ownerNodeStub.increaseDownloads(selectedFileName);
 
             } catch (RemoteException | UnknownHostException | NotBoundException e) {
                 e.printStackTrace();
             }
 
+            // Actually open the file
             try {
                 Desktop.getDesktop().open(fileToOpen);
             } catch (IOException e) {
@@ -94,26 +107,16 @@ public class NodeController {
 
     @FXML
     private void handleDelete() {
-        String fileName = fileListView.getSelectionModel().getSelectedItem();
-        System.out.println("Delete button pressed on: " + fileName);
-        if (fileName != null) {
-            node.deleteFileFromNetwork(fileName);
+        if (selectedFileName != null) {
+            node.deleteFileFromNetwork(selectedFileName);
             fileListView.getSelectionModel().selectFirst();
         }
     }
 
     @FXML
     private void handleDeleteLocal() {
-        String fileName = fileListView.getSelectionModel().getSelectedItem();
-        System.out.println("Delete local button pressed on: " + fileName);
-        if (fileName != null) {
-            node.deleteDownloadedFile(fileName);
+        if (selectedFileName != null) {
+            node.deleteDownloadedFile(selectedFileName);
         }
-    }
-
-    @FXML
-    private void handlePrintObservable() {
-        System.out.println("Contents of the observable: " + node.getAllFilesObservable());
-        System.out.println("Contents of the map: " + node.getAllFiles());
     }
 }
