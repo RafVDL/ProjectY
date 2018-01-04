@@ -951,8 +951,7 @@ public class Node implements NodeInterface {
 
                         // If downloads = 0 -> delete local copy and copy of owner
                         if (downloads == 0) {
-                            prevNodeStub.deleteFileFromNode(localEntry.getValue());
-                            deleteFileFromNode(localEntry.getValue());
+                            deleteFileFromNetwork(localEntry.getKey());
                         } else {
                             // Else update download locations in the FileHandle
                             prevNodeStub.addOwnerFileList(localEntry.getValue());
@@ -1009,8 +1008,7 @@ public class Node implements NodeInterface {
                         FileHandle fileHandle = ownerNodeStub.getReplicatedFiles().get(localEntry.getKey());
                         if (fileHandle != null) {
                             if (ownerNodeStub.getReplicatedFiles().get(localEntry.getKey()).getDownloads() == 0) {
-                                ownerNodeStub.deleteFileFromNode(localEntry.getValue());
-                                deleteFileFromNode(localEntry.getValue());
+                                deleteFileFromNetwork(localEntry.getKey());
                             } else {
                                 // Else update download locations in the FileHandle
                                 ownerNodeStub.removeFromAvailableNodes(localEntry.getKey(), ownHash);
