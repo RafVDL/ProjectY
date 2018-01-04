@@ -15,20 +15,21 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.AlreadyBoundException;
-import java.rmi.NoSuchObjectException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Scanner;
+import java.util.TreeMap;
 
 public class NamingServer implements NamingServerInterface {
     private final InetAddress serverIP;
     private TreeMap<Integer, InetAddress> ipAddresses = new TreeMap<>();
 
-    private static int latestAgentcount=-1;
+    private static int latestAgentcount = -1;
     private static int currentAgentcount;
     private static InetAddress fileAgentAddress;
     private static int fileAgentHash;
@@ -122,11 +123,11 @@ public class NamingServer implements NamingServerInterface {
         int prevHash = 0;
         int nextHash = 0;
         int currentMinimum = 0;
-        int minimum=10000000;
+        int minimum = 10000000;
         int currentMaximum = 10000000;
-        int maximum=0;
+        int maximum = 0;
         //If only one node in network --> neighbours of this node is this node
-        if(ipAddresses.size() == 1) {
+        if (ipAddresses.size() == 1) {
             HashMap.Entry<Integer, InetAddress> pair = it.next();
             if (pair.getKey() == hashNode) {
                 prevHash = hashNode;
@@ -134,7 +135,7 @@ public class NamingServer implements NamingServerInterface {
             }
         }
         //If only two nodes in network --> neighbours of this node is other node
-        if(ipAddresses.size() == 2) {
+        if (ipAddresses.size() == 2) {
             HashMap.Entry<Integer, InetAddress> pairr = it.next();
             if (pairr.getKey() == hashNode) {
                 if (it.hasNext()) {
@@ -152,8 +153,7 @@ public class NamingServer implements NamingServerInterface {
                     }
                 }
             }
-        }
-        else {
+        } else {
             while (it.hasNext()) {
                 HashMap.Entry<Integer, InetAddress> pairrr = it.next();
                 if (pairrr.getKey() < minimum) {
@@ -178,23 +178,22 @@ public class NamingServer implements NamingServerInterface {
         if (prevHash != 0 && nextHash != 0) {
             neighbours[0] = prevHash;
             neighbours[1] = nextHash;
-        }
-        else {
-                //Lowest node prev neighbour is highest node
-                if(currentMinimum == 0 && currentMaximum != 10000000) {
-                    neighbours[0] = maximum;
-                    neighbours[1] = currentMaximum;
-                }
-                //Highest node next neighbour is lowest node
-                if(currentMaximum == 10000000 && currentMinimum != 0) {
-                    neighbours[0] = currentMinimum;
-                    neighbours[1] = minimum;
-                }
-                //Node is neither highest node or lowest node
-                if (currentMinimum != 0 && currentMaximum != 10000000) {
-                    neighbours[0] = currentMinimum;
-                    neighbours[1] = currentMaximum;
-                }
+        } else {
+            //Lowest node prev neighbour is highest node
+            if (currentMinimum == 0 && currentMaximum != 10000000) {
+                neighbours[0] = maximum;
+                neighbours[1] = currentMaximum;
+            }
+            //Highest node next neighbour is lowest node
+            if (currentMaximum == 10000000 && currentMinimum != 0) {
+                neighbours[0] = currentMinimum;
+                neighbours[1] = minimum;
+            }
+            //Node is neither highest node or lowest node
+            if (currentMinimum != 0 && currentMaximum != 10000000) {
+                neighbours[0] = currentMinimum;
+                neighbours[1] = currentMaximum;
+            }
         }
 
         return neighbours;
@@ -269,9 +268,9 @@ public class NamingServer implements NamingServerInterface {
     }
 
     public void latestFileAgent(InetAddress thisAddress, int thisHash, int nextHash, int number) {
-        fileAgentHash= thisHash;
+        fileAgentHash = thisHash;
         fileAgentAddress = thisAddress;
-        nextFileAgentHash= nextHash;
+        nextFileAgentHash = nextHash;
         currentAgentcount = number;
     }
 
@@ -284,8 +283,7 @@ public class NamingServer implements NamingServerInterface {
             NodeInterface currNodeStub = (NodeInterface) currNodeRegistry.lookup("Node");
             currNodeStub.runFailureAgent(nextFileAgentHash, fileAgentHash, fileAgentAddress);
             System.out.println("Unresponding FileAgent! Starting FailureAgent");
-        }
-        else {
+        } else {
             latestAgentcount = currentAgentcount;
         }
 
@@ -326,6 +324,8 @@ public class NamingServer implements NamingServerInterface {
 
                 case "clear":
                     namingServer.ipAddresses.clear();
+                    latestAgentcount = -1;
+                    currentAgentcount = 0;
                     System.out.println("----------Cleared network table----------\n");
                     break;
 
