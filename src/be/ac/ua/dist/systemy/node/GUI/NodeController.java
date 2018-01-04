@@ -10,6 +10,9 @@ import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ListView;
+import javafx.scene.image.Image;
+import javafx.scene.layout.*;
+import javafx.stage.Stage;
 
 import java.awt.*;
 import java.io.File;
@@ -23,21 +26,33 @@ import java.rmi.registry.Registry;
 
 public class NodeController {
     private Node node;
+    private Stage primaryStage;
     private String selectedFileName;
 
+    @FXML
+    private BorderPane borderPane;
     @FXML
     private ListView<String> fileListView;
     @FXML
     private Button deleteLocalBtn;
 
+    public NodeController(Stage primaryStage) {
+        this.primaryStage = primaryStage;
+    }
+
     @FXML
     private void initialize() {
         node = NodeMain.getNode();
-
         if (node == null) {
             showNodeStartError();
             Platform.exit();
         }
+        primaryStage.setTitle("Node (" + node.getOwnHash() + ") running in SystemY " + node.getOwnAddress());
+        BackgroundImage backgroundImage = new BackgroundImage(new Image(getClass().getResource("Pictures/background.png").toExternalForm(), 650, 500, true, true),
+                BackgroundRepeat.REPEAT, BackgroundRepeat.NO_REPEAT, BackgroundPosition.DEFAULT,
+                BackgroundSize.DEFAULT);
+        borderPane.setBackground(new Background(backgroundImage));
+
 
         fileListView.setItems(node.getAllFilesObservable());
         fileListView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {

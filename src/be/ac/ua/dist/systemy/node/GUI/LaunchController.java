@@ -97,11 +97,10 @@ public class LaunchController {
      */
     private void startMainGUI() {
         try {
-//            NodeController nodeController = new NodeController();
+            NodeController nodeController = new NodeController(primaryStage);
             FXMLLoader loader = new FXMLLoader(getClass().getResource("NodeView.fxml"));
-//            loader.setController(nodeController); // Controller is set in the FXML
+            loader.setController(nodeController);
             primaryStage.setScene(new Scene(loader.load()));
-            primaryStage.setTitle("Node active");
             primaryStage.show();
         } catch (IOException e) {
             e.printStackTrace();
