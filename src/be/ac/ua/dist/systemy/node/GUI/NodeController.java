@@ -6,12 +6,15 @@ import be.ac.ua.dist.systemy.node.Node;
 import be.ac.ua.dist.systemy.node.NodeInterface;
 import be.ac.ua.dist.systemy.node.NodeMain;
 import javafx.application.Platform;
+import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.image.Image;
 import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
 import java.awt.*;
@@ -49,12 +52,47 @@ public class NodeController {
         }
         primaryStage.setTitle("Node (" + node.getOwnHash() + ") running in SystemY " + node.getOwnAddress());
         BackgroundImage backgroundImage = new BackgroundImage(new Image(getClass().getResource("Pictures/background.png").toExternalForm(), 650, 500, true, true),
-                BackgroundRepeat.REPEAT, BackgroundRepeat.NO_REPEAT, BackgroundPosition.DEFAULT,
-                BackgroundSize.DEFAULT);
+                BackgroundRepeat.REPEAT, BackgroundRepeat.NO_REPEAT, BackgroundPosition.DEFAULT, BackgroundSize.DEFAULT);
         borderPane.setBackground(new Background(backgroundImage));
 
 
         fileListView.setItems(node.getAllFilesObservable());
+        fileListView.setCellFactory(lv -> new ListCell<String>() {
+            @Override
+            protected void updateItem(String text, boolean empty) {
+                super.updateItem(text, empty);
+                if (text == null) {
+                    setText(null);
+                    setTextFill(null);
+                } else {
+                    File selectedFile = new File(Constants.DOWNLOADED_FILES_PATH + selectedFileName);
+                    Color color = Constants.DEFAULT_COLOR;
+                    if (node.getLocalFiles().containsKey(text)) {
+                        color = Constants.LOCAL_COLOR;
+                    } else if (node.getReplicatedFiles().containsKey(text)) {
+                        color = Constants.REPLICATED_COLOR;
+                    } else if (selectedFile.isFile()) {
+                        color = Constants.DOWNLOADED_COLOR;
+                    }
+                    setTextFill(color);
+                    setText(text);
+                }
+            }
+        });
+
+        // Workaround for the colors not always updating
+        node.getAllFilesObservable().addListener((ListChangeListener<String>) c -> {
+            Thread thread = new Thread(() -> {
+                try {
+                    Thread.sleep(500);
+                    fileListView.refresh();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+            thread.start();
+        });
+
         fileListView.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
             selectedFileName = newValue;
 
@@ -134,4 +172,22 @@ public class NodeController {
             node.deleteDownloadedFile(selectedFileName);
         }
     }
+
+//    public class ColoredText{
+//        private final String text;
+//        private final Color color;
+//
+//        public ColoredText(String text, Color color) {
+//            this.text = text;
+//            this.color = color;
+//        }
+//
+//        public String getText() {
+//            return text;
+//        }
+//
+//        public Color getColor() {
+//            return color;
+//        }
+//    }
 }
