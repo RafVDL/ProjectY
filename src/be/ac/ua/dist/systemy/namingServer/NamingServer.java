@@ -143,8 +143,14 @@ public class NamingServer implements NamingServerInterface {
                     prevHash = pairr.getKey();
                 }
             } else {
-                nextHash = pairr.getKey();
-                prevHash = pairr.getKey();
+                if(it.hasNext()) {
+                    pairr = it.next();
+                    if (pairr.getKey() == hashNode) {
+                        HashMap.Entry<Integer, InetAddress> pairrrr = it.next();
+                        nextHash = pairrrr.getKey();
+                        prevHash = pairrrr.getKey();
+                    }
+                }
             }
         }
         else {
@@ -165,6 +171,10 @@ public class NamingServer implements NamingServerInterface {
             }
         }
 
+        if(prevHash == 0 && nextHash == 0) {
+            neighbours[0] = 0;
+            neighbours[1] = 0;
+        }
         if (prevHash != 0 && nextHash != 0) {
             neighbours[0] = prevHash;
             neighbours[1] = nextHash;
