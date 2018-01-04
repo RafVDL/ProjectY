@@ -55,17 +55,28 @@ public class LaunchController {
     private void handleLaunch() {
         String enteredAddress = addressField.getText();
         String enteredHostName = nameField.getText();
+
+        if (enteredAddress.equals("")) {
+            try {
+                addressField.setText(InetAddress.getLocalHost().getHostAddress());
+                enteredAddress = InetAddress.getLocalHost().getHostAddress();
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            }
+        }
+
         try {
             InetAddress address = InetAddress.getByName(enteredAddress);
             if (NetworkInterface.getByInetAddress(address) == null) {
                 showIPNotLocal();
                 return;
             }
+
             NodeMain.setNode(Node.startNode(enteredHostName, address, true));
             primaryStage.close();
             startMainGUI();
 
-            Thread thread = new Thread(()->{
+            Thread thread = new Thread(() -> {
                 // Listen for commands
                 while (NodeMain.getNode().isRunning()) {
                     Scanner sc = new Scanner(System.in);
