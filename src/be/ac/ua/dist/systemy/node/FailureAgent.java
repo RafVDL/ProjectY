@@ -81,7 +81,7 @@ public class FailureAgent implements Runnable, Serializable {
                     currNodeStub.replicateFailed(fileHandle, addressOfPrevNeighbour);
                 }
             }
-            /*
+
             //Stap 2: Replicated files
             System.out.println("Handling replicated files from this node...");
             for (FileHandle fileHandle : replicatedFiles) {
@@ -91,18 +91,25 @@ public class FailureAgent implements Runnable, Serializable {
                 System.out.println("Local hash van "+ currFile + ": " + localHash);
                 //Replicated file is locally available on failed node
                 if (localHash == hashFailed){
-                    System.out.println(currFile + "was local on failed node and will be processed...");
+                    System.out.println(currFile + " was local on failed node and will be processed...");
                     //File needs locally available on this node and needs to be rereplicated
+                    hashOfPrevNeighbour = currNodePrevNeighbour;
+                    if(currNodePrevNeighbour == hashFailed) {
+                        neighboursOfFailed = namingServerStub.getNeighbours(hashFailed);
+                        hashOfPrevNeighbour = neighboursOfFailed[0];
+                    }
+                    addressOfPrevNeighbour = namingServerStub.getIPNode(hashOfPrevNeighbour);
                     fileHandle.setLocalAddress(currNode);
                     fileHandle.removeAvailable(hashFailed);
-                    //Verander map van file
-                    //newFileName =  Constants.LOCAL_FILES_PATH + fileHandle.getFile().getName();
-                    //File currFile = fileHandle.getFile();
-                    //currFile.renameTo(new File(newFileName));
-                    currNodeStub.replicateWhenJoining(fileHandle);
+                    currNodeStub.replicateFailed(fileHandle, addressOfPrevNeighbour);
+                    //Change file from replicated to local
+                    String newFileName =  Constants.LOCAL_FILES_PATH + fileHandle.getFile().getName();
+                    File currFile = fileHandle.getFile();
+                    currFile.renameTo(new File(newFileName));
+                    currNodeStub.removeReplicatedFile(fileHandle);
                 }
             }
-            */
+
         } catch (IOException | NotBoundException e) {
             e.printStackTrace();
         }
