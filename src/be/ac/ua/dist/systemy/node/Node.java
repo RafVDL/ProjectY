@@ -445,14 +445,16 @@ public class Node implements NodeInterface {
 
 
         Thread t2 = new Thread(() -> {
+            InetAddress tempAddress = nextAddress;
+            int tempHash = nextHash;
             try {
-                Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
+                Registry registry = LocateRegistry.getRegistry(tempAddress.getHostAddress(), RMI_PORT);
                 NodeInterface stub = (NodeInterface) registry.lookup("Node");
                 stub.runFileAgent(fileAgentFiles);
             } catch (RemoteException | NotBoundException | InterruptedException e) {
                 try {
                     //failureAgent wordt voor de eerste keer gestart en zal uitgevoerd vooraleer de fileAgent terug zal worden opgestart
-                    runFailureAgent(nextHash, ownHash, ownAddress);
+                    runFailureAgent(tempHash, ownHash, ownAddress);
                 } catch (InterruptedException e1) {
                     e1.printStackTrace();
                 } catch (RemoteException e1) {
@@ -1019,6 +1021,7 @@ public class Node implements NodeInterface {
             tcpServer.stop();
             setRunning(false);
             leaveNetwork();
+            //insert run file agent here?
             UnicastRemoteObject.unexportObject(this, true);
             System.out.println("Left the network+");
             System.exit(0);
