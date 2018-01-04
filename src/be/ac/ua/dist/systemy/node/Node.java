@@ -289,6 +289,7 @@ public class Node implements NodeInterface {
      *
      * @param filename the name of the file to remove
      */
+    @Override
     public void deleteFileFromNetwork(String filename) {
         if (allFiles.containsKey(filename)) {
             allFiles.put(filename, -1);
@@ -951,7 +952,7 @@ public class Node implements NodeInterface {
 
                         // If downloads = 0 -> delete local copy and copy of owner
                         if (downloads == 0) {
-                            deleteFileFromNetwork(localEntry.getKey());
+                            prevNodeStub.deleteFileFromNetwork(localEntry.getKey());
                         } else {
                             // Else update download locations in the FileHandle
                             prevNodeStub.addOwnerFileList(localEntry.getValue());
@@ -1008,7 +1009,7 @@ public class Node implements NodeInterface {
                         FileHandle fileHandle = ownerNodeStub.getReplicatedFiles().get(localEntry.getKey());
                         if (fileHandle != null) {
                             if (ownerNodeStub.getReplicatedFiles().get(localEntry.getKey()).getDownloads() == 0) {
-                                deleteFileFromNetwork(localEntry.getKey());
+                                ownerNodeStub.deleteFileFromNetwork(localEntry.getKey());
                             } else {
                                 // Else update download locations in the FileHandle
                                 ownerNodeStub.removeFromAvailableNodes(localEntry.getKey(), ownHash);
