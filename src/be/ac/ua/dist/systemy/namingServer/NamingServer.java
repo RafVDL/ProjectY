@@ -118,83 +118,14 @@ public class NamingServer implements NamingServerInterface {
     }
 
     public int[] getNeighbours(int hashNode) {
-        Iterator<HashMap.Entry<Integer, InetAddress>> it = ipAddresses.entrySet().iterator();
         int[] neighbours = new int[2];
-        int prevHash = 0;
-        int nextHash = 0;
-        int currentMinimum = 0;
-        int minimum = 10000000;
-        int currentMaximum = 10000000;
-        int maximum = 0;
-        //If only one node in network --> neighbours of this node is this node
-        if (ipAddresses.size() == 1) {
-            HashMap.Entry<Integer, InetAddress> pair = it.next();
-            if (pair.getKey() == hashNode) {
-                prevHash = hashNode;
-                nextHash = hashNode;
-            }
-        }
-        //If only two nodes in network --> neighbours of this node is other node
-        if (ipAddresses.size() == 2) {
-            HashMap.Entry<Integer, InetAddress> pairr = it.next();
-            if (pairr.getKey() == hashNode) {
-                if (it.hasNext()) {
-                    pairr = it.next();
-                    nextHash = pairr.getKey();
-                    prevHash = pairr.getKey();
-                }
-            } else {
-                if(it.hasNext()) {
-                    pairr = it.next();
-                    if (pairr.getKey() == hashNode) {
-                        HashMap.Entry<Integer, InetAddress> pairrrr = it.next();
-                        nextHash = pairrrr.getKey();
-                        prevHash = pairrrr.getKey();
-                    }
-                }
-            }
-        } else {
-            while (it.hasNext()) {
-                HashMap.Entry<Integer, InetAddress> pairrr = it.next();
-                if (pairrr.getKey() < minimum) {
-                    minimum = pairrr.getKey();
-                }
-                if (pairrr.getKey() > maximum) {
-                    maximum = pairrr.getKey();
-                }
-                if (pairrr.getKey() > currentMinimum && pairrr.getKey() < hashNode) {
-                    currentMinimum = pairrr.getKey();
-                }
-                if (pairrr.getKey() < currentMaximum && pairrr.getKey() > hashNode) {
-                    currentMaximum = pairrr.getKey();
-                }
-            }
-        }
 
-        if(prevHash == 0 && nextHash == 0) {
-            neighbours[0] = 0;
-            neighbours[1] = 0;
-        }
-        if (prevHash != 0 && nextHash != 0) {
-            neighbours[0] = prevHash;
-            neighbours[1] = nextHash;
-        } else {
-            //Lowest node prev neighbour is highest node
-            if (currentMinimum == 0 && currentMaximum != 10000000) {
-                neighbours[0] = maximum;
-                neighbours[1] = currentMaximum;
-            }
-            //Highest node next neighbour is lowest node
-            if (currentMaximum == 10000000 && currentMinimum != 0) {
-                neighbours[0] = currentMinimum;
-                neighbours[1] = minimum;
-            }
-            //Node is neither highest node or lowest node
-            if (currentMinimum != 0 && currentMaximum != 10000000) {
-                neighbours[0] = currentMinimum;
-                neighbours[1] = currentMaximum;
-            }
-        }
+        // no point in trying if there are no known addresses or the given hash is not known to the naming server
+        if (ipAddresses.size() == 0 || !ipAddresses.containsKey(hashNode))
+            return neighbours;
+
+        neighbours[0] = ipAddresses.lowerKey(hashNode) != null ? ipAddresses.lowerKey(hashNode) : ipAddresses.lastKey(); // previous hash
+        neighbours[1] = ipAddresses.higherKey(hashNode) != null ? ipAddresses.higherKey(hashNode) : ipAddresses.firstKey(); // next hash
 
         return neighbours;
     }
