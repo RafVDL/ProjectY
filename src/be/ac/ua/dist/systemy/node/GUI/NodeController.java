@@ -15,6 +15,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 
 import java.awt.*;
@@ -38,6 +39,14 @@ public class NodeController {
     private ListView<String> fileListView;
     @FXML
     private Button deleteLocalBtn;
+    @FXML
+    private Rectangle localRect;
+    @FXML
+    private Rectangle replicatedRect;
+    @FXML
+    private Rectangle downloadedRect;
+    @FXML
+    private Rectangle otherRect;
 
     public NodeController(Stage primaryStage) {
         this.primaryStage = primaryStage;
@@ -51,11 +60,17 @@ public class NodeController {
             Platform.exit();
         }
         primaryStage.setTitle("Node (" + node.getOwnHash() + ") running in SystemY " + node.getOwnAddress());
-        BackgroundImage backgroundImage = new BackgroundImage(new Image(getClass().getResource("Pictures/background.png").toExternalForm(), 650, 500, true, true),
-                BackgroundRepeat.REPEAT, BackgroundRepeat.NO_REPEAT, BackgroundPosition.DEFAULT, BackgroundSize.DEFAULT);
+        BackgroundImage backgroundImage = new BackgroundImage(new Image(getClass().getResource("Pictures/background.png").toExternalForm(), 650, 500, false, true),
+                BackgroundRepeat.NO_REPEAT, BackgroundRepeat.NO_REPEAT, BackgroundPosition.DEFAULT, BackgroundSize.DEFAULT);
         borderPane.setBackground(new Background(backgroundImage));
 
+        // Set the legend
+        localRect.setFill(Constants.LOCAL_COLOR);
+        replicatedRect.setFill(Constants.REPLICATED_COLOR);
+        downloadedRect.setFill(Constants.DOWNLOADED_COLOR);
+        otherRect.setFill(Constants.DEFAULT_COLOR);
 
+        // Set the listView
         fileListView.setItems(node.getAllFilesObservable());
         fileListView.setCellFactory(lv -> new ListCell<String>() {
             @Override
