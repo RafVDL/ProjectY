@@ -7,6 +7,8 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.net.InetAddress;
+import java.util.Iterator;
 
 public class FileHandle implements Serializable {
 
@@ -15,6 +17,7 @@ public class FileHandle implements Serializable {
     private File logFile;
     private int downloads;
     private final Set<Integer> availableNodes = new LinkedHashSet<>(); //TODO: When a Node downloads a file, add it here?
+    private InetAddress localAddress;
 
     public FileHandle(String fileName, boolean local) {
         this.fileName = fileName;
@@ -54,9 +57,19 @@ public class FileHandle implements Serializable {
         return availableNodes;
     }
 
+    public void removeAvailable(int hashNode) {
+        for (Iterator<Integer> iterator = availableNodes.iterator(); iterator.hasNext();) {
+            Integer s =  iterator.next();
+            if (s == hashNode) {
+                iterator.remove();
+            }
+        }
+    }
+
     public FileHandle getAsLocal() {
         FileHandle fileHandle = new FileHandle(fileName, true);
         fileHandle.downloads = downloads;
+        fileHandle.localAddress = localAddress;
         fileHandle.availableNodes.addAll(availableNodes);
         return fileHandle;
     }
@@ -64,6 +77,7 @@ public class FileHandle implements Serializable {
     public FileHandle getAsReplicated() {
         FileHandle fileHandle = new FileHandle(fileName, false);
         fileHandle.downloads = downloads;
+        fileHandle.localAddress = localAddress;
         fileHandle.availableNodes.addAll(availableNodes);
         return fileHandle;
     }
@@ -108,6 +122,14 @@ public class FileHandle implements Serializable {
     public int hashCode() {
         // A HashSet carries an internal HashMap with <Integer(HashCode), Object> entries and uses equals() as well as the equals method of the HashCode to determine equality.
         return fileName.hashCode();
+    }
+
+    public void setLocalAddress(InetAddress localAddress) {
+        this.localAddress = localAddress;
+    }
+
+    public InetAddress getLocalAddress() {
+        return localAddress;
     }
 
 }

@@ -9,11 +9,15 @@ import be.ac.ua.dist.systemy.networking.packet.*;
 import be.ac.ua.dist.systemy.networking.tcp.TCPServer;
 import be.ac.ua.dist.systemy.networking.udp.MulticastServer;
 import be.ac.ua.dist.systemy.networking.udp.UnicastServer;
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
 import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.AlreadyBoundException;
+import java.rmi.NoSuchObjectException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -22,32 +26,58 @@ import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static be.ac.ua.dist.systemy.Constants.RMI_PORT;
 
 public class Node implements NodeInterface {
 
     private final InetAddress ownAddress;
     private final int ownHash;
+    private String grantedDownloadFile;
     private Map<String, FileHandle> localFiles;
     private Map<String, FileHandle> replicatedFiles;
     private Map<String, FileHandle> ownerFiles;
     private Set<String> downloadingFiles;
+    private Map<String, Integer> allFiles;
+    private ObservableList<String> allFilesObservable;
+    private HashMap<String, Integer> fileAgentFiles;
+
 
     private volatile InetAddress namingServerAddress;
     private InetAddress prevAddress;
     private InetAddress nextAddress;
+    private InetAddress ownerAddress;
 
     private volatile int prevHash;
     private volatile int nextHash;
 
-    private boolean running = true;
+    private boolean isRunning = true;
+    private boolean isGUIStarted;
+    private boolean isInitialized = false;
+    private boolean shutdown = false;
 
     private InetAddress multicastGroup;
     private Server multicastServer;
     private Server tcpServer;
 
-    public Node(String nodeName, InetAddress address) throws IOException {
+    private long joinTimestamp = 0;
+    private int retries = 0;
+
+    public Node(String nodeName, InetAddress address, boolean isGUIStarted) throws UnknownHostException {
+        this.isGUIStarted = isGUIStarted;
+
         this.ownAddress = address;
+        this.ownerAddress = ownAddress;
         this.ownHash = calculateHash(nodeName);
+        this.allFiles = new HashMap<>();
+        this.allFilesObservable = FXCollections.observableArrayList(new ArrayList<>());
+        this.grantedDownloadFile = "null";
+
+        this.localFiles = new HashMap<>();
+        this.replicatedFiles = new HashMap<>();
+        this.ownerFiles = new HashMap<>();
+        this.downloadingFiles = new HashSet<>();
 
         multicastGroup = InetAddress.getByName(Constants.MULTICAST_ADDRESS);
     }
@@ -76,6 +106,19 @@ public class Node implements NodeInterface {
         return prevHash;
     }
 
+    @Override
+    public int getNextHash() {
+        return nextHash;
+    }
+
+    public boolean isInitialized() {
+        return isInitialized;
+    }
+
+    public void setInitialized(boolean initialized) {
+        isInitialized = initialized;
+    }
+
     public void setNamingServerAddress(InetAddress ipAddress) {
         this.namingServerAddress = ipAddress;
     }
@@ -83,7 +126,6 @@ public class Node implements NodeInterface {
     public InetAddress getNamingServerAddress() {
         return namingServerAddress;
     }
-
 
     @Override
     public Map<String, FileHandle> getLocalFiles() {
@@ -95,23 +137,65 @@ public class Node implements NodeInterface {
         return replicatedFiles;
     }
 
+    public Map<String, FileHandle> getOwnerFiles() {
+        return ownerFiles;
+    }
+
+    public HashMap<String, Integer> getFileAgentFiles() {
+        return fileAgentFiles;
+    }
+
     public Set getDownloadingFiles() {
         return downloadingFiles;
     }
 
+    public String getFileLockRequest() {
+        AtomicReference<String> fileLockRequest = new AtomicReference<>("null");
+        allFiles.forEach((String key, Integer value) -> {
+            if (ownHash == value) fileLockRequest.set(key);
+        });
+        return fileLockRequest.get();
+    }
+
+    public void downloadAFile(String filename) {
+        if (allFiles.containsKey(filename)) {
+            allFiles.put(filename, ownHash);
+        } else {
+            System.out.println("File does not exist or you are the owner, try again");
+        }
+    }
+
+    @Override
+    public Map<String, Integer> getAllFiles() {
+        return allFiles;
+    }
+
+    public ObservableList<String> getAllFilesObservable() {
+        return allFilesObservable;
+    }
+
     @Override
     public void addLocalFileList(FileHandle fileHandle) {
-        localFiles.put(fileHandle.getFile().getName(), fileHandle);
+        localFiles.put(fileHandle.getFile().getName(), fileHandle.getAsLocal());
     }
 
     @Override
     public void addReplicatedFileList(FileHandle fileHandle) {
-        replicatedFiles.put(fileHandle.getFile().getName(), fileHandle);
+        if (localFiles.containsKey(fileHandle.getFile().getName())) {
+            replicatedFiles.put(fileHandle.getFile().getName(), fileHandle.getAsLocal());
+        } else {
+            replicatedFiles.put(fileHandle.getFile().getName(), fileHandle);
+        }
     }
 
     @Override
     public void addOwnerFileList(FileHandle fileHandle) {
-        ownerFiles.put(fileHandle.getFile().getName(), fileHandle);
+        if (localFiles.containsKey(fileHandle.getFile().getName())) {
+            ownerFiles.put(fileHandle.getFile().getName(), fileHandle.getAsLocal());
+        } else {
+            ownerFiles.put(fileHandle.getFile().getName(), fileHandle);
+        }
+
     }
 
     @Override
@@ -127,6 +211,26 @@ public class Node implements NodeInterface {
     @Override
     public void removeOwnerFile(FileHandle fileHandle) {
         ownerFiles.remove(fileHandle.getFile().getName());
+    }
+
+    public void addAllFileList(String file, int value) {
+        this.allFiles.put(file, value);
+    }
+
+    public void removeAllFileList(String file) {
+        this.allFiles.remove(file);
+    }
+
+    public void setFileAgentFiles(HashMap<String, Integer> files) {
+        this.fileAgentFiles = files;
+    }
+
+    public void setDownloadFileGranted(String download) {
+        this.grantedDownloadFile = download;
+    }
+
+    public String getDownloadFileGranted() {
+        return this.grantedDownloadFile;
     }
 
     @Override
@@ -164,7 +268,7 @@ public class Node implements NodeInterface {
     }
 
     /**
-     * Removes a file from the Node. This includes the actual file on disk as well as the lists.
+     * Removes a file from the Node. This includes the actual file on disk as well as the Maps.
      *
      * @param fileHandle the fileHandle of the file to remove
      */
@@ -173,7 +277,54 @@ public class Node implements NodeInterface {
         ownerFiles.remove(fileHandle.getFile().getName());
         localFiles.remove(fileHandle.getFile().getName());
         replicatedFiles.remove(fileHandle.getFile().getName());
-        fileHandle.getFile().delete();
+        if (fileHandle.getFile().exists()) {
+            fileHandle.getFile().delete();
+        } else if (fileHandle.getAsReplicated().getFile().exists()) {
+            fileHandle.getAsReplicated().getFile().delete();
+        }
+    }
+
+    /**
+     * Marks a file so it is ready to remove from the entire network
+     *
+     * @param filename the name of the file to remove
+     */
+    @Override
+    public void deleteFileFromNetwork(String filename) {
+        if (allFiles.containsKey(filename)) {
+            allFiles.put(filename, -1);
+        } else {
+            System.out.println("File does not exist or you are the owner, try again");
+        }
+    }
+
+    /**
+     * Deletes a the local copy of a downloaded file and updates the corresponding FileHandle at the owner
+     *
+     * @param filename the name of the file to remove
+     */
+    public void deleteDownloadedFile(String filename) {
+        try {
+            Registry namingServerRegistry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
+            NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+            InetAddress ownerAddress = namingServerStub.getOwner(filename);
+
+            Registry ownerNodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
+            NodeInterface ownerNodeStub = (NodeInterface) ownerNodeRegistry.lookup("Node");
+            ownerNodeStub.removeFromAvailableNodes(filename, ownHash);
+
+            File file = new File(Constants.DOWNLOADED_FILES_PATH + filename);
+            if (file.isFile()) {
+                file.delete();
+            }
+
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        } catch (NotBoundException e) {
+            e.printStackTrace();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -206,6 +357,15 @@ public class Node implements NodeInterface {
             return;
         }
         ownerFiles.get(fileName).getAvailableNodes().remove(hashToRemove);
+    }
+
+    @Override
+    public void increaseDownloads(String fileName) {
+        if (!ownerFiles.containsKey(fileName)) {
+            System.out.println("Error: trying to update a FileHandle of a file that this Node does not own.");
+            return;
+        }
+        ownerFiles.get(fileName).increaseDownloads();
     }
 
     /**
@@ -246,6 +406,192 @@ public class Node implements NodeInterface {
 
         prevAddress = newAddress;
         prevHash = newHash;
+    }
+
+    /**
+     * Starts isRunning the file agent, this method can be run via RMI
+     *
+     * @param fileAgentFiles: list of all files
+     *                        String: filename
+     *                        Integer: hash of node that has a lock request on that file
+     */
+    @Override
+    public void runFileAgent(HashMap<String, Integer> fileAgentFiles) throws InterruptedException, RemoteException, NotBoundException {
+        // This method can get called (RMI) before the node has finished initializing -> wait
+        while (!isInitialized) {
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                System.err.println("Interrupted while waiting for Node to initialize.");
+            }
+        }
+
+        Random rand = new Random();
+        int number = rand.nextInt(100000);
+        Registry namingServerRegistry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
+        NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+        namingServerStub.latestFileAgent(ownAddress, ownHash, nextHash, number);
+
+        ownerAddress = ownAddress;
+        Thread t = new Thread(new FileAgent(fileAgentFiles, ownAddress));
+        t.start();
+        t.join(); //wait for thread to stop
+
+        // Update the observable for the GUI if the node has a GUI
+        if (isGUIStarted) {
+            Platform.runLater(() -> {
+                for (Iterator<String> iterator = fileAgentFiles.keySet().iterator(); iterator.hasNext(); ) {
+                    String fileName = iterator.next();
+                    if (!allFilesObservable.contains(fileName)) {
+                        allFilesObservable.add(fileName);
+                    }
+                }
+
+                allFilesObservable.retainAll(fileAgentFiles.keySet());
+            });
+        }
+
+
+        Thread t2 = new Thread(() -> {
+            InetAddress tempAddress = nextAddress;
+            int tempHash = nextHash;
+            try {
+                Registry registry = LocateRegistry.getRegistry(tempAddress.getHostAddress(), RMI_PORT);
+                NodeInterface stub = (NodeInterface) registry.lookup("Node");
+                stub.runFileAgent(fileAgentFiles);
+            } catch (RemoteException | NotBoundException | InterruptedException e) {
+                try {
+                    //failureAgent wordt voor de eerste keer gestart en zal uitgevoerd vooraleer de fileAgent terug zal worden opgestart
+                    runFailureAgent(tempHash, ownHash, ownAddress);
+                } catch (InterruptedException e1) {
+                    e1.printStackTrace();
+                } catch (RemoteException e1) {
+                    e1.printStackTrace();
+                } catch (NotBoundException e1) {
+                    e1.printStackTrace();
+                }
+            }
+
+        });
+        String fileLockRequest = getFileLockRequest();
+        if (!grantedDownloadFile.equals("null") && !grantedDownloadFile.equals("downloading") && !fileLockRequest.equals("null")) { //download file
+            Thread t3 = new Thread(() -> {
+                try {
+                    // Get ownerAddress from NamingServer via RMI.
+                    //Registry namingServerRegistry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
+                    //NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+                    ownerAddress = namingServerStub.getOwner(grantedDownloadFile);
+                    if (ownerAddress.equals(ownAddress)) {
+                        ownerAddress = getLocalAddressOfFile(grantedDownloadFile);
+                    } else {
+                        Registry registry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), RMI_PORT);
+                        NodeInterface ownerStub = (NodeInterface) registry.lookup("Node");
+                        ownerAddress = ownerStub.getLocalAddressOfFile(grantedDownloadFile);
+                    }
+                } catch (IOException | NotBoundException e) {
+                    e.printStackTrace();
+                }
+
+                if (ownerAddress.equals(ownAddress)) {
+                    System.out.println("You are the owner");
+                    grantedDownloadFile = "null";
+                    allFiles.put(fileLockRequest, 0);
+                } else {
+                    downloadFile(Constants.LOCAL_FILES_PATH + grantedDownloadFile, Constants.DOWNLOADED_FILES_PATH + grantedDownloadFile, ownerAddress);
+                    grantedDownloadFile = "downloading";
+                }
+            });
+            t3.start();
+            Thread.sleep(1000);
+        }
+        if (shutdown) {
+            shutdown();
+        }
+        t2.start();
+    }
+
+    @Override
+    public void runFailureAgent(int hashFailed, int hashStart, InetAddress currNode) throws InterruptedException, RemoteException, NotBoundException {
+        //don't start FailureAgent if only two nodes in network of which one is failed
+        if (!(hashFailed == prevHash && hashFailed == nextHash)) {
+            Thread t = new Thread(new FailureAgent(hashFailed, hashStart, currNode));
+            t.start();
+            t.join(); //wait for thread to stop
+            //Check if not alone in network and if next neighbour isn't the failed node or the start node
+            if (ownHash != nextHash && hashFailed != nextHash && hashStart != nextHash) {
+                Thread t4 = new Thread(() -> {
+                    try {
+                        Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
+                        NodeInterface stub = (NodeInterface) registry.lookup("Node");
+                        stub.runFailureAgent(hashFailed, hashStart, nextAddress);
+                    } catch (RemoteException | NotBoundException | InterruptedException e) {
+                        System.out.println("ERROR1: Not able to run FailureAgent on next node!");
+                        e.printStackTrace();
+                    }
+                });
+                t4.start();
+            }
+            //Check if next neighbour is the failed node
+            if (hashFailed == nextHash) {
+                Thread t5 = new Thread(() -> {
+                    try {
+                        //Need to skip next neighbour cause this one is the failed node. Need to start FailureAgent on next neighbour of failed node
+                        Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
+                        NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+                        int[] neighboursOfFailed = namingServerStub.getNeighbours(hashFailed);
+                        int hashOfNextNeighbour = neighboursOfFailed[1];
+                        InetAddress addressOfNextNeighbour = namingServerStub.getIPNode(hashOfNextNeighbour);
+
+                        Registry registry = LocateRegistry.getRegistry(addressOfNextNeighbour.getHostAddress(), RMI_PORT);
+                        NodeInterface stub = (NodeInterface) registry.lookup("Node");
+                        //Check if next neighbour of failed node isn't the start node
+                        if (hashOfNextNeighbour != hashStart) {
+                            stub.runFailureAgent(hashFailed, hashStart, addressOfNextNeighbour);
+                        } else {
+                            System.out.println("Starting failureHandler...");
+                            FailureHandler failureHandler = new FailureHandler(hashFailed, this);
+                            failureHandler.repairFailedNode();
+                            System.out.println("Failure handled! Restarting fileAgent...");
+                            stub.runFileAgent(fileAgentFiles);
+                            System.out.println("FileAgent restarted.");
+                        }
+                    } catch (RemoteException | NotBoundException | InterruptedException e) {
+                        System.out.println("ERROR2: Not able to run FailureAgent on next node or restart the FileAgent!");
+                        e.printStackTrace();
+                    }
+                });
+                t5.start();
+            }
+            //Agent is around the network and we can now remove the failed node from the network and afterwards restart FileAgent
+            if (nextHash == hashStart) {
+                Thread t6 = new Thread(() -> {
+                    try {
+                        Registry registry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), RMI_PORT);
+                        NodeInterface stub = (NodeInterface) registry.lookup("Node");
+                        System.out.println("Starting failureHandler...");
+                        FailureHandler failureHandler = new FailureHandler(hashFailed, this);
+                        failureHandler.repairFailedNode();
+                        System.out.println("Failure handled! Restarting fileAgent...");
+                        stub.runFileAgent(fileAgentFiles);
+                        System.out.println("FileAgent restarted.");
+                    } catch (RemoteException | NotBoundException | InterruptedException e) {
+                        System.out.println("ERROR3: Not able to restart FileAgent!");
+                        e.printStackTrace();
+                    }
+                });
+                t6.start();
+            }
+        }
+        //Node is only working node in network, we may delete failed node and restart FileAgent
+        else {
+            System.out.println("Starting failureHandler...");
+            FailureHandler failureHandler = new FailureHandler(hashFailed, this);
+            failureHandler.repairFailedNode();
+            System.out.println("Failure handled! Restarting fileAgent...");
+            runFileAgent(fileAgentFiles);
+            System.out.println("FileAgent restarted.");
+        }
     }
 
     /**
@@ -336,6 +682,7 @@ public class Node implements NodeInterface {
     }
 
     public void joinNetwork() throws IOException {
+        joinTimestamp = System.currentTimeMillis();
         HelloPacket helloPacket = new HelloPacket();
         Client client = Communications.getUDPClient(multicastGroup, Constants.MULTICAST_PORT);
         client.sendPacket(helloPacket);
@@ -373,16 +720,20 @@ public class Node implements NodeInterface {
         }
     }
 
-    private int calculateHash(String name) {
+    public int calculateHash(String name) {
         return Math.abs(name.hashCode() % 32768);
     }
 
     public boolean isRunning() {
-        return running;
+        return isRunning;
     }
 
     public void setRunning(boolean running) {
-        this.running = running;
+        this.isRunning = running;
+    }
+
+    public InetAddress getLocalAddressOfFile(String filename) {
+        return ownerFiles.get(filename).getLocalAddress();
     }
 
     /**
@@ -407,18 +758,6 @@ public class Node implements NodeInterface {
         System.out.println("Finished discovery of " + folder.getName());
     }
 
-    public void replicateNewOwnerFiles() throws RemoteException, NotBoundException {
-        Map<String, FileHandle> originalOwnerFiles = new HashMap<>(ownerFiles);
-
-        originalOwnerFiles.forEach(((s, fileHandle) -> {
-            try {
-                replicateToNewNode(fileHandle);
-            } catch (RemoteException | NotBoundException | UnknownHostException e) {
-                e.printStackTrace();
-            }
-        }));
-    }
-
     /**
      * Introduces a new local file in the network.
      * <p>
@@ -439,6 +778,7 @@ public class Node implements NodeInterface {
             // Put in local copy in localFiles and update the FileHandle
             localFiles.put(fileHandle.getFile().getName(), fileHandle);
             fileHandle.setLocal(true);
+            fileHandle.setLocalAddress(ownAddress);
             fileHandle.getAvailableNodes().add(ownHash);
 
             replicateWhenJoining(fileHandle);
@@ -486,6 +826,11 @@ public class Node implements NodeInterface {
         }
     }
 
+    /**
+     * Checks if this node is still the owner of the file and moves it around if necessary
+     *
+     * @param fileHandle to check/update
+     */
     public void replicateToNewNode(FileHandle fileHandle) throws RemoteException, NotBoundException, UnknownHostException {
         File file = fileHandle.getFile();
 
@@ -493,38 +838,74 @@ public class Node implements NodeInterface {
         NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
         InetAddress ownerAddress = namingServerStub.getOwner(file.getName());
 
-        if (ownerAddress == null) // no owner
+        if (ownerAddress == null) // No owner
             return;
 
-        if (ownAddress.equals(nextAddress)) {
-            ownerFiles.put(fileHandle.getFile().getName(), fileHandle);
-            return;
-        }
-
-        if (!ownerAddress.equals(ownAddress)) {
+        if (ownerAddress.equals(ownAddress) && prevHash == nextHash) {
+            // Still the owner but only two Nodes in the network -> replicate to second Node.
             Registry nextNodeRegistry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), Constants.RMI_PORT);
             NodeInterface nextNodeStub = (NodeInterface) nextNodeRegistry.lookup("Node");
-
             nextNodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
 
-            if (prevHash != nextHash)
-                fileHandle.getAvailableNodes().remove(ownHash);
+            fileHandle.getAvailableNodes().add(nextHash);
+            FileHandle newFileHandle = fileHandle.getAsReplicated();
+            nextNodeStub.addReplicatedFileList(newFileHandle);
+            replicatedFiles.remove(fileHandle.getFile().getName());
+
+        } else if (ownerAddress.equals(ownAddress) && prevHash != nextHash) {
+            // Still the owner -> no need to update.
+        } else if (!ownerAddress.equals(ownAddress)) {
+            // Next neighbour is new owner -> move to new owner
+            Registry nextNodeRegistry = LocateRegistry.getRegistry(nextAddress.getHostAddress(), Constants.RMI_PORT);
+            NodeInterface nextNodeStub = (NodeInterface) nextNodeRegistry.lookup("Node");
+            nextNodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
 
             fileHandle.getAvailableNodes().add(nextHash);
 
+            if (prevHash == nextHash) {
+                // Only two Nodes in the network -> keep copy as replicated.
+            } else {
+                // Just move to new owner
+                fileHandle.getAvailableNodes().remove(ownHash);
+                replicatedFiles.remove(fileHandle.getFile().getName());
+            }
+
             FileHandle newFileHandle = fileHandle.getAsReplicated();
             nextNodeStub.addReplicatedFileList(newFileHandle);
-            nextNodeStub.addOwnerFileList(newFileHandle);
-
-            replicatedFiles.remove(fileHandle.getFile().getName());
             ownerFiles.remove(fileHandle.getFile().getName());
         }
+    }
+
+    public void replicateFailed(FileHandle fileHandle, InetAddress receiveAddress) throws RemoteException, NotBoundException {
+        File file = fileHandle.getFile();
+
+        if (receiveAddress == null) // no owner
+            return;
+
+        Registry nodeRegistry = LocateRegistry.getRegistry(receiveAddress.getHostAddress(), Constants.RMI_PORT);
+        NodeInterface nodeStub = (NodeInterface) nodeRegistry.lookup("Node");
+        nodeStub.downloadFile(file.getPath(), Constants.REPLICATED_FILES_PATH + file.getName(), ownAddress);
+
+        fileHandle.getAvailableNodes().add(receiveAddress.equals(ownAddress) ? prevHash : nodeStub.getOwnHash());
+
+        FileHandle newFileHandle = fileHandle.getAsReplicated();
+        nodeStub.addReplicatedFileList(newFileHandle);
+
+        if (receiveAddress.equals(ownAddress)) {
+            ownerFiles.put(newFileHandle.getFile().getName(), fileHandle);
+        } else {
+            nodeStub.addOwnerFileList(newFileHandle);
+        }
+    }
+
+    public void initializeShutdown() {
+        this.shutdown = true;
     }
 
     /**
      * Transfer all replicated and process all local files. Then leave the network.
      */
-    public void shutdown() {
+    private void shutdown() {
         multicastServer.stop();
 
         if (!(prevHash == ownHash)) {
@@ -546,8 +927,8 @@ public class Node implements NodeInterface {
                         if (prevNodeStub == null) {
                             continue;
                         }
-                        prevNodeStub.removeFromAvailableNodes(entry.getKey(), ownHash);
                         prevNodeStub.addOwnerFileList(entry.getValue());
+                        prevNodeStub.removeFromAvailableNodes(entry.getKey(), ownHash);
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     }
@@ -571,20 +952,17 @@ public class Node implements NodeInterface {
 
                         // If downloads = 0 -> delete local copy and copy of owner
                         if (downloads == 0) {
-                            prevNodeStub.deleteFileFromNode(localEntry.getValue());
-                            deleteFileFromNode(localEntry.getValue());
+                            prevNodeStub.deleteFileFromNetwork(localEntry.getKey());
                         } else {
                             // Else update download locations in the FileHandle
-                            prevNodeStub.removeFromAvailableNodes(localEntry.getKey(), ownHash);
                             prevNodeStub.addOwnerFileList(localEntry.getValue());
+                            prevNodeStub.removeFromAvailableNodes(localEntry.getKey(), ownHash);
                         }
                     } catch (RemoteException e) {
                         e.printStackTrace();
                     }
                 }
-            } else {
-                // Not alone in the network
-
+            } else { // More than two Nodes in the network
                 // Transfer all replicated files
                 for (Map.Entry<String, FileHandle> entry : replicatedFiles.entrySet()) {
                     try {
@@ -594,7 +972,7 @@ public class Node implements NodeInterface {
                             // Previous Node has the file as local file -> replicate to previous' previous neighbour and make it owner of the file
                             replicatedFileHandle.getAvailableNodes().remove(ownHash);
                             replicatedFileHandle.getAvailableNodes().add(prevNodeStub.getPrevHash());
-                            prevNodeStub.addOwnerFileList(replicatedFileHandle);
+                            prevNodeStub.addOwnerFileList(replicatedFileHandle.getAsLocal());
 
                             Registry prevPrevNodeRegistry = LocateRegistry.getRegistry(prevNodeStub.getPrevAddress().getHostAddress(), Constants.RMI_PORT);
                             NodeInterface prevPrevNodeStub = (NodeInterface) prevPrevNodeRegistry.lookup("Node");
@@ -631,8 +1009,7 @@ public class Node implements NodeInterface {
                         FileHandle fileHandle = ownerNodeStub.getReplicatedFiles().get(localEntry.getKey());
                         if (fileHandle != null) {
                             if (ownerNodeStub.getReplicatedFiles().get(localEntry.getKey()).getDownloads() == 0) {
-                                ownerNodeStub.deleteFileFromNode(localEntry.getValue());
-                                deleteFileFromNode(localEntry.getValue());
+                                ownerNodeStub.deleteFileFromNetwork(localEntry.getKey());
                             } else {
                                 // Else update download locations in the FileHandle
                                 ownerNodeStub.removeFromAvailableNodes(localEntry.getKey(), ownHash);
@@ -651,6 +1028,7 @@ public class Node implements NodeInterface {
             tcpServer.stop();
             setRunning(false);
             leaveNetwork();
+            //insert run file agent here?
             UnicastRemoteObject.unexportObject(this, true);
             System.out.println("Left the network+");
             System.exit(0);
@@ -701,11 +1079,16 @@ public class Node implements NodeInterface {
             if (packet.getSenderHash() != getOwnHash()) {
                 updateNeighbours(client.getAddress(), packet.getSenderHash());
 
-                try {
-                    replicateNewOwnerFiles();
-                } catch (NotBoundException e) {
-                    e.printStackTrace();
-                }
+//                replicateNewOwnerFiles();
+                // Loop trough all ownerfiles and check if they need to be moved around
+                Map<String, FileHandle> originalOwnerFiles = new HashMap<>(ownerFiles);
+                originalOwnerFiles.forEach(((s, fileHandle) -> {
+                    try {
+                        replicateToNewNode(fileHandle);
+                    } catch (RemoteException | NotBoundException | UnknownHostException e) {
+                        e.printStackTrace();
+                    }
+                }));
             }
         }));
 
@@ -761,6 +1144,92 @@ public class Node implements NodeInterface {
         }
     }
 
+    public static Node startNode(String nodeName, InetAddress address, boolean isGUIStarted) {
+        Node node;
+        try {
+            node = new Node(nodeName, address, isGUIStarted);
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+            System.err.println("Unknown multicast address, cannot create Node.");
+            return null;
+        }
+
+        node.clearDir(Constants.REPLICATED_FILES_PATH);
+        node.clearDir(Constants.DOWNLOADED_FILES_PATH);
+        node.initializeRMI();
+        System.out.println("Hash: " + node.getOwnHash());
+        Communications.setSenderHash(node.getOwnHash());
+        node.setupMulticastServer();
+        node.setupTCPServer();
+        try {
+            node.joinNetwork();
+        } catch (IOException e) {
+            e.printStackTrace();
+            System.err.println("Unable to join network.");
+            return null;
+        }
+
+
+        // Discover local files
+        while (node.namingServerAddress == null || node.prevHash == 0 || node.nextHash == 0 || node.prevAddress == null || node.nextAddress == null) {
+            if (System.currentTimeMillis() - node.joinTimestamp >= 1000) {
+                // try to rejoin at most 5 times
+                if (++node.retries > 5) {
+                    System.err.println("Failed to join network. Naming server is not responding");
+                    node.multicastServer.stop();
+                    node.tcpServer.stop();
+                    try {
+                        UnicastRemoteObject.unexportObject(node, true);
+                    } catch (NoSuchObjectException e) {
+                        e.printStackTrace();
+                    }
+                    System.exit(0);
+                    return null;
+                }
+                System.out.println("Retrying to join the network (" + node.retries + ")");
+                node.joinTimestamp = System.currentTimeMillis();
+                try {
+                    node.joinNetwork();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    System.err.println("Unable to join network.");
+                    return null;
+                }
+            }
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                System.err.println("Interrupted while waiting for Node to initialize.");
+                return null;
+            }
+        }
+        node.setInitialized(true);
+        node.discoverLocalFiles();
+
+        // Start the FileAgent if this is the first Node in the network
+        if (node.prevHash == node.ownHash) {
+            HashMap<String, Integer> files = new HashMap<>();
+            try {
+                node.runFileAgent(files);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            } catch (NotBoundException e) {
+                e.printStackTrace();
+            }
+        }
+
+
+        // Start file update watcher
+        FileUpdateWatcher fileUpdateWatcherThread = new FileUpdateWatcher(node, Constants.LOCAL_FILES_PATH);
+        Thread thread = new Thread(fileUpdateWatcherThread);
+        thread.start();
+
+        return node;
+    }
+
     public static void main(String[] args) throws IOException {
         // Get IP and hostname
         Scanner sc = new Scanner(System.in);
@@ -778,45 +1247,14 @@ public class Node implements NodeInterface {
         }
 
 
-        // Create Node object and initialize
-        Node node = new Node(hostname, InetAddress.getByName(ip));
-
-        node.clearDir(Constants.REPLICATED_FILES_PATH);
-        node.localFiles = new HashMap<>();
-        node.replicatedFiles = new HashMap<>();
-        node.ownerFiles = new HashMap<>();
-        node.downloadingFiles = new HashSet<>();
-
-        node.initializeRMI();
-        System.out.println("Hash: " + node.getOwnHash());
-
-        Communications.setSenderHash(node.getOwnHash());
-
-        node.setupMulticastServer();
-        node.setupTCPServer();
-
-        node.joinNetwork();
-
-
-        // Discover local files
-        while (node.namingServerAddress == null || node.prevHash == 0 || node.nextHash == 0 || node.prevAddress == null || node.nextAddress == null) {
-            try {
-                Thread.sleep(500);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        // Start the Node
+        Node node = Node.startNode(hostname, InetAddress.getByName(ip), false);
+        if (node == null) {
+            return;
         }
-        node.discoverLocalFiles();
-
-
-        // Start file update watcher
-        FileUpdateWatcher fileUpdateWatcherThread = new FileUpdateWatcher(node, Constants.LOCAL_FILES_PATH);
-        Thread thread = new Thread(fileUpdateWatcherThread);
-        thread.start();
-
 
         // Listen for commands
-        while (node.running) {
+        while (node.isRunning) {
             String cmd = sc.nextLine().toLowerCase();
             switch (cmd) {
                 case "debug":
@@ -844,7 +1282,7 @@ public class Node implements NodeInterface {
                 case "shutdown+":
                 case "shut+":
                 case "sh+":
-                    node.shutdown();
+                    node.initializeShutdown();
                     break;
 
                 case "neighbours":
@@ -867,6 +1305,25 @@ public class Node implements NodeInterface {
                 case "ownerFiles":
                 case "of":
                     System.out.println("Owner files: " + node.ownerFiles);
+                    break;
+
+                case "allfiles":
+                    System.out.println("All files: " + node.allFiles);
+                    break;
+
+                case "fafiles":
+                    System.out.println("All fileagentfiles: " + node.fileAgentFiles);
+                    break;
+
+                case "dl":
+                    System.out.print("Enter filename to download: ");
+                    node.downloadAFile(sc.nextLine());
+                    break;
+
+                case "delnetw":
+                    System.out.println("All files: " + node.allFiles);
+                    System.out.print("Enter filename to delete from the network: ");
+                    node.deleteFileFromNetwork(sc.nextLine());
                     break;
             }
         }

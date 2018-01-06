@@ -16,5 +16,7 @@ public interface NamingServerInterface extends Remote {
     void printIPadresses() throws RemoteException;
     int[] getNeighbours(int hashNode) throws RemoteException;
     InetAddress getIPNode(int hashNode) throws RemoteException;
+    int getHashOfAddress(InetAddress thisAddress) throws RemoteException;
+    void latestFileAgent(InetAddress thisAddress, int thisHash, int nextHash, int number) throws RemoteException;
 
 }
