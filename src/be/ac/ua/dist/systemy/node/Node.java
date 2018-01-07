@@ -851,17 +851,19 @@ public class Node implements NodeInterface {
 
             fileHandle.getAvailableNodes().add(nextHash);
 
+            FileHandle newFileHandle = fileHandle.getAsReplicated();
+
             if (prevHash == nextHash) {
                 // Only two Nodes in the network -> keep copy as replicated.
+                nextNodeStub.addOwnerFileList(newFileHandle);
+                replicatedFiles.put(newFileHandle.getFile().getName(), newFileHandle);
             } else {
                 // Just move to new owner
                 fileHandle.getAvailableNodes().remove(ownHash);
+                nextNodeStub.addOwnerFileList(newFileHandle);
                 replicatedFiles.remove(fileHandle.getFile().getName());
             }
 
-            FileHandle newFileHandle = fileHandle.getAsReplicated();
-            nextNodeStub.addOwnerFileList(newFileHandle);
-            replicatedFiles.put(newFileHandle.getFile().getName(), newFileHandle);
             ownerFiles.remove(fileHandle.getFile().getName());
         }
     }
