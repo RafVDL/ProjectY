@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -139,7 +140,7 @@ public class NodeController {
             } else {
                 node.downloadAFile(selectedFileName);
                 fileToOpen = new File(Constants.DOWNLOADED_FILES_PATH + selectedFileName);
-                while (!fileToOpen.isFile()) {
+                while (!Files.isReadable(fileToOpen.toPath())) {
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
