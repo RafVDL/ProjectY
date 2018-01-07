@@ -45,6 +45,7 @@ public class Node implements NodeInterface {
 
 
     private volatile InetAddress namingServerAddress;
+    private NamingServerInterface namingServerStub;
     private InetAddress prevAddress;
     private InetAddress nextAddress;
     private InetAddress ownerAddress;
@@ -137,6 +138,7 @@ public class Node implements NodeInterface {
         return replicatedFiles;
     }
 
+    @Override
     public Map<String, FileHandle> getOwnerFiles() {
         return ownerFiles;
     }
@@ -305,8 +307,6 @@ public class Node implements NodeInterface {
      */
     public void deleteDownloadedFile(String filename) {
         try {
-            Registry namingServerRegistry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
-            NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
             InetAddress ownerAddress = namingServerStub.getOwner(filename);
 
             Registry ownerNodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
@@ -429,8 +429,6 @@ public class Node implements NodeInterface {
 
         Random rand = new Random();
         int number = rand.nextInt(100000);
-        Registry namingServerRegistry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
-        NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
         namingServerStub.latestFileAgent(ownAddress, ownHash, nextHash, number);
 
         ownerAddress = ownAddress;
@@ -479,8 +477,6 @@ public class Node implements NodeInterface {
             Thread t3 = new Thread(() -> {
                 try {
                     // Get ownerAddress from NamingServer via RMI.
-                    //Registry namingServerRegistry = LocateRegistry.getRegistry(getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
-                    //NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
                     ownerAddress = namingServerStub.getOwner(grantedDownloadFile);
                     if (ownerAddress.equals(ownAddress)) {
                         ownerAddress = getLocalAddressOfFile(grantedDownloadFile);
@@ -537,8 +533,6 @@ public class Node implements NodeInterface {
                 Thread t5 = new Thread(() -> {
                     try {
                         //Need to skip next neighbour cause this one is the failed node. Need to start FailureAgent on next neighbour of failed node
-                        Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
-                        NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
                         int[] neighboursOfFailed = namingServerStub.getNeighbours(hashFailed);
                         int hashOfNextNeighbour = neighboursOfFailed[1];
                         InetAddress addressOfNextNeighbour = namingServerStub.getIPNode(hashOfNextNeighbour);
@@ -789,9 +783,6 @@ public class Node implements NodeInterface {
 
     public void replicateWhenJoining(FileHandle fileHandle) throws RemoteException, NotBoundException, UnknownHostException {
         File file = fileHandle.getFile();
-
-        Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
-        NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
         InetAddress ownerAddress = namingServerStub.getOwner(file.getName());
 
         if (ownerAddress == null) // no owner
@@ -834,8 +825,6 @@ public class Node implements NodeInterface {
     public void replicateToNewNode(FileHandle fileHandle) throws RemoteException, NotBoundException, UnknownHostException {
         File file = fileHandle.getFile();
 
-        Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
-        NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
         InetAddress ownerAddress = namingServerStub.getOwner(file.getName());
 
         if (ownerAddress == null) // No owner
@@ -871,7 +860,8 @@ public class Node implements NodeInterface {
             }
 
             FileHandle newFileHandle = fileHandle.getAsReplicated();
-            nextNodeStub.addReplicatedFileList(newFileHandle);
+            nextNodeStub.addOwnerFileList(newFileHandle);
+            replicatedFiles.put(newFileHandle.getFile().getName(), newFileHandle);
             ownerFiles.remove(fileHandle.getFile().getName());
         }
     }
@@ -947,7 +937,7 @@ public class Node implements NodeInterface {
                             downloads = localEntry.getValue().getDownloads();
                         } else {
                             // The other Node is the owner -> check downloads there and proceed
-                            downloads = prevNodeStub.getReplicatedFiles().get(localEntry.getKey()).getDownloads();
+                            downloads = prevNodeStub.getOwnerFiles().get(localEntry.getKey()).getDownloads();
                         }
 
                         // If downloads = 0 -> delete local copy and copy of owner
@@ -996,8 +986,6 @@ public class Node implements NodeInterface {
                 for (Map.Entry<String, FileHandle> localEntry : (new HashMap<>(localFiles)).entrySet()) {
                     try {
                         // Get ownerAddress from NamingServer via RMI.
-                        Registry namingServerRegistry = LocateRegistry.getRegistry(namingServerAddress.getHostAddress(), Constants.RMI_PORT);
-                        NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
                         InetAddress ownerAddress = namingServerStub.getOwner(localEntry.getKey());
 
                         // Contact owner
@@ -1079,8 +1067,16 @@ public class Node implements NodeInterface {
             if (packet.getSenderHash() != getOwnHash()) {
                 updateNeighbours(client.getAddress(), packet.getSenderHash());
 
-//                replicateNewOwnerFiles();
-                // Loop trough all ownerfiles and check if they need to be moved around
+                // wait until NamingServer knows new Node
+                while (namingServerStub.getIPNode(packet.getSenderHash()) == null) {
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                // Loop through all ownerfiles and check if they need to be moved around
                 Map<String, FileHandle> originalOwnerFiles = new HashMap<>(ownerFiles);
                 originalOwnerFiles.forEach(((s, fileHandle) -> {
                     try {
@@ -1203,6 +1199,14 @@ public class Node implements NodeInterface {
                 System.err.println("Interrupted while waiting for Node to initialize.");
                 return null;
             }
+        }
+        try {
+            Registry namingServerRegistry = LocateRegistry.getRegistry(node.namingServerAddress.getHostAddress(), Constants.RMI_PORT);
+            node.namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+        } catch (RemoteException | NotBoundException e) {
+            System.err.println("Failed to connect to NamingServer");
+            e.printStackTrace();
+            return null;
         }
         node.setInitialized(true);
         node.discoverLocalFiles();

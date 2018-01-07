@@ -25,6 +25,8 @@ public interface NodeInterface extends Remote {
 
     Map<String, FileHandle> getReplicatedFiles() throws RemoteException;
 
+    Map<String, FileHandle> getOwnerFiles() throws RemoteException;
+
     void addLocalFileList(FileHandle fileHandle) throws RemoteException;
 
     void addReplicatedFileList(FileHandle fileHandle) throws RemoteException;
