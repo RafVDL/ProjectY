@@ -856,10 +856,12 @@ public class Node implements NodeInterface {
                 FileHandle newFileHandle = fileHandle.getAsReplicated();
                 nextNodeStub.addOwnerFileList(newFileHandle);
                 replicatedFiles.put(newFileHandle.getFile().getName(), newFileHandle);
-                try {
-                    Files.move(fileHandle.getFile().toPath(), newFileHandle.getFile().toPath());
-                } catch (IOException e) {
-                    e.printStackTrace();
+                if (!fileHandle.isLocal()) {
+                    try {
+                        Files.move(fileHandle.getFile().toPath(), newFileHandle.getFile().toPath());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             } else {
                 // Just move to new owner
@@ -867,10 +869,12 @@ public class Node implements NodeInterface {
                 FileHandle newFileHandle = fileHandle.getAsReplicated();
                 nextNodeStub.addOwnerFileList(newFileHandle);
                 replicatedFiles.remove(fileHandle.getFile().getName());
-                try {
-                    Files.deleteIfExists(fileHandle.getFile().toPath());
-                } catch (IOException e) {
-                    e.printStackTrace();
+                if (!fileHandle.isLocal()) {
+                    try {
+                        Files.deleteIfExists(fileHandle.getFile().toPath());
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
 

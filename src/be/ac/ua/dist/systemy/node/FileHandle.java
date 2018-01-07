@@ -29,6 +29,10 @@ public class FileHandle implements Serializable {
         return new File((local ? Constants.LOCAL_FILES_PATH : Constants.REPLICATED_FILES_PATH) + fileName);
     }
 
+    public boolean isLocal() {
+        return local;
+    }
+
     public void setLocal(boolean local) {
         this.local = local;
     }
