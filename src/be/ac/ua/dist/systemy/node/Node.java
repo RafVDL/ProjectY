@@ -809,10 +809,10 @@ public class Node implements NodeInterface {
         fileHandle.getAvailableNodes().add(ownerAddress.equals(ownAddress) ? prevHash : nodeStub.getOwnHash());
 
         FileHandle newFileHandle = fileHandle.getAsReplicated();
-        nodeStub.addReplicatedFileList(newFileHandle);
 
         if (ownerAddress.equals(ownAddress)) {
-            ownerFiles.put(newFileHandle.getFile().getName(), fileHandle);
+            ownerFiles.put(fileHandle.getFile().getName(), fileHandle);
+            nodeStub.addReplicatedFileList(newFileHandle);
         } else {
             nodeStub.addOwnerFileList(newFileHandle);
         }
