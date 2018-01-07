@@ -16,6 +16,7 @@ import javafx.collections.ObservableList;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
 import java.rmi.AlreadyBoundException;
 import java.rmi.NoSuchObjectException;
 import java.rmi.NotBoundException;
@@ -840,7 +841,6 @@ public class Node implements NodeInterface {
             FileHandle newFileHandle = fileHandle.getAsReplicated();
             nextNodeStub.addReplicatedFileList(newFileHandle);
             replicatedFiles.remove(fileHandle.getFile().getName());
-
         } else if (ownerAddress.equals(ownAddress) && prevHash != nextHash) {
             // Still the owner -> no need to update.
         } else if (!ownerAddress.equals(ownAddress)) {
@@ -856,12 +856,22 @@ public class Node implements NodeInterface {
                 FileHandle newFileHandle = fileHandle.getAsReplicated();
                 nextNodeStub.addOwnerFileList(newFileHandle);
                 replicatedFiles.put(newFileHandle.getFile().getName(), newFileHandle);
+                try {
+                    Files.move(fileHandle.getFile().toPath(), newFileHandle.getFile().toPath());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             } else {
                 // Just move to new owner
                 fileHandle.getAvailableNodes().remove(ownHash);
                 FileHandle newFileHandle = fileHandle.getAsReplicated();
                 nextNodeStub.addOwnerFileList(newFileHandle);
                 replicatedFiles.remove(fileHandle.getFile().getName());
+                try {
+                    Files.deleteIfExists(fileHandle.getFile().toPath());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
 
             ownerFiles.remove(fileHandle.getFile().getName());
