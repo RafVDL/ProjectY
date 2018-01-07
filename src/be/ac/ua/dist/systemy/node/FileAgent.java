@@ -95,7 +95,7 @@ public class FileAgent implements Runnable, Serializable {
                 }
                 //Step 5
                 allFilesNode.forEach((key, value) -> {
-                    if(value == -1){
+                    if(value == -1 && files.get(key) == 0){ //check if file is not being downloaded
                         files.put(key, -1);
                     }
                         });
