@@ -7,6 +7,7 @@ import be.ac.ua.dist.systemy.networking.Server;
 import be.ac.ua.dist.systemy.networking.packet.*;
 import be.ac.ua.dist.systemy.networking.udp.MulticastServer;
 import be.ac.ua.dist.systemy.node.NodeInterface;
+import be.ac.ua.dist.systemy.node.NodeMain;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -40,6 +41,10 @@ public class NamingServer implements NamingServerInterface {
 
     public NamingServer(InetAddress serverIP) {
         this.serverIP = serverIP;
+    }
+
+    private TreeMap<Integer, InetAddress> getIpAddresses() {
+        return ipAddresses;
     }
 
     public int calculateHash(String nodeName) {
@@ -237,11 +242,29 @@ public class NamingServer implements NamingServerInterface {
 
         namingServer.setupMulticastServer();
 
+        Thread thread = new Thread(() -> {
+            // Run the checker
+            while (NodeMain.getNode().isRunning()) {
+                try {
+                    if (namingServer.getIpAddresses().size() > 1) {
+                        checkRunningFileAgent();
+                    }
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                } catch (NotBoundException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        thread.start();
+
         System.out.println("Namingserver started @" + ip);
 
         while (namingServer.running) {
             String cmd = sc.nextLine().toLowerCase();
-            checkRunningFileAgent();
             switch (cmd) {
                 case "debug":
                     Communications.setDebugging(true);
