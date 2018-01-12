@@ -244,7 +244,7 @@ public class NamingServer implements NamingServerInterface {
 
         Thread thread = new Thread(() -> {
             // Run the checker
-            while (NodeMain.getNode().isRunning()) {
+            while (namingServer.isRunning()) {
                 try {
                     if (namingServer.getIpAddresses().size() > 1) {
                         checkRunningFileAgent();
