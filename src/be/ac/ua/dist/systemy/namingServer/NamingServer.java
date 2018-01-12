@@ -225,7 +225,7 @@ public class NamingServer implements NamingServerInterface {
 
     }
 
-    public static void main(String[] args) throws UnknownHostException, RemoteException, InterruptedException, NotBoundException {
+    public static void main(String[] args) throws UnknownHostException, RemoteException {
         Scanner sc = new Scanner(System.in);
         InetAddress detectedHostAddress = InetAddress.getLocalHost();
         System.out.println("(Detected localHost is: " + detectedHostAddress + ")");
