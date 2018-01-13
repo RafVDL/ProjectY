@@ -130,48 +130,51 @@ public class NodeController {
 
     @FXML
     private void handleOpen() {
-        if (selectedFileName != null) {
-            File fileToOpen;
+        Thread downloadThread = new Thread(() -> {
+            if (selectedFileName != null) {
+                File fileToOpen;
 
-            if (node.getLocalFiles().containsKey(selectedFileName)) {
-                fileToOpen = new File(Constants.LOCAL_FILES_PATH + selectedFileName);
-            } else if (node.getReplicatedFiles().containsKey(selectedFileName)) {
-                fileToOpen = new File(Constants.REPLICATED_FILES_PATH + selectedFileName);
-            } else {
-                node.downloadAFile(selectedFileName);
-                fileToOpen = new File(Constants.DOWNLOADED_FILES_PATH + selectedFileName);
-                while (!Files.isReadable(fileToOpen.toPath()) && !node.getDownloadingFiles().contains(fileToOpen.getName())) {
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                        System.err.println("Interrupted while waiting file to finish downloading.");
+                if (node.getLocalFiles().containsKey(selectedFileName)) {
+                    fileToOpen = new File(Constants.LOCAL_FILES_PATH + selectedFileName);
+                } else if (node.getReplicatedFiles().containsKey(selectedFileName)) {
+                    fileToOpen = new File(Constants.REPLICATED_FILES_PATH + selectedFileName);
+                } else {
+                    node.downloadAFile(selectedFileName);
+                    fileToOpen = new File(Constants.DOWNLOADED_FILES_PATH + selectedFileName);
+                    while (!Files.isReadable(fileToOpen.toPath()) && !node.getDownloadingFiles().contains(fileToOpen.getName())) {
+                        try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                            System.err.println("Interrupted while waiting file to finish downloading.");
+                        }
                     }
+                    deleteLocalBtn.setDisable(true);
                 }
-                deleteLocalBtn.setDisable(true);
+
+                // Contact owner of the file and increase the downloads counter
+                try {
+                    Registry namingServerRegistry = LocateRegistry.getRegistry(node.getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
+                    NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
+                    InetAddress ownerAddress = namingServerStub.getOwner(selectedFileName);
+
+                    Registry ownerNodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
+                    NodeInterface ownerNodeStub = (NodeInterface) ownerNodeRegistry.lookup("Node");
+                    ownerNodeStub.increaseDownloads(selectedFileName);
+
+                } catch (RemoteException | UnknownHostException | NotBoundException e) {
+                    e.printStackTrace();
+                }
+
+                // Actually open the file
+                try {
+                    Desktop.getDesktop().open(fileToOpen);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
-
-            // Contact owner of the file and increase the downloads counter
-            try {
-                Registry namingServerRegistry = LocateRegistry.getRegistry(node.getNamingServerAddress().getHostAddress(), Constants.RMI_PORT);
-                NamingServerInterface namingServerStub = (NamingServerInterface) namingServerRegistry.lookup("NamingServer");
-                InetAddress ownerAddress = namingServerStub.getOwner(selectedFileName);
-
-                Registry ownerNodeRegistry = LocateRegistry.getRegistry(ownerAddress.getHostAddress(), Constants.RMI_PORT);
-                NodeInterface ownerNodeStub = (NodeInterface) ownerNodeRegistry.lookup("Node");
-                ownerNodeStub.increaseDownloads(selectedFileName);
-
-            } catch (RemoteException | UnknownHostException | NotBoundException e) {
-                e.printStackTrace();
-            }
-
-            // Actually open the file
-            try {
-                Desktop.getDesktop().open(fileToOpen);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        });
+        downloadThread.start();
     }
 
     @FXML
