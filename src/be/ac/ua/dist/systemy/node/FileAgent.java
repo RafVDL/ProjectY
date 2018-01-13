@@ -87,7 +87,7 @@ public class FileAgent implements Runnable, Serializable {
                     files.put(lockRequest, 0);                                                                  //lift up lock request in FileAgent
                     currNodeStub.addAllFileList(lockRequest, 0);//clear lockrequest on node
                 }
-                if (!lockRequest.equals("null") && !currNodeStub.getDownloadFileGranted().equals("downloading")) {  //if pending lockrequest, and node not downloading
+                else if (!lockRequest.equals("null") && !currNodeStub.getDownloadFileGranted().equals("downloading")) {  //if pending lockrequest, and node not downloading
                     if (files.containsKey(lockRequest) && files.get(lockRequest) == 0) {
                         currNodeStub.setDownloadFileGranted(lockRequest);                                           //tell node he can download the file
                         files.put(lockRequest, currNodeStub.getOwnHash());                                          //lock file in FileAgent

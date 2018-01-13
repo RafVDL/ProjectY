@@ -494,7 +494,7 @@ public class Node implements NodeInterface {
                     System.out.println("You are the owner");
                     grantedDownloadFile = "null";
                     allFiles.put(fileLockRequest, 0);
-                } else {
+                } else if (!grantedDownloadFile.equals("downloading")){
                     downloadFile(Constants.LOCAL_FILES_PATH + grantedDownloadFile, Constants.DOWNLOADED_FILES_PATH + grantedDownloadFile, ownerAddress);
                     grantedDownloadFile = "downloading";
                 }
