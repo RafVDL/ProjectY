@@ -495,8 +495,9 @@ public class Node implements NodeInterface {
                     grantedDownloadFile = "null";
                     allFiles.put(fileLockRequest, 0);
                 } else if (!grantedDownloadFile.equals("downloading")){
-                    downloadFile(Constants.LOCAL_FILES_PATH + grantedDownloadFile, Constants.DOWNLOADED_FILES_PATH + grantedDownloadFile, ownerAddress);
+                    String temp = grantedDownloadFile;
                     grantedDownloadFile = "downloading";
+                    downloadFile(Constants.LOCAL_FILES_PATH + temp, Constants.DOWNLOADED_FILES_PATH + temp, ownerAddress);
                 }
             });
             t3.start();
