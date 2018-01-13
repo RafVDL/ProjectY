@@ -140,7 +140,7 @@ public class NodeController {
             } else {
                 node.downloadAFile(selectedFileName);
                 fileToOpen = new File(Constants.DOWNLOADED_FILES_PATH + selectedFileName);
-                while (!Files.isReadable(fileToOpen.toPath())) {
+                while (!Files.isReadable(fileToOpen.toPath()) && !node.getDownloadingFiles().contains(fileToOpen.getName())) {
                     try {
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
